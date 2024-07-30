@@ -3,6 +3,7 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+import os
 import pathlib
 import sys
 
@@ -64,3 +65,11 @@ modindex_common_prefix = [
 
 html_theme = "pydata_sphinx_theme"
 html_static_path = ["_static"]
+
+# -- Options for LaTeX output ------------------------------------------------
+
+os.environ["LATEXMKOPTS"] = "-interaction=nonstopmode"
+
+# latex_engine = "xelatex"
+latex_logo = "../TFN_Landscape_Colour_CMYK.png"
+latex_show_urls = "footnote"
