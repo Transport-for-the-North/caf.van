@@ -10,11 +10,15 @@
 ##### IMPORTS #####
 
 # Built-Ins
+import logging
 from dataclasses import dataclass
 from enum import Enum, auto
 
 # Third Party
 import numpy as np
+
+##### CONSTANTS #####
+LOG = logging.getLogger(__name__)
 
 
 ##### CLASSES #####
@@ -174,7 +178,7 @@ def factor_totals(
     if totals[0] == totals[1]:
         return col_total, row_total
     mean_tot = np.mean([np.sum(col_total), np.sum(row_total)])
-    print(f"Factoring trip ends sum to mean total: {mean_tot}")
+    LOG.info("Factoring trip ends sum to mean total: %s", mean_tot)
     new_totals = []
     for tot, arr in zip(totals, trip_ends):
         new_totals.append(arr * mean_tot / tot)

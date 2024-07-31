@@ -6,6 +6,7 @@
 ##### IMPORTS #####
 
 # Built-Ins
+import logging
 import pathlib
 import re
 from itertools import chain
@@ -22,6 +23,7 @@ from caf.van import errors, lgv_inputs, utilities
 from caf.van.rezone import Rezone
 
 ##### CONSTANTS #####
+LOG = logging.getLogger(__name__)
 BUSINESS_FLOORSPACE_HEADER: dict[str, type] = {"AREA_CODE": str}
 BUSINESS_FLOORSPACE_RENAME = {"AREA_CODE": "zone"}
 BUSINESS_CATEGORIES = ["Retail", "Office", "Industrial", "Other"]
@@ -173,7 +175,7 @@ class CommuteTripEnds:
         self.commute_trips_main_usage = {
             k: v * self.params["LGV growth"] for k, v in self.commute_trips_main_usage.items()
         }
-        print(f"Grown {self.commute_trips_main_usage=}")
+        LOG.info("Grown commute trips main usage: %s", self.commute_trips_main_usage)
 
         self.commute_trips_land_use = utilities.to_dict(
             commute_tables["Commute trips by land use"],
@@ -184,7 +186,7 @@ class CommuteTripEnds:
         self.commute_trips_land_use = {
             k: v * self.params["LGV growth"] for k, v in self.commute_trips_land_use.items()
         }
-        print(f"Grown {self.commute_trips_land_use=}")
+        LOG.info("Grown commute trips land use: %s", self.commute_trips_land_use)
 
     def _read_zone_lookups(self):
         for key, value in self.paths.dict().items():

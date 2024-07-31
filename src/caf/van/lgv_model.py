@@ -8,6 +8,8 @@
 # Built-Ins
 import argparse
 import io
+import logging
+import pprint
 import warnings
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -35,6 +37,7 @@ from caf.van.service_segment import ServiceTripEnds
 from caf.van.utilities import DataPaths
 
 ##### CONSTANTS #####
+LOG = logging.getLogger(__name__)
 TRIP_DISTRIBUTION_SHEETS = {
     "service": "Service",
     "delivery_parcel_stem": "Delivery",
@@ -287,7 +290,7 @@ def calculate_trip_ends(
     ]
     model_zones.name = "Zone"
 
-    message_hook("Calculating Service trip ends")
+    LOG.info("Calculating Service trip ends")
     service = ServiceTripEnds(
         input_paths.household_paths,
         bres_paths,
@@ -299,7 +302,7 @@ def calculate_trip_ends(
     service.trip_ends.to_csv(output_folder / "service_trip_ends.csv")
 
     # Calculate the delivery trip ends and save outputs
-    message_hook("Calculating Delivery trip ends")
+    LOG.info("Calculating Delivery trip ends")
     delivery = DeliveryTripEnds(
         DataPaths(
             "LGV Delivery Warehouse", input_paths.warehouse_path, input_paths.lsoa_lookup_path
@@ -316,13 +319,13 @@ def calculate_trip_ends(
     delivery.grocery_bush_trip_ends.to_csv(output_folder / "delivery_grocery_trip_ends.csv")
 
     # Calculate commuting trip ends and save output
-    message_hook("Calculating Commuting trip ends")
+    LOG.info("Calculating Commuting trip ends")
     commute = CommuteTripEnds(input_paths, model_zones)
     commute_trips = commute.trips
     for key in commute_trips:
         commute_trips[key].to_csv(output_folder / Path(f"commute_{key}_trip_ends.csv"))
 
-    message_hook("\tDone with trip ends")
+    LOG.info("\tDone with trip ends")
     return LGVTripEnds(
         service=service.trip_ends,
         delivery_parcel_stem=delivery.parcel_stem_trip_ends,
@@ -339,11 +342,10 @@ def _calibrate_gm(
     input_paths: LGVInputPaths,
     gm_params: pd.DataFrame,
     internals: set,
-    message_hook: Callable = print,
 ) -> CalibrateGravityModel:
     """Internal function used in `run_gravity_model` for running the GM with calibration."""
     calibrate = gm_params.loc[name, "calibrate"]
-    message_hook(f"Running Gravity Model: {name}, with calibration {calibrate}")
+    LOG.info("Running Gravity Model: %s, with calibration %s", name, calibrate)
     calib_gm = CalibrateGravityModel(
         trip_ends,
         input_paths.cost_matrix_path,
@@ -357,7 +359,7 @@ def _calibrate_gm(
         calibrate=calibrate,
         constraint=gm_params.loc[name, "furness_type"],
     )
-    message_hook("\tFinished, now writing outputs")
+    LOG.info("\tFinished, now writing outputs")
     return calib_gm
 
 
@@ -392,16 +394,16 @@ def run_gravity_model(
         if name == "zones":
             continue
         try:
-            calib_gm = _calibrate_gm(te, name, input_paths, gm_params, internals, message_hook)
+            calib_gm = _calibrate_gm(te, name, input_paths, gm_params, internals)
         except Exception as e:
-            message_hook(f"\t{e.__class__.__name__}: {e}")
+            LOG.info("\t%s: %s", e.__class__.__name__, e)
             continue
 
         output_folder.mkdir(exist_ok=True)
         # Check if segment outputs a PA matrix which needs to be converted
         if name in PA_MATRICES:
             # Save PA matrix to CSV and convert to OD dataframe
-            message_hook("\tConverting PA to OD")
+            LOG.info("\tConverting PA to OD")
             calib_gm.trip_matrix.to_csv(output_folder / (name + "-trip_matrix-PA.csv"))
             matrices[name] = annual_pa_to_od(
                 calib_gm.trip_matrix.values,
@@ -439,7 +441,7 @@ def run_gravity_model(
                 vehicle_kms.to_excel(writer, sheet_name="Vehicle Kilometres (PA)")
             vehicle_kms = calculate_vehicle_kms(matrices[name], calib_gm.costs, internals)
             vehicle_kms.to_excel(writer, sheet_name="Vehicle Kilometres")
-        message_hook("\tFinished writing")
+        LOG.info("\tFinished writing")
 
     return matrices
 
@@ -639,7 +641,7 @@ def produce_annual_matrices(
     LGVMatrices
         Annual LGV matrices.
     """
-    message_hook("Running gravity model to get annual matrices")
+    LOG.info("Running gravity model to get annual matrices")
     matrices = run_gravity_model(
         input_paths,
         trip_ends,
@@ -648,7 +650,7 @@ def produce_annual_matrices(
     )
 
     try:
-        message_hook("Calculating personal segment matrices from NorMITs car demand")
+        LOG.info("Calculating personal segment matrices from NorMITs car demand")
         personal_matrix = produce_personal_matrix(
             input_paths.normits_pa_folder,
             input_paths.personal_purposes,
@@ -657,7 +659,7 @@ def produce_annual_matrices(
             factor=input_paths.normits_to_personal_factor,
             output_folder=output_folder,
         )
-        message_hook("Finished personal segment matrices")
+        LOG.info("Finished personal segment matrices")
 
     except Exception as exc:
         personal_matrix = pd.DataFrame(
@@ -684,11 +686,12 @@ def main(input_paths: LGVInputPaths, message_hook: Callable = print):
     message_hook : Callable, optional
         Function for writing messages, by default print
     """
-    message_hook("Getting model parameters")
+    LOG.info("Getting model parameters")
     parameters = lgv_parameters(input_paths.parameters_path)
+    LOG.debug("Model parameters:\n%s", pprint.pformat(parameters, indent=2, width=100))
 
     # Create output folder
-    message_hook("Creating output folder")
+    LOG.info("Creating output folder")
     output_folder = (
         input_paths.output_folder / f"LGV Model Outputs - {datetime.now():%Y-%m-%d %H.%M.%S}"
     )
@@ -696,7 +699,7 @@ def main(input_paths: LGVInputPaths, message_hook: Callable = print):
 
     input_paths.save_yaml(output_folder / "lgv_model_config.yml")
 
-    message_hook("Calculating trip ends")
+    LOG.info("Calculating trip ends")
     trip_ends = calculate_trip_ends(
         input_paths,
         output_folder / "trip ends",
@@ -705,7 +708,7 @@ def main(input_paths: LGVInputPaths, message_hook: Callable = print):
         message_hook=message_hook,
     )
 
-    message_hook("Calculating annual matrices")
+    LOG.info("Calculating annual matrices")
     annual_matrices = produce_annual_matrices(
         input_paths,
         trip_ends,
@@ -714,13 +717,13 @@ def main(input_paths: LGVInputPaths, message_hook: Callable = print):
         message_hook=message_hook,
     )
 
-    message_hook("Calculating matrices by time period")
+    LOG.info("Calculating matrices by time period")
     matrix_time_periods(
         annual_matrices,
         input_paths.parameters_path,
         output_folder / "time period matrices",
     )
-    message_hook("Done, it is now safe to close the tool")
+    LOG.info("Done, it is now safe to close the tool")
 
 
 def lgv_arg_parser() -> argparse.ArgumentParser:

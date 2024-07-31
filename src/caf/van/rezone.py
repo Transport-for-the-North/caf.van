@@ -5,19 +5,20 @@ Rezones a matrix when given a lookup with splitting factors.
 ##### IMPORTS #####
 
 # Built-Ins
+import logging
 import sys
 
 # Local Imports
 from caf.van.errors import IncorrectParameterError, MissingLookupValuesError
-from caf.van.utilities import Loggers, Parameters, read_csv
+from caf.van.utilities import Parameters, read_csv
+
+##### CONSTANTS #####
+LOG = logging.getLogger(__name__)
 
 
 ##### CLASS #####
 class Rezone:
     """Class for rezoning a matrix when given a lookup with splitting factors."""
-
-    # Class logger
-    log = Loggers.childLogger(f"{__name__}.Rezone")
 
     @classmethod
     def read(cls, path, columns):
@@ -57,7 +58,7 @@ class Rezone:
         except IncorrectParameterError:
             errType, errVal = sys.exc_info()[:2]
             # Log any errors and reraise
-            cls.log.error("%s: %s", errType.__name__, str(errVal))
+            LOG.error("%s: %s", errType.__name__, str(errVal))
             raise
 
         # Set column names if rename is list or use rename method with dicts

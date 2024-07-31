@@ -10,6 +10,7 @@ from __future__ import annotations
 
 # Built-Ins
 import enum
+import logging
 import re
 import string
 from pathlib import Path
@@ -28,6 +29,7 @@ from caf.van.rezone import Rezone
 from caf.van.utilities import DataPaths
 
 ##### CONSTANTS #####
+LOG = logging.getLogger(__name__)
 HH_PROJECTIONS_HEADER = {"Area Description": str, "HHs": float}
 """Column names (and data types) for input CSV to `household_projections` function."""
 BRES_HEADER: dict[str, type] = {
@@ -278,7 +280,7 @@ def write_example_config(path: Path | None) -> None:
             )
 
     LGVInputPaths.write_example(path, **example_data)
-    print(f"Written example config: {path}")
+    LOG.info("Written example config: %s", path)
 
 
 def household_projections(path: Path, zone_lookup: Path) -> pd.DataFrame:

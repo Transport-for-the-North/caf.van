@@ -6,6 +6,7 @@
 ##### IMPORTS #####
 
 # Built-Ins
+import logging
 from pathlib import Path
 from typing import Union
 
@@ -17,6 +18,9 @@ from pydantic import fields
 
 # Local Imports
 from caf.van import errors, lgv_inputs, utilities
+
+##### CONSTANTS #####
+LOG = logging.getLogger(__name__)
 
 
 ##### FUNCTIONS #####
@@ -198,12 +202,13 @@ class DeliveryTripEnds:
 
         if already_zones:
             # TODO(MB) Add logging to LFT
-            print(
-                f"{len(already_zones)} zones already have non-zero "
-                "values in warehouse data so won't be infilled"
+            LOG.info(
+                "%s zones already have non-zero values"
+                " in warehouse data so won't be infilled",
+                len(already_zones),
             )
 
-        print(f"warehouse data for {len(update_zones)} zones will be infilled")
+        LOG.info("warehouse data for %s zones will be infilled", len(update_zones))
         if len(update_zones) == 0:
             return depots
 
