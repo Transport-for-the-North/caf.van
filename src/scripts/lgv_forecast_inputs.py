@@ -7,35 +7,36 @@
 """
 
 ##### IMPORTS #####
-# Standard imports
+
+# Built-Ins
 import datetime as dt
 import logging
 import pathlib
 import sys
 from typing import Any, Callable, Iterator
 
-# Third party imports
+# Third Party
 import caf.toolkit
-from matplotlib import pyplot as plt, ticker
 import numpy as np
 import pandas as pd
 import pydantic
+import strictyaml
+from matplotlib import pyplot as plt
+from matplotlib import ticker
 from pydantic import dataclasses, types
 from scipy import stats
-import strictyaml
 
-
-# Local imports
-sys.path.extend(["local_freight_tool", "."])
+sys.path.extend(["src"])
+# Local Imports
 # pylint: disable=wrong-import-position
-from LFT import utilities
-from LFT.lgv_model import commute_segment, lgv_inputs
+import caf.van
+from caf.van import commute_segment, lgv_inputs, utilities
 
 # pylint: enable=wrong-import-position
 
 ##### CONSTANTS #####
-LOG = logging.getLogger("LFT.lgv_forecast_inputs")
-CONFIG_PATH = pathlib.Path("scripts/lgv_forecast_inputs.yml")
+LOG = logging.getLogger("caf.van.lgv_forecast_inputs")
+CONFIG_PATH = pathlib.Path("src/scripts/lgv_forecast_inputs.yml")
 BASE_LGV_GROWTH_FACTOR = 1.51
 LGV_SURVEY_YEAR = 2003
 CSV_COMMENT_CHARACTER = "#"
@@ -125,29 +126,6 @@ class _GrowthFactorLinRegress:
 
 
 ##### FUNCTIONS #####
-def _init_logger(output_folder: pathlib.Path):
-    root = logging.getLogger("LFT")
-    root.setLevel(logging.DEBUG)
-
-    stream = logging.StreamHandler()
-    stream.setLevel(logging.INFO)
-    stream_format = logging.Formatter(
-        "{asctime} [{levelname:^8.8}] {message}", datefmt="%H:%M:%S", style="{"
-    )
-    stream.setFormatter(stream_format)
-    root.addHandler(stream)
-
-    file = logging.FileHandler(output_folder / "Forecast_inputs.log")
-    file.setLevel(logging.DEBUG)
-    file_format = logging.Formatter(
-        "{asctime} [{name:30.30}] [{module:20.20}:{lineno!s:5.5}] "
-        "[{levelname:^8.8}] {message}",
-        style="{",
-    )
-    file.setFormatter(file_format)
-    root.addHandler(file)
-
-
 def _load_planning_data(base_path: pathlib.Path, forecast_path: pathlib.Path):
     """Calculate growth values for the TEMPro planning data for the forecast year."""
     # TODO(MB) Load NTEM data directly from the databases, functionality for this
@@ -852,120 +830,125 @@ def main(params: ForecastInputsConfig) -> None:
     )
     output_folder.mkdir(exist_ok=True)
 
-    # TODO(MB) Use LogHelper class from caf.toolkit
-    _init_logger(output_folder)
-    LOG.info("Outputs saved to: %s", output_folder)
+    details = caf.toolkit.ToolDetails("caf.van.forecast_inputs", caf.van.__version__)
+    log_file = output_folder / "Forecast_inputs.log"
+    with caf.toolkit.LogHelper("caf.van", details, log_file):
+        LOG.info("Outputs saved to: %s", output_folder)
 
-    out_path = output_folder / "forecast_inputs_config.yml"
-    params.save_yaml(out_path)
-    LOG.info("Written: %s", out_path.name)
+        out_path = output_folder / "forecast_inputs_config.yml"
+        params.save_yaml(out_path)
+        LOG.info("Written: %s", out_path.name)
 
-    base_config = lgv_inputs.LGVInputPaths.load_yaml(params.base_model_config)
-    out_path = output_folder / "base_inputs_config.yml"
-    base_config.save_yaml(out_path)
-    LOG.info("Written: %s", out_path.name)
+        base_config = lgv_inputs.LGVInputPaths.load_yaml(params.base_model_config)
+        out_path = output_folder / "base_inputs_config.yml"
+        base_config.save_yaml(out_path)
+        LOG.info("Written: %s", out_path.name)
 
-    oa_lookup = load_oa_lookup(params.oa_lookup_path)
-    growth = get_planning_growth(
-        params.base_planning_path, params.forecast_planning_path, oa_lookup
-    )
+        oa_lookup = load_oa_lookup(params.oa_lookup_path)
+        growth = get_planning_growth(
+            params.base_planning_path, params.forecast_planning_path, oa_lookup
+        )
 
-    growth_folder = output_folder / "growth_factors"
-    growth_folder.mkdir(exist_ok=True)
-    for name, data in growth:
-        out_path = growth_folder / f"planning_data_growth_factors-{name}.csv"
-        data.to_csv(out_path)
-        LOG.info("Written: %s", out_path.relative_to(output_folder))
+        growth_folder = output_folder / "growth_factors"
+        growth_folder.mkdir(exist_ok=True)
+        for name, data in growth:
+            out_path = growth_folder / f"planning_data_growth_factors-{name}.csv"
+            data.to_csv(out_path)
+            LOG.info("Written: %s", out_path.relative_to(output_folder))
 
-    forecast_paths: dict[str, Any] = {}
-    totals_comparison: dict[str, pd.DataFrame] = {}
+        forecast_paths: dict[str, Any] = {}
+        totals_comparison: dict[str, pd.DataFrame] = {}
 
-    grown_inputs_folder = output_folder / "grown_inputs"
-    grown_inputs_folder.mkdir(exist_ok=True)
+        grown_inputs_folder = output_folder / "grown_inputs"
+        grown_inputs_folder.mkdir(exist_ok=True)
 
-    name = "bres_data"
-    forecast_paths[name], totals_comparison[name] = grow_bres(
-        base_config.bres_path,
-        grown_inputs_folder / f"grown_BRES_{params.forecast_year}.csv",
-        growth,
-        params.forecast_year,
-    )
+        name = "bres_data"
+        forecast_paths[name], totals_comparison[name] = grow_bres(
+            base_config.bres_path,
+            grown_inputs_folder / f"grown_BRES_{params.forecast_year}.csv",
+            growth,
+            params.forecast_year,
+        )
 
-    name = "ndr_floorspace"
-    forecast_paths[name], totals_comparison[name] = grow_ndr_floorspace(
-        base_config.ndr_floorspace_path,
-        params.base_year,
-        params.forecast_year,
-        growth,
-        grown_inputs_folder / f"grown_NDR_floorspace_{params.forecast_year}.csv",
-    )
+        name = "ndr_floorspace"
+        forecast_paths[name], totals_comparison[name] = grow_ndr_floorspace(
+            base_config.ndr_floorspace_path,
+            params.base_year,
+            params.forecast_year,
+            growth,
+            grown_inputs_folder / f"grown_NDR_floorspace_{params.forecast_year}.csv",
+        )
 
-    name = "dwellings_england"
-    forecast_paths[name], totals_comparison[name] = grow_english_dwellings_data(
-        base_config.e_dwellings_path,
-        grown_inputs_folder / f"grown_english_dwelling_{params.forecast_year}.xlsx",
-        params.base_year,
-        params.forecast_year,
-        growth,
-    )
-    name = "dwellings_scotland_wales"
-    forecast_paths[name], totals_comparison[name] = grow_sc_w_dwellings_data(
-        base_config.sc_w_dwellings_path,
-        grown_inputs_folder / f"grown_scotland_wales_dwelling_{params.forecast_year}.csv",
-        params.base_year,
-        params.forecast_year,
-        growth,
-    )
+        name = "dwellings_england"
+        forecast_paths[name], totals_comparison[name] = grow_english_dwellings_data(
+            base_config.e_dwellings_path,
+            grown_inputs_folder / f"grown_english_dwelling_{params.forecast_year}.xlsx",
+            params.base_year,
+            params.forecast_year,
+            growth,
+        )
+        name = "dwellings_scotland_wales"
+        forecast_paths[name], totals_comparison[name] = grow_sc_w_dwellings_data(
+            base_config.sc_w_dwellings_path,
+            grown_inputs_folder / f"grown_scotland_wales_dwelling_{params.forecast_year}.csv",
+            params.base_year,
+            params.forecast_year,
+            growth,
+        )
 
-    forecast_paths["QS606_data"], comparisons = grow_occupation_data(
-        base_config.qs606ew_path,
-        base_config.qs606sc_path,
-        growth,
-        params.base_year,
-        params.forecast_year,
-        grown_inputs_folder,
-    )
-    totals_comparison.update({f"QS606{k}": v for k, v in comparisons.items()})
+        forecast_paths["QS606_data"], comparisons = grow_occupation_data(
+            base_config.qs606ew_path,
+            base_config.qs606sc_path,
+            growth,
+            params.base_year,
+            params.forecast_year,
+            grown_inputs_folder,
+        )
+        totals_comparison.update({f"QS606{k}": v for k, v in comparisons.items()})
 
-    forecast_paths["warehouse_data"], comparisons = grow_warehouse_data(
-        base_config.warehouse_path,
-        base_config.commute_warehouse_paths,
-        growth,
-        params.base_year,
-        params.forecast_year,
-        grown_inputs_folder,
-    )
-    totals_comparison.update(comparisons)
+        forecast_paths["warehouse_data"], comparisons = grow_warehouse_data(
+            base_config.warehouse_path,
+            base_config.commute_warehouse_paths,
+            growth,
+            params.base_year,
+            params.forecast_year,
+            grown_inputs_folder,
+        )
+        totals_comparison.update(comparisons)
 
-    forecast_paths = _recursive_apply(forecast_paths, lambda x: x.relative_to(output_folder))
+        forecast_paths = _recursive_apply(
+            forecast_paths, lambda x: x.relative_to(output_folder)
+        )
 
-    growth_factors = calculate_veh_km_growth_factor(
-        params.forecasted_vehicle_kms,
-        params.base_year,
-        params.forecast_year,
-        output_folder / "LGV_growth_factor_plot.pdf",
-    )
-    forecast_paths.update({"Vehicle km based growth factors": growth_factors})
-    growth_factors = calculate_fleet_projections_growth_factor(
-        params.fleet_growth,
-        params.base_year,
-        params.forecast_year,
-        output_folder / "LGV_fleet_projections_growth_factor_plot.pdf",
-    )
-    forecast_paths.update({"NoCARB fleet projections based growth factors": growth_factors})
+        growth_factors = calculate_veh_km_growth_factor(
+            params.forecasted_vehicle_kms,
+            params.base_year,
+            params.forecast_year,
+            output_folder / "LGV_growth_factor_plot.pdf",
+        )
+        forecast_paths.update({"Vehicle km based growth factors": growth_factors})
+        growth_factors = calculate_fleet_projections_growth_factor(
+            params.fleet_growth,
+            params.base_year,
+            params.forecast_year,
+            output_folder / "LGV_fleet_projections_growth_factor_plot.pdf",
+        )
+        forecast_paths.update(
+            {"NoCARB fleet projections based growth factors": growth_factors}
+        )
 
-    write_forecast_log(
-        forecast_paths,
-        output_folder / "grown_data.yml",
-        params.base_year,
-        params.forecast_year,
-    )
+        write_forecast_log(
+            forecast_paths,
+            output_folder / "grown_data.yml",
+            params.base_year,
+            params.forecast_year,
+        )
 
-    output_path = grown_inputs_folder / "grown_input_comparisons.xlsx"
-    with pd.ExcelWriter(output_path, engine="openpyxl") as excel:
-        for name, data in totals_comparison.items():
-            data.to_excel(excel, sheet_name=name)
-    LOG.info("Written summaries to: %s", output_path.relative_to(output_folder))
+        output_path = grown_inputs_folder / "grown_input_comparisons.xlsx"
+        with pd.ExcelWriter(output_path, engine="openpyxl") as excel:
+            for name, data in totals_comparison.items():
+                data.to_excel(excel, sheet_name=name)
+        LOG.info("Written summaries to: %s", output_path.relative_to(output_folder))
 
 
 ##### MAIN #####
