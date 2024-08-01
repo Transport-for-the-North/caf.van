@@ -27,9 +27,9 @@ def main():
         input_paths = lgv_inputs.LGVInputPaths.load_yaml(args.config_file)
 
         details = ToolDetails(__package__, caf.van.__version__)
-        log_file = input_paths.output_folder / "van.log"
+        log_file = input_paths.model_output_folder / "van.log"
 
-        with LogHelper(__package__, details, log_file):
+        with LogHelper(__package__, details, log_file=log_file):
             lgv_model.main(input_paths)
 
     else:

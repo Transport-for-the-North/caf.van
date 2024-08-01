@@ -34,8 +34,6 @@
 
 Transport demand model to produce van travel matrices.
 
-
-
 ## Common Analytical Framework
 
 This package is sits within the [Common Analytical Framework (CAF)](https://transport-for-the-north.github.io/caf_homepage/intro.html),
@@ -54,6 +52,7 @@ question has already been answered.
 Please see [CONTRIBUTING.rst](contributing.rst) for details on contributing to the codebase or
 documentation.
 
+## Documentation
 
 Documentation is created using [Sphinx](https://www.sphinx-doc.org/en/master/index.html) and is hosted online at
 [cafvan.readthedocs](https://cafvan.readthedocs.io/en/stable/).
@@ -96,4 +95,3 @@ provides a target (latexpdf) which builds the LaTeX files then immediately build
 running `make latexpdf` MiKTeX may ask for permission to installed some required TeX packages.
 Once the command has finished the PDF will be located at
 [`docs/build/latex/cafvan.pdf`](docs/build/latex/cafvan.pdf).
-

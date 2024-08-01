@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 # Built-Ins
+import datetime as dt
 import enum
 import logging
 import re
@@ -174,6 +175,8 @@ class LGVInputPaths(caf.toolkit.BaseConfig):
     )
     """Personal purpose types defined by Normits"""
 
+    _model_output_folder: Path | None = fields.PrivateAttr(None)
+
     @classmethod
     def write_example(cls, path: Path, **examples: str) -> None:
         """Write examples to a config file.
@@ -198,6 +201,17 @@ class LGVInputPaths(caf.toolkit.BaseConfig):
 
         example = cls.construct(**data)
         example.save_yaml(path)
+
+    @property
+    def model_output_folder(self) -> Path:
+        """Output folder for single run of model."""
+        if self._model_output_folder is None:
+            self._model_output_folder = (
+                self.output_folder
+                / f"CAF.Van Model Outputs - {dt.datetime.now():%Y-%m-%d %H.%M.%S}"
+            )
+            self._model_output_folder.mkdir(exist_ok=True)
+        return self._model_output_folder
 
 
 InfillFunction = Callable[[np.ndarray], float]

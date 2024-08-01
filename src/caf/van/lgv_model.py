@@ -615,7 +615,6 @@ def produce_annual_matrices(
     trip_ends: LGVTripEnds,
     output_folder: Path,
     year: int,
-    message_hook: Callable = print,
 ) -> LGVMatrices:
     """Produces annual LGV matrices for all segments.
 
@@ -633,8 +632,6 @@ def produce_annual_matrices(
         Folder to save outputs to.
     year : int
         Base year of the model.
-    message_hook : Callable, default print
-        Function for outputting messages.
 
     Returns
     -------
@@ -646,7 +643,6 @@ def produce_annual_matrices(
         input_paths,
         trip_ends,
         output_folder,
-        message_hook=message_hook,
     )
 
     try:
@@ -676,52 +672,41 @@ def produce_annual_matrices(
     return LGVMatrices(**matrices, personal=personal_matrix)
 
 
-def main(input_paths: LGVInputPaths, message_hook: Callable = print):
+def main(input_paths: LGVInputPaths):
     """Runs the LGV model.
 
     Parameters
     ----------
     input_paths : LGVInputPaths
         Paths to all the input files for the LGV model.
-    message_hook : Callable, optional
-        Function for writing messages, by default print
     """
     LOG.info("Getting model parameters")
     parameters = lgv_parameters(input_paths.parameters_path)
     LOG.debug("Model parameters:\n%s", pprint.pformat(parameters, indent=2, width=100))
 
-    # Create output folder
-    LOG.info("Creating output folder")
-    output_folder = (
-        input_paths.output_folder / f"LGV Model Outputs - {datetime.now():%Y-%m-%d %H.%M.%S}"
-    )
-    output_folder.mkdir(exist_ok=True, parents=True)
-
-    input_paths.save_yaml(output_folder / "lgv_model_config.yml")
+    input_paths.save_yaml(input_paths.model_output_folder / "lgv_model_config.yml")
 
     LOG.info("Calculating trip ends")
     trip_ends = calculate_trip_ends(
         input_paths,
-        output_folder / "trip ends",
+        input_paths.model_output_folder / "trip ends",
         parameters["lgv_growth"],
         parameters["year"],
-        message_hook=message_hook,
     )
 
     LOG.info("Calculating annual matrices")
     annual_matrices = produce_annual_matrices(
         input_paths,
         trip_ends,
-        output_folder / "annual trip matrices",
+        input_paths.model_output_folder / "annual trip matrices",
         year=parameters["year"],
-        message_hook=message_hook,
     )
 
     LOG.info("Calculating matrices by time period")
     matrix_time_periods(
         annual_matrices,
         input_paths.parameters_path,
-        output_folder / "time period matrices",
+        input_paths.model_output_folder / "time period matrices",
     )
     LOG.info("Done, it is now safe to close the tool")
 
