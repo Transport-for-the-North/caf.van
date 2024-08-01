@@ -95,3 +95,8 @@ provides a target (latexpdf) which builds the LaTeX files then immediately build
 running `make latexpdf` MiKTeX may ask for permission to installed some required TeX packages.
 Once the command has finished the PDF will be located at
 [`docs/build/latex/cafvan.pdf`](docs/build/latex/cafvan.pdf).
+
+## Credits
+
+CAF.van was initially created by taking the LGV model sub-package from
+[caf-freight-tools Local Freight Tool v2.1.0](https://github.com/Transport-for-the-North/caf-freight-tools/tree/v2.1.0).
