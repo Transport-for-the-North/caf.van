@@ -16,10 +16,9 @@ Tutorials and examples for useful functionality.
 LGV Model
 ---------
 
-This module contains the functionality for running the LGV model which
-includes calculating trip ends, using a gravity model to generate annual
-trip matrices and converting the annual matrices to time periods. The
-interface is shown below. The methodology of the LGV model is based on
+The LGV model is a transport demand model which includes calculating trip ends,
+using a gravity model to generate annual trip matrices and converting the annual
+matrices to time periods. The methodology of the LGV model is based on
 Ian Williams' technical note "LGVN Model Design" [1]_.
 
 The following sections contain detailed information on the expected
