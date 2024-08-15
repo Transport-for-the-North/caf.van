@@ -17,8 +17,13 @@ from pathlib import Path
 from typing import Callable
 
 # Third Party
+from caf.distribute import gravity_model, cost_functions
+
+from caf.toolkit import cost_utils
 import numpy as np
 import pandas as pd
+import caf.distribute
+
 
 # Local Imports
 from caf.van.commute_segment import CommuteTripEnds
@@ -34,7 +39,7 @@ from caf.van.lgv_inputs import (
 )
 from caf.van.rezone import Rezone
 from caf.van.service_segment import ServiceTripEnds
-from caf.van.utilities import DataPaths
+from caf.van.utilities import DataPaths, read_csv, read_excel
 
 ##### CONSTANTS #####
 LOG = logging.getLogger(__name__)
@@ -56,6 +61,18 @@ PA_MATRICES = [
 """List of matrices which are in PA format and will be converted to OD."""
 NTEM_PURPOSES = {"hb": list(range(1, 9)), "nhb": [12, 13, 14, 15, 16, 18]}
 PERSONAL_TIME_PERIODS = [1, 2, 3, 4]
+
+
+TRIP_DISTRIBUTION_COLS = dict.fromkeys(
+    ("start", "end", "average", "observed proportions"), float
+)
+"""Names and dtypes of the columns expected in the trip distributions input."""
+FUNCTION_LABELS = {
+    "log_normal": r"Log Normal: $\sigma={:.1e}$, $\mu={:.1e}$",
+    "tanner": r"Tanner: $\alpha={:.1e}$, $\beta={:.1e}$",
+}
+
+
 """Time periods to aggregate NHB together for."""
 
 
@@ -342,25 +359,87 @@ def _calibrate_gm(
     input_paths: LGVInputPaths,
     gm_params: pd.DataFrame,
     internals: set,
-) -> CalibrateGravityModel:
+) -> gravity_model.GravityModelCalibrateResults:
     """Internal function used in `run_gravity_model` for running the GM with calibration."""
     calibrate = gm_params.loc[name, "calibrate"]
     LOG.info("Running Gravity Model: %s, with calibration %s", name, calibrate)
-    calib_gm = CalibrateGravityModel(
-        trip_ends,
-        input_paths.cost_matrix_path,
-        (input_paths.trip_distributions_path, TRIP_DISTRIBUTION_SHEETS[name]),
-        input_paths.calibration_matrix_path,
-        internal_zones=internals,
+
+    cost_matrix = pd.read_csv(input_paths.cost_matrix_path, index_col=0).to_numpy() #TODO this should have validation 
+
+
+    #different segments require different cost function and starting params - we determine extract these below
+    if gm_params.loc[name, "function"]=="log normal":
+        cost_function = cost_functions.BuiltInCostFunction.LOG_NORMAL.get_cost_function()
+        init_params = {"sigma": gm_params.loc[name, "param1"], "mu": 10.0} #TODO why is mu -10 in paramters file?
+    elif gm_params.loc[name, "function"]=="tanner":
+        cost_function = cost_functions.BuiltInCostFunction.TANNER.get_cost_function()
+        init_params = {"alpha": gm_params.loc[name, "param1"], "beta": gm_params.loc[name, "param2"]}
+
+
+    #TODO this is a TERRIBLE way of doing this - sort it out
+    try:
+        calib_gm = gravity_model.SingleAreaGravityModelCalibrator(
+            trip_ends["Productions"].to_numpy(),
+            trip_ends["Attractions"].to_numpy(),
+            cost_function,
+            cost_matrix,
+        )
+    except KeyError:
+        calib_gm = gravity_model.SingleAreaGravityModelCalibrator(
+            trip_ends["Origins"].to_numpy(), 
+            trip_ends["Destinations"].to_numpy(),
+            cost_function,
+            cost_matrix, 
+        )
+    trip_distribution_path = (input_paths.trip_distributions_path, TRIP_DISTRIBUTION_SHEETS[name])
+    td_info = read_excel(
+            trip_distribution_path[0],
+            "Gravity model trip distribution",
+            sheet_name=trip_distribution_path[1],
+            nrows=1,
+            header=None,
+        )
+
+    # Read the rest of the distributions sheet
+    trip_distribution = read_excel(
+        trip_distribution_path[0],
+        "Gravity model trip distribution",
+        columns=TRIP_DISTRIBUTION_COLS,
+        sheet_name=trip_distribution_path[1],
+        skiprows=1,
     )
-    calib_gm.calibrate_gravity_model(
-        function=gm_params.loc[name, "function"],
-        init_params=tuple(gm_params.loc[name, ["param1", "param2"]]),
-        calibrate=calibrate,
-        constraint=gm_params.loc[name, "furness_type"],
+
+
+    tld = cost_utils.CostDistribution(
+        trip_distribution,
+        min_col= "start",
+        max_col= "end",
+        avg_col= "average",
+        trips_col= "observed proportions",
     )
+    calibration_results = calib_gm.calibrate(
+        init_params,
+        input_paths.output_folder / f"gravity_model_{name}_calibration_log.csv",
+        target_cost_distribution = tld, 
+        #TODO figure out which key word args with default values needed to be changed
+    )
+    
+    
+    #calib_gm = CalibrateGravityModel(
+    #    trip_ends,
+    #    input_paths.cost_matrix_path,
+    #    (input_paths.trip_distributions_path, TRIP_DISTRIBUTION_SHEETS[name]),
+    #    input_paths.calibration_matrix_path,
+    #    internal_zones=internals,
+    #)
+    #calib_gm.calibrate_gravity_model(
+    #    function=gm_params.loc[name, "function"],
+    #    init_params=tuple(gm_params.loc[name, ["param1", "param2"]]),
+    #    calibrate=calibrate,
+    #    constraint=gm_params.loc[name, "furness_type"],
+    #)
     LOG.info("\tFinished, now writing outputs")
-    return calib_gm
+    return calibration_results 
 
 
 def run_gravity_model(
@@ -393,20 +472,21 @@ def run_gravity_model(
     for name, te in trip_ends.asdict().items():
         if name == "zones":
             continue
-        try:
-            calib_gm = _calibrate_gm(te, name, input_paths, gm_params, internals)
-        except Exception as e:
-            LOG.info("\t%s: %s", e.__class__.__name__, e)
-            continue
+        #TODO put this back to normal once dev is done
+        #try:
+        calib_gm = _calibrate_gm(te, name, input_paths, gm_params, internals)
+        #except Exception as e:
+        #    LOG.info("\t%s: %s", e.__class__.__name__, e)
+        #    continue
 
         output_folder.mkdir(exist_ok=True)
         # Check if segment outputs a PA matrix which needs to be converted
         if name in PA_MATRICES:
             # Save PA matrix to CSV and convert to OD dataframe
             LOG.info("\tConverting PA to OD")
-            calib_gm.trip_matrix.to_csv(output_folder / (name + "-trip_matrix-PA.csv"))
+            calib_gm.value_distribution.to_csv(output_folder / (name + "-trip_matrix-PA.csv"))
             matrices[name] = annual_pa_to_od(
-                calib_gm.trip_matrix.values,
+                calib_gm.value_distribution,
                 calib_gm.trip_ends.attractions.values,
                 calib_gm.trip_ends.productions.values,
             )
