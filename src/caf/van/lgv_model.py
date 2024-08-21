@@ -359,6 +359,7 @@ def _calibrate_gm(
     input_paths: LGVInputPaths,
     gm_params: pd.DataFrame,
     internals: set,
+    calibrate_logging_path: Path,
 ) -> gravity_model.GravityModelCalibrateResults:
     """Internal function used in `run_gravity_model` for running the GM with calibration."""
     calibrate = gm_params.loc[name, "calibrate"]
@@ -372,9 +373,9 @@ def _calibrate_gm(
     if gm_params.loc[name, "function"] == "log normal":
         cost_function = cost_functions.BuiltInCostFunction.LOG_NORMAL.get_cost_function()
         init_params = {
-            "sigma": gm_params.loc[name, "param1"],
-            "mu": 10.0,
-        }  # TODO why is mu -10 in paramters file?
+            "sigma": gm_params.loc[name, "param2"],
+            "mu": gm_params.loc[name, "param1"],
+        }
     elif gm_params.loc[name, "function"] == "tanner":
         cost_function = cost_functions.BuiltInCostFunction.TANNER.get_cost_function()
         init_params = {
@@ -427,7 +428,7 @@ def _calibrate_gm(
     )
     calibration_results = calib_gm.calibrate(
         init_params,
-        input_paths.output_folder / f"gravity_model_{name}_calibration_log.csv",
+        calibrate_logging_path,
         target_cost_distribution=tld,
         # TODO figure out which key word args with default values needed to be changed
     )
@@ -476,28 +477,34 @@ def run_gravity_model(
     internals = read_study_area(input_paths.model_study_area)
     gm_params = read_gm_params(input_paths.parameters_path)
     matrices: dict[str, pd.DataFrame] = {}
+    output_folder.mkdir(exist_ok=True)
+
     for name, te in trip_ends.asdict().items():
         if name == "zones":
             continue
         # TODO put this back to normal once dev is done
         try:
             calib_gm: gravity_model.GravityModelCalibrateResults = _calibrate_gm(
-                te, name, input_paths, gm_params, internals
+                te,
+                name,
+                input_paths,
+                gm_params,
+                internals,
+                output_folder / f"gravity_model_{name}_calibration_log.csv",
             )
         except Exception as e:
             LOG.info("\t%s: %s", e.__class__.__name__, e)
             continue
 
-        output_folder.mkdir(exist_ok=True)
         # Check if segment outputs a PA matrix which needs to be converted
         if name in PA_MATRICES:
             # Save PA matrix to CSV and convert to OD dataframe
             LOG.info("\tConverting PA to OD")
-            #TODO KF: I am pretty sure this index and column labelling aligns, but I/you need to check
-            pa_matrix = pd.DataFrame(calib_gm.value_distribution, index=te.index, columns=te.index)
-            pa_matrix.to_csv(
-                output_folder / (name + "-trip_matrix-PA.csv")
+            # TODO KF: I am pretty sure this index and column labelling aligns, but I/you need to check
+            pa_matrix = pd.DataFrame(
+                calib_gm.value_distribution, index=te.index, columns=te.index
             )
+            pa_matrix.to_csv(output_folder / (name + "-trip_matrix-PA.csv"))
             matrix = annual_pa_to_od(
                 calib_gm.value_distribution,
                 te["Attractions"].values,
@@ -509,26 +516,23 @@ def run_gravity_model(
                 columns=te.index,
             )
             # Calculate trip distributions for OD
-            #TODO do we need this??
-            col = "OD whole matrix proportions"
-            trip_hist = np.histogram(matrix, bins=calib_gm.cost_distribution.bin_edges, weights=matrix)
-            normalised_trip_hist =  trip_hist / np.sum(trip_hist)
-            calib_gm.value_distribution[col] = normalised_trip_hist
         else:
             matrices[name] = calib_gm.value_distribution
 
         # Save the annual matrix, TLD graph and Excel summary file
-        
-        #TODO below is broken - add an issue on GitHub or at Isaac
-        #calib_gm.plot_distributions().savefig(output_folder / (name + "-distribution.pdf"))
+
+        # TODO below is broken - add an issue on GitHub or at Isaac
+        calib_gm.plot_distributions().savefig(output_folder / (name + "-distribution.pdf"))
         matrices[name].to_csv(output_folder / (name + "-trip_matrix-OD.csv"))
         with pd.ExcelWriter(output_folder / (name + "-GM_log.xlsx")) as writer:
-            #TODO write out metadata
-            df = pd.DataFrame.from_dict({"convergence": calib_gm.cost_convergence}, orient="index")
+            # TODO write out metadata
+            df = pd.DataFrame.from_dict(
+                {"convergence": calib_gm.cost_convergence}, orient="index"
+            )
             df.to_excel(writer, sheet_name="Cost Convergence", header=False)
             df = pd.DataFrame.from_dict(calib_gm.cost_params, orient="index")
             df.to_excel(writer, sheet_name="Cost Params", header=False)
-            #convert to a dataframe
+            # convert to a dataframe
             calib_gm.cost_distribution.df.to_excel(
                 writer, sheet_name="Achieved Distribution", index=False
             )
@@ -536,16 +540,12 @@ def run_gravity_model(
                 writer, sheet_name="Target Distribution", index=False
             )
 
-            #TODO This is very bad - we have already read this in inside _calibrate_gm: figure out how to store this in memory nicely
-            cost_matrix = pd.read_csv(
-            input_paths.cost_matrix_path, index_col=0
-            )
+            # TODO This is very bad - we have already read this in inside _calibrate_gm: figure out how to store this in memory nicely
+            cost_matrix = pd.read_csv(input_paths.cost_matrix_path, index_col=0)
 
             if name in PA_MATRICES:
-                
-                vehicle_kms = calculate_vehicle_kms(
-                    pa_matrix, cost_matrix, internals
-                )
+
+                vehicle_kms = calculate_vehicle_kms(pa_matrix, cost_matrix, internals)
                 vehicle_kms.to_excel(writer, sheet_name="Vehicle Kilometres (PA)")
             vehicle_kms = calculate_vehicle_kms(matrices[name], cost_matrix, internals)
             vehicle_kms.to_excel(writer, sheet_name="Vehicle Kilometres")
