@@ -353,16 +353,17 @@ def calculate_trip_ends(
     )
 
 
-def _calibrate_gm(
+def _gravity_model(
     trip_ends: pd.DataFrame,
     name: str,
     input_paths: LGVInputPaths,
     gm_params: pd.DataFrame,
+    calibrate: bool, 
     internals: set,
-    calibrate_logging_path: Path,
-) -> gravity_model.GravityModelCalibrateResults:
+    csv_logging_path: Path,
+) -> gravity_model.GravityModelResults:
     """Internal function used in `run_gravity_model` for running the GM with calibration."""
-    calibrate = gm_params.loc[name, "calibrate"]
+
     LOG.info("Running Gravity Model: %s, with calibration %s", name, calibrate)
 
     cost_matrix = pd.read_csv(
@@ -370,7 +371,7 @@ def _calibrate_gm(
     ).to_numpy()  # TODO this should have validation
 
     # different segments require different cost function and starting params - we determine extract these below
-    if gm_params.loc[name, "function"] == "log normal":
+    if gm_params.loc[name, "function"] == "log_normal":
         cost_function = cost_functions.BuiltInCostFunction.LOG_NORMAL.get_cost_function()
         init_params = {
             "sigma": gm_params.loc[name, "param2"],
@@ -382,6 +383,8 @@ def _calibrate_gm(
             "alpha": gm_params.loc[name, "param1"],
             "beta": gm_params.loc[name, "param2"],
         }
+    else:
+        raise ValueError(f"Cost Function {gm_params.loc[name, 'function']} not found")
 
     # TODO this is a TERRIBLE way of doing this - sort it out
     try:
@@ -426,12 +429,17 @@ def _calibrate_gm(
         avg_col="average",
         trips_col="observed proportions",
     )
-    calibration_results = calib_gm.calibrate(
-        init_params,
-        calibrate_logging_path,
-        target_cost_distribution=tld,
-        # TODO figure out which key word args with default values needed to be changed
-    )
+    if calibrate:
+        gravity_model_results = calib_gm.calibrate(
+            init_params,
+            csv_logging_path,
+            target_cost_distribution=tld,
+            # TODO figure out which key word args with default values needed to be changed
+        )
+    else:
+        gravity_model_results = calib_gm.run(init_params, 
+            csv_logging_path,
+            target_cost_distribution=tld)
 
     # calib_gm = CalibrateGravityModel(
     #    trip_ends,
@@ -447,7 +455,7 @@ def _calibrate_gm(
     #    constraint=gm_params.loc[name, "furness_type"],
     # )
     LOG.info("\tFinished, now writing outputs")
-    return calibration_results
+    return gravity_model_results
 
 
 def run_gravity_model(
@@ -484,11 +492,13 @@ def run_gravity_model(
             continue
         # TODO put this back to normal once dev is done
         try:
-            calib_gm: gravity_model.GravityModelCalibrateResults = _calibrate_gm(
+            calibrate = gm_params.loc[name, "calibrate"]
+            calib_gm = _gravity_model(
                 te,
                 name,
                 input_paths,
                 gm_params,
+                calibrate, 
                 internals,
                 output_folder / f"gravity_model_{name}_calibration_log.csv",
             )
@@ -517,36 +527,43 @@ def run_gravity_model(
             )
             # Calculate trip distributions for OD
         else:
-            matrices[name] = calib_gm.value_distribution
+            matrices[name] = pd.DataFrame(
+                calib_gm.value_distribution,
+                index=te.index,
+                columns=te.index,
+            )
 
         # Save the annual matrix, TLD graph and Excel summary file
-
-        # TODO below is broken - add an issue on GitHub or at Isaac
-        calib_gm.plot_distributions().savefig(output_folder / (name + "-distribution.pdf"))
-        matrices[name].to_csv(output_folder / (name + "-trip_matrix-OD.csv"))
+        
+        if calibrate:
+            calib_gm.plot_distributions().savefig(output_folder / (name + "-distribution.pdf"))
+        matrices[name].to_csv(path_or_buf=output_folder / (name + "-trip_matrix-OD.csv"))
         with pd.ExcelWriter(output_folder / (name + "-GM_log.xlsx")) as writer:
             # TODO write out metadata
             df = pd.DataFrame.from_dict(
-                {"convergence": calib_gm.cost_convergence}, orient="index"
+                {"Convergence": calib_gm.cost_convergence}, orient="index"
             )
             df.to_excel(writer, sheet_name="Cost Convergence", header=False)
-            df = pd.DataFrame.from_dict(calib_gm.cost_params, orient="index")
-            df.to_excel(writer, sheet_name="Cost Params", header=False)
-            # convert to a dataframe
             calib_gm.cost_distribution.df.to_excel(
                 writer, sheet_name="Achieved Distribution", index=False
             )
+            costs = calib_gm.cost_params
+            costs["Calibrated"] = calibrate
+            df = pd.DataFrame.from_dict(costs, orient="index")
+            df.to_excel(writer, sheet_name="Cost Params", header=False)
+            # convert to a dataframe
+
             calib_gm.target_cost_distribution.df.to_excel(
                 writer, sheet_name="Target Distribution", index=False
             )
 
-            # TODO This is very bad - we have already read this in inside _calibrate_gm: figure out how to store this in memory nicely
+            # TODO We have already read this in inside _calibrate_gm: figure out if this stores in memory nicely
             cost_matrix = pd.read_csv(input_paths.cost_matrix_path, index_col=0)
 
             if name in PA_MATRICES:
-
                 vehicle_kms = calculate_vehicle_kms(pa_matrix, cost_matrix, internals)
                 vehicle_kms.to_excel(writer, sheet_name="Vehicle Kilometres (PA)")
+
             vehicle_kms = calculate_vehicle_kms(matrices[name], cost_matrix, internals)
             vehicle_kms.to_excel(writer, sheet_name="Vehicle Kilometres")
         LOG.info("\tFinished writing")
