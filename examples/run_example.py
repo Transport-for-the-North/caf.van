@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Test Example
-============
+Ran Example
+===========
 
-This is an example of a code example which is displayed but **not** ran.
+This is an example of a code example which is displayed **and** ran.
 
 .. note::
-    See :ref:`ran example` for an example which is displayed **and** ran.
+    See :ref:`test example` for an example which is displayed but **not** ran.
 
 The examples can include documentation in the docstrings and comments alongside
 the code and outputs. Text uses the reStructuredText format, the same as other

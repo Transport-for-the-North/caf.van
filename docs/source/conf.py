@@ -5,6 +5,7 @@
 
 import os
 import pathlib
+import re
 import sys
 
 dir_path = pathlib.Path(__file__).parents[2]
@@ -63,7 +64,8 @@ modindex_common_prefix = ["caf.", "caf.van."]
 sphinx_gallery_conf = {
     "examples_dirs": "../../examples",  # path to your example scripts
     "gallery_dirs": "examples",  # path to where to save gallery generated output
-    "filename_pattern": ".py",
+    # Regex pattern of filenames to be ran so the output can be included
+    "filename_pattern": rf"{re.escape(os.sep)}run_.*\.py",
 }
 
 # -- Options for HTML output -------------------------------------------------
