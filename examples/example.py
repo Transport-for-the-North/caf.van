@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Test Example
-============
+Example
+=======
 
 This is an example of a code example which is displayed but **not** ran.
 
