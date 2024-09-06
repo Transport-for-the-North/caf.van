@@ -75,6 +75,8 @@ FUNCTION_LABELS = {
 
 """Time periods to aggregate NHB together for."""
 
+PA_DIFFERENCE_TOL = 1e-3
+
 
 ##### CLASSES #####
 @dataclass
@@ -358,11 +360,27 @@ def _gravity_model(
     name: str,
     input_paths: LGVInputPaths,
     gm_params: pd.DataFrame,
-    calibrate: bool, 
+    calibrate: bool,
     internals: set,
     csv_logging_path: Path,
 ) -> gravity_model.GravityModelResults:
     """Internal function used in `run_gravity_model` for running the GM with calibration."""
+
+    # check PA are balanced - if not balance and add warning with difference
+
+    trip_end_difference = trip_ends["Productions"].sum() - trip_ends["Attractions"].sum()
+
+    if np.abs(trip_end_difference) > PA_DIFFERENCE_TOL:
+
+        factor = trip_ends["Productions"].sum() / trip_ends["Attractions"].sum()
+
+        LOG.warning(
+            "Production and Attractions are imbalance (P-A difference"
+            f" = {trip_end_difference}) Factoring Attractions to"
+            " Productions (factor = {factor})"
+        )
+
+        trip_ends["Attractions"] *= factor
 
     LOG.info("Running Gravity Model: %s, with calibration %s", name, calibrate)
 
@@ -437,9 +455,9 @@ def _gravity_model(
             # TODO figure out which key word args with default values needed to be changed
         )
     else:
-        gravity_model_results = calib_gm.run(init_params, 
-            csv_logging_path,
-            target_cost_distribution=tld)
+        gravity_model_results = calib_gm.run(
+            init_params, csv_logging_path, target_cost_distribution=tld
+        )
 
     # calib_gm = CalibrateGravityModel(
     #    trip_ends,
@@ -498,7 +516,7 @@ def run_gravity_model(
                 name,
                 input_paths,
                 gm_params,
-                calibrate, 
+                calibrate,
                 internals,
                 output_folder / f"gravity_model_{name}_calibration_log.csv",
             )
@@ -534,7 +552,7 @@ def run_gravity_model(
             )
 
         # Save the annual matrix, TLD graph and Excel summary file
-        
+
         if calibrate:
             calib_gm.plot_distributions().savefig(output_folder / (name + "-distribution.pdf"))
         matrices[name].to_csv(path_or_buf=output_folder / (name + "-trip_matrix-OD.csv"))
