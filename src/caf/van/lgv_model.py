@@ -370,6 +370,8 @@ def _gravity_model(
 
     trip_end_difference = trip_ends["Productions"].sum() - trip_ends["Attractions"].sum()
 
+    tld_path = input_paths.trip_distributions_path[name]
+
     if np.abs(trip_end_difference) > PA_DIFFERENCE_TOL:
 
         factor = trip_ends["Productions"].sum() / trip_ends["Attractions"].sum()
@@ -390,74 +392,60 @@ def _gravity_model(
 
     # different segments require different cost function and starting params - we determine extract these below
     if gm_params.loc[name, "function"] == "log_normal":
+
         cost_function = cost_functions.BuiltInCostFunction.LOG_NORMAL.get_cost_function()
-        init_params = {
-            "sigma": gm_params.loc[name, "param2"],
-            "mu": gm_params.loc[name, "param1"],
-        }
+        # init_params = { TODO how do we set input Params
+        #    "sigma": gm_params.loc[name, "param2"],
+        #    "mu": gm_params.loc[name, "param1"],
+        # }
     elif gm_params.loc[name, "function"] == "tanner":
         cost_function = cost_functions.BuiltInCostFunction.TANNER.get_cost_function()
-        init_params = {
-            "alpha": gm_params.loc[name, "param1"],
-            "beta": gm_params.loc[name, "param2"],
-        }
+        # init_params = {
+        #    "alpha": gm_params.loc[name, "param1"],
+        #    "beta": gm_params.loc[name, "param2"],
+        # }
     else:
         raise ValueError(f"Cost Function {gm_params.loc[name, 'function']} not found")
 
+    # TODO rewrite this function / make a wrapper to make this nicer
+    gravity_model_args = gravity_model.MultiDistInput(
+        tld_file=tld_path,
+        tld_lookup_file=input_paths.cat_zone_correspondance_path,
+        cat_col="area",
+        min_col="from",
+        max_col="to",
+        ave_col="av_distance",
+        trips_col="observed",
+        lookup_cat_col="area",
+        lookup_zone_col="msoa_id",
+        log_path=csv_logging_path,
+        # TODO furness tol? init params? furness jac?
+    )
+
     # TODO this is a TERRIBLE way of doing this - sort it out
     try:
-        calib_gm = gravity_model.SingleAreaGravityModelCalibrator(
+        calib_gm = gravity_model.MultiAreaGravityModelCalibrator(
             trip_ends["Productions"].to_numpy(),
             trip_ends["Attractions"].to_numpy(),
-            cost_function,
             cost_matrix,
+            cost_function,
+            gravity_model_args,
         )
     except KeyError:
-        calib_gm = gravity_model.SingleAreaGravityModelCalibrator(
+        calib_gm = gravity_model.MultiAreaGravityModelCalibrator(
             trip_ends["Origins"].to_numpy(),
             trip_ends["Destinations"].to_numpy(),
-            cost_function,
             cost_matrix,
+            cost_function,
+            gravity_model_args,
         )
-    trip_distribution_path = (
-        input_paths.trip_distributions_path,
-        TRIP_DISTRIBUTION_SHEETS[name],
-    )
-    td_info = read_excel(
-        trip_distribution_path[0],
-        "Gravity model trip distribution",
-        sheet_name=trip_distribution_path[1],
-        nrows=1,
-        header=None,
-    )
 
-    # Read the rest of the distributions sheet
-    trip_distribution = read_excel(
-        trip_distribution_path[0],
-        "Gravity model trip distribution",
-        columns=TRIP_DISTRIBUTION_COLS,
-        sheet_name=trip_distribution_path[1],
-        skiprows=1,
-    )
-
-    tld = cost_utils.CostDistribution(
-        trip_distribution,
-        min_col="start",
-        max_col="end",
-        avg_col="average",
-        trips_col="observed proportions",
-    )
     if calibrate:
         gravity_model_results = calib_gm.calibrate(
-            init_params,
-            csv_logging_path,
-            target_cost_distribution=tld,
-            # TODO figure out which key word args with default values needed to be changed
+            csv_logging_path  # TODO figure out which key word args with default values needed to be changed
         )
     else:
-        gravity_model_results = calib_gm.run(
-            init_params, csv_logging_path, target_cost_distribution=tld
-        )
+        gravity_model_results = calib_gm.run()
 
     # calib_gm = CalibrateGravityModel(
     #    trip_ends,

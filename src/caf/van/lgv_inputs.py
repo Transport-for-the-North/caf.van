@@ -18,6 +18,8 @@ from pathlib import Path
 from typing import Any, Callable, Optional, Union
 
 # Third Party
+
+
 import caf.toolkit
 import numpy as np
 import pandas as pd
@@ -157,8 +159,10 @@ class LGVInputPaths(caf.toolkit.BaseConfig):
     calibration_matrix_path: Optional[types.FilePath] = None # keep as is TODO?
     """Path to CSV containing calibration matrix, should be square matrix
     with zone numbers as column names and indices."""
-    trip_distributions_path: types.FilePath #TODO Change for MultiTLD
+    trip_distributions_path: dict[str, types.FilePath] #TODO Change for MultiTLD
     """Path to Excel Workbook containing all the trip cost distributions."""
+    cat_zone_correspondance_path: types.FilePath
+
     output_folder: types.DirectoryPath #keep as is
     """Path to folder to save outputs to."""
     normits_pa_folder: types.DirectoryPath #keep as is
@@ -328,6 +332,7 @@ def household_projections(path: Path, zone_lookup: Path) -> pd.DataFrame:
     rezoned = Rezone.rezoneOD(households, lookup, dfCols=(columns[0],), rezoneCols=columns[1])
     rezoned.columns = ["Zone", "Households"]
     return rezoned
+
 
 
 def filtered_bres(
