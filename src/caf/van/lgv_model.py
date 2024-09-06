@@ -394,16 +394,16 @@ def _gravity_model(
     if gm_params.loc[name, "function"] == "log_normal":
 
         cost_function = cost_functions.BuiltInCostFunction.LOG_NORMAL.get_cost_function()
-        # init_params = { TODO how do we set input Params
-        #    "sigma": gm_params.loc[name, "param2"],
-        #    "mu": gm_params.loc[name, "param1"],
-        # }
+        init_params = { #TODO how do we set input Params
+        "sigma": gm_params.loc[name, "param2"],
+        "mu": gm_params.loc[name, "param1"],
+        }
     elif gm_params.loc[name, "function"] == "tanner":
         cost_function = cost_functions.BuiltInCostFunction.TANNER.get_cost_function()
-        # init_params = {
-        #    "alpha": gm_params.loc[name, "param1"],
-        #    "beta": gm_params.loc[name, "param2"],
-        # }
+        init_params = {
+        "alpha": gm_params.loc[name, "param1"],
+        "beta": gm_params.loc[name, "param2"],
+        }
     else:
         raise ValueError(f"Cost Function {gm_params.loc[name, 'function']} not found")
 
@@ -419,7 +419,8 @@ def _gravity_model(
         lookup_cat_col="area",
         lookup_zone_col="msoa_id",
         log_path=csv_logging_path,
-        # TODO furness tol? init params? furness jac?
+        init_params=init_params
+        # TODO furness tol? furness jac?
     )
 
     # TODO this is a TERRIBLE way of doing this - sort it out
@@ -497,20 +498,20 @@ def run_gravity_model(
         if name == "zones":
             continue
         # TODO put this back to normal once dev is done
-        try:
-            calibrate = gm_params.loc[name, "calibrate"]
-            calib_gm = _gravity_model(
-                te,
-                name,
-                input_paths,
-                gm_params,
-                calibrate,
-                internals,
-                output_folder / f"gravity_model_{name}_calibration_log.csv",
-            )
-        except Exception as e:
-            LOG.info("\t%s: %s", e.__class__.__name__, e)
-            continue
+        #try:
+        calibrate = gm_params.loc[name, "calibrate"]
+        calib_gm = _gravity_model(
+            te,
+            name,
+            input_paths,
+            gm_params,
+            calibrate,
+            internals,
+            output_folder / f"gravity_model_{name}_calibration_log.csv",
+        )
+    #except Exception as e:
+        #    LOG.info("\t%s: %s", e.__class__.__name__, e)
+        #    continue
 
         # Check if segment outputs a PA matrix which needs to be converted
         if name in PA_MATRICES:
