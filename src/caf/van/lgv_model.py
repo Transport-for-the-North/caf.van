@@ -417,7 +417,7 @@ def _gravity_model(
         ave_col="av_distance",
         trips_col="observed",
         lookup_cat_col="area",
-        lookup_zone_col="msoa_id",
+        lookup_zone_col="ntem_id",
         log_path=csv_logging_path,
         init_params=init_params
         # TODO furness tol? furness jac?
@@ -509,6 +509,8 @@ def run_gravity_model(
             internals,
             output_folder / f"gravity_model_{name}_calibration_log.csv",
         )
+
+        #TODO handle dictionary outputs for run method
     #except Exception as e:
         #    LOG.info("\t%s: %s", e.__class__.__name__, e)
         #    continue
