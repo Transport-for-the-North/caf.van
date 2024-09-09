@@ -40,6 +40,12 @@ extensions = [
 templates_path = ["_templates", "_templates/autosummary"]
 exclude_patterns = []
 
+rst_prolog = """
+.. attention::
+    This documentation is currently work-in-progress and is not necessarily up to
+    date with the current methodolgy and functionality of CAF.van.
+"""
+
 
 numpydoc_show_class_members = False
 
