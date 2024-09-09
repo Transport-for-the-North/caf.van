@@ -161,7 +161,7 @@ class LGVInputPaths(caf.toolkit.BaseConfig):
     with zone numbers as column names and indices."""
     trip_distributions_path: dict[str, types.FilePath] #TODO Change for MultiTLD
     """Path to Excel Workbook containing all the trip cost distributions."""
-    cat_zone_correspondance_path: types.FilePath
+    cat_zone_correspondence_path: types.FilePath
 
     output_folder: types.DirectoryPath #keep as is
     """Path to folder to save outputs to."""

@@ -355,6 +355,30 @@ def calculate_trip_ends(
     )
 
 
+class VanGravityModelResults:
+    distribution: pd.DataFrame
+    summary: pd.DataFrame
+    zones: np.ndarray
+    info: dict[str | int, gravity_model.GravityModelResults]
+
+    def __init__(
+        self,
+        distribution: np.ndarray,
+        zones: np.ndarray,
+        info: dict[str | int, gravity_model.GravityModelResults],
+    ):
+
+        self.distribution = pd.DataFrame(distribution, index=zones, columns=zones)
+        self.zones = zones
+        self.info = info
+
+        summary_build = {}
+        for key, results in info.items():
+            summary_build[key] = results.summary
+
+        self.summary = pd.DataFrame(summary_build)
+
+
 def _gravity_model(
     trip_ends: pd.DataFrame,
     name: str,
@@ -363,7 +387,7 @@ def _gravity_model(
     calibrate: bool,
     internals: set,
     csv_logging_path: Path,
-) -> gravity_model.GravityModelResults:
+) -> VanGravityModelResults:
     """Internal function used in `run_gravity_model` for running the GM with calibration."""
 
     # check PA are balanced - if not balance and add warning with difference
@@ -371,6 +395,11 @@ def _gravity_model(
     trip_end_difference = trip_ends["Productions"].sum() - trip_ends["Attractions"].sum()
 
     tld_path = input_paths.trip_distributions_path[name]
+
+    # we have to do this because caf distribute does not look at index values, just order
+    trip_ends = trip_ends.sort_index()  #
+    # define zones to order everthing on
+    zones = trip_ends.index.to_numpy()
 
     if np.abs(trip_end_difference) > PA_DIFFERENCE_TOL:
 
@@ -388,65 +417,102 @@ def _gravity_model(
 
     cost_matrix = pd.read_csv(
         input_paths.cost_matrix_path, index_col=0
-    ).to_numpy()  # TODO this should have validation
+    )  # TODO this should have validation
+
+    cost_matrix_validated = cost_matrix.loc[zones, zones].to_numpy()
 
     # different segments require different cost function and starting params - we determine extract these below
     if gm_params.loc[name, "function"] == "log_normal":
 
         cost_function = cost_functions.BuiltInCostFunction.LOG_NORMAL.get_cost_function()
-        init_params = { #TODO how do we set input Params
-        "sigma": gm_params.loc[name, "param2"],
-        "mu": gm_params.loc[name, "param1"],
+        func_params = {  # TODO how do we set input Params
+            "sigma": gm_params.loc[name, "param2"],
+            "mu": gm_params.loc[name, "param1"],
         }
     elif gm_params.loc[name, "function"] == "tanner":
         cost_function = cost_functions.BuiltInCostFunction.TANNER.get_cost_function()
-        init_params = {
-        "alpha": gm_params.loc[name, "param1"],
-        "beta": gm_params.loc[name, "param2"],
+        func_params = {
+            "alpha": gm_params.loc[name, "param1"],
+            "beta": gm_params.loc[name, "param2"],
         }
     else:
         raise ValueError(f"Cost Function {gm_params.loc[name, 'function']} not found")
 
     # TODO rewrite this function / make a wrapper to make this nicer
-    gravity_model_args = gravity_model.MultiDistInput(
-        tld_file=tld_path,
-        tld_lookup_file=input_paths.cat_zone_correspondance_path,
-        cat_col="area",
-        min_col="from",
-        max_col="to",
-        ave_col="av_distance",
-        trips_col="observed",
-        lookup_cat_col="area",
-        lookup_zone_col="ntem_id",
-        log_path=csv_logging_path,
-        init_params=init_params
-        # TODO furness tol? furness jac?
-    )
+    # gravity_model_args = gravity_model.MultiDistInput(
+    #    tld_file=tld_path,
+    #    tld_lookup_file=input_paths.cat_zone_correspondence_path,
+    #    cat_col="area",
+    #    min_col="from",
+    #    max_col="to",
+    #    ave_col="av_distance",
+    #    trips_col="observed",
+    #    lookup_cat_col="area",
+    #    lookup_zone_col="ntem_id",
+    #    log_path=csv_logging_path,
+    #    init_params=func_params,
+    #    # TODO furness tol? furness jac?
+    # )
+    #
+    cost_distributions = []
+
+    cat_zone_correspondence = pd.read_csv(input_paths.cat_zone_correspondence_path)
+    tld = pd.read_csv(tld_path)
+    for category in cat_zone_correspondence["area"].unique():
+        cat_zones = cat_zone_correspondence.loc[
+            cat_zone_correspondence["area"] == category, "zone_id"
+        ].to_numpy()
+        if not np.all(np.isin(cat_zones, zones)):
+            missing_values = cat_zones[~np.isin(cat_zones, zones)]
+            raise ValueError(
+                f"The following values from cat->zone lookup are not present in the tld zones: {missing_values}"
+            )
+
+        # Find the indices of elements in A that are also in B
+        cat_zone_indices = np.where(np.isin(cat_zones, zones))
+
+        cat_tld = tld[tld["area"] == category]
+        cat_cost_distribution = cost_utils.CostDistribution(
+            cat_tld, "from", "to", "av_distance", "observed", "av_distance"
+        )  # TODO no unweighted average column. is this an issue?
+        cost_distributions.append(
+            gravity_model.MultiCostDistribution(
+                category, cat_cost_distribution, cat_zone_indices, func_params
+            )
+        )
 
     # TODO this is a TERRIBLE way of doing this - sort it out
     try:
         calib_gm = gravity_model.MultiAreaGravityModelCalibrator(
             trip_ends["Productions"].to_numpy(),
             trip_ends["Attractions"].to_numpy(),
-            cost_matrix,
+            cost_matrix_validated,
             cost_function,
-            gravity_model_args,
+            cost_distributions,
+            csv_logging_path,
+            #TODO add options for furness tol and furness jacobian,
         )
     except KeyError:
         calib_gm = gravity_model.MultiAreaGravityModelCalibrator(
             trip_ends["Origins"].to_numpy(),
             trip_ends["Destinations"].to_numpy(),
-            cost_matrix,
+            cost_matrix_validated,
             cost_function,
-            gravity_model_args,
+            cost_distributions,
+            csv_logging_path,
+            #TODO add options for furness tol and furness jacobian,
         )
 
     if calibrate:
         gravity_model_results = calib_gm.calibrate(
-            csv_logging_path  # TODO figure out which key word args with default values needed to be changed
+            csv_logging_path,  # TODO figure out which key word args with default values needed to be changed
         )
     else:
-        gravity_model_results = calib_gm.run()
+        gravity_model_results = calib_gm.run(init_params=cost_distributions)
+
+        results = VanGravityModelResults(
+            calib_gm.achieved_distribution, zones, gravity_model_results
+        )
 
     # calib_gm = CalibrateGravityModel(
     #    trip_ends,
@@ -462,7 +528,7 @@ def _gravity_model(
     #    constraint=gm_params.loc[name, "furness_type"],
     # )
     LOG.info("\tFinished, now writing outputs")
-    return gravity_model_results
+    return results
 
 
 def run_gravity_model(
@@ -498,7 +564,7 @@ def run_gravity_model(
         if name == "zones":
             continue
         # TODO put this back to normal once dev is done
-        #try:
+        # try:
         calibrate = gm_params.loc[name, "calibrate"]
         calib_gm = _gravity_model(
             te,
@@ -510,8 +576,8 @@ def run_gravity_model(
             output_folder / f"gravity_model_{name}_calibration_log.csv",
         )
 
-        #TODO handle dictionary outputs for run method
-    #except Exception as e:
+        # TODO handle dictionary outputs for run method
+        # except Exception as e:
         #    LOG.info("\t%s: %s", e.__class__.__name__, e)
         #    continue
 
@@ -520,51 +586,46 @@ def run_gravity_model(
             # Save PA matrix to CSV and convert to OD dataframe
             LOG.info("\tConverting PA to OD")
             # TODO KF: I am pretty sure this index and column labelling aligns, but I/you need to check
-            pa_matrix = pd.DataFrame(
-                calib_gm.value_distribution, index=te.index, columns=te.index
-            )
+            pa_matrix = pd.DataFrame(calib_gm.distribution, index=te.index, columns=te.index)
             pa_matrix.to_csv(output_folder / (name + "-trip_matrix-PA.csv"))
             matrix = annual_pa_to_od(
-                calib_gm.value_distribution,
-                te["Attractions"].values,
-                te["Productions"].values,
+                calib_gm.distribution.to_numpy(),
+                te.loc[calib_gm.zones, "Attractions"].values,
+                te.loc[calib_gm.zones, "Productions"].values,
             )
             matrices[name] = pd.DataFrame(
                 matrix,
-                index=te.index,
-                columns=te.index,
+                index=calib_gm.zones,
+                columns=calib_gm.zones,
             )
             # Calculate trip distributions for OD
         else:
             matrices[name] = pd.DataFrame(
-                calib_gm.value_distribution,
-                index=te.index,
-                columns=te.index,
+                calib_gm.distribution,
+                index=calib_gm.zones,
+                columns=calib_gm.zones,
             )
 
         # Save the annual matrix, TLD graph and Excel summary file
-
-        if calibrate:
-            calib_gm.plot_distributions().savefig(output_folder / (name + "-distribution.pdf"))
         matrices[name].to_csv(path_or_buf=output_folder / (name + "-trip_matrix-OD.csv"))
+
         with pd.ExcelWriter(output_folder / (name + "-GM_log.xlsx")) as writer:
             # TODO write out metadata
-            df = pd.DataFrame.from_dict(
-                {"Convergence": calib_gm.cost_convergence}, orient="index"
-            )
-            df.to_excel(writer, sheet_name="Cost Convergence", header=False)
-            calib_gm.cost_distribution.df.to_excel(
-                writer, sheet_name="Achieved Distribution", index=False
-            )
-            costs = calib_gm.cost_params
-            costs["Calibrated"] = calibrate
-            df = pd.DataFrame.from_dict(costs, orient="index")
-            df.to_excel(writer, sheet_name="Cost Params", header=False)
-            # convert to a dataframe
 
-            calib_gm.target_cost_distribution.df.to_excel(
-                writer, sheet_name="Target Distribution", index=False
-            )
+            for cat, gm_cat_results in calib_gm.info.items():
+                if calibrate:
+                    gm_cat_results.plot_distributions().savefig(
+                        output_folder / (name + f"-distribution_{cat}.pdf")
+                    )
+                    gm_cat_results.cost_distribution.df.to_excel(
+                        writer, sheet_name=f"Achieved Distribution {cat}", index=False
+                    )
+
+                    gm_cat_results.target_cost_distribution.df.to_excel(
+                        writer, sheet_name=f"Target Distribution {cat}", index=False
+                    )
+
+            calib_gm.summary.to_excel(writer, sheet_name={"Gravity Model Info"})
 
             # TODO We have already read this in inside _calibrate_gm: figure out if this stores in memory nicely
             cost_matrix = pd.read_csv(input_paths.cost_matrix_path, index_col=0)
