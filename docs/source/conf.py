@@ -40,7 +40,7 @@ exclude_patterns = []
 rst_prolog = """
 .. attention::
     This documentation is currently work-in-progress and is not necessarily up to
-    data with the current methodolgy and functionality of CAF.van.
+    date with the current methodolgy and functionality of CAF.van.
 """
 
 
