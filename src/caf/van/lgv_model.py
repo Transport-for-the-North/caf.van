@@ -488,9 +488,7 @@ def _gravity_model(
             trip_ends["Attractions"].to_numpy(),
             cost_matrix_validated,
             cost_function,
-            cost_distributions,
-            csv_logging_path,
-            #TODO add options for furness tol and furness jacobian,
+            # TODO add options for furness tol and furness jacobian,
         )
     except KeyError:
         calib_gm = gravity_model.MultiAreaGravityModelCalibrator(
@@ -498,17 +496,20 @@ def _gravity_model(
             trip_ends["Destinations"].to_numpy(),
             cost_matrix_validated,
             cost_function,
-            cost_distributions,
-            csv_logging_path,
-            #TODO add options for furness tol and furness jacobian,
+            # TODO add options for furness tol and furness jacobian,
         )
 
     if calibrate:
         gravity_model_results = calib_gm.calibrate(
+            cost_distributions,
             csv_logging_path,  # TODO figure out which key word args with default values needed to be changed
         )
+
+        results = VanGravityModelResults(
+            calib_gm.achieved_distribution, zones, gravity_model_results
+        )
     else:
-        gravity_model_results = calib_gm.run(init_params=cost_distributions)
+        gravity_model_results = calib_gm.run(cost_distributions, csv_logging_path)
 
         results = VanGravityModelResults(
             calib_gm.achieved_distribution, zones, gravity_model_results
