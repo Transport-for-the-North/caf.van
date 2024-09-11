@@ -385,14 +385,16 @@ def _gravity_model(
     input_paths: LGVInputPaths,
     gm_params: pd.DataFrame,
     calibrate: bool,
-    internals: set,
     csv_logging_path: Path,
 ) -> VanGravityModelResults:
     """Internal function used in `run_gravity_model` for running the GM with calibration."""
 
-    # check PA are balanced - if not balance and add warning with difference
+    # check PA/OD are balanced - if not balance and add warning with difference
+    if name in PA_MATRICES:
+        trip_ends = balance_trip_ends(trip_ends, "Attractions", "Productions")
+    else:
+        trip_ends = balance_trip_ends(trip_ends, "Origins", "Destinations")
 
-    trip_end_difference = trip_ends["Productions"].sum() - trip_ends["Attractions"].sum()
 
     tld_path = input_paths.trip_distributions_path[name]
 
@@ -401,17 +403,7 @@ def _gravity_model(
     # define zones to order everthing on
     zones = trip_ends.index.to_numpy()
 
-    if np.abs(trip_end_difference) > PA_DIFFERENCE_TOL:
-
-        factor = trip_ends["Productions"].sum() / trip_ends["Attractions"].sum()
-
-        LOG.warning(
-            "Production and Attractions are imbalance (P-A difference"
-            f" = {trip_end_difference}) Factoring Attractions to"
-            " Productions (factor = {factor})"
-        )
-
-        trip_ends["Attractions"] *= factor
+    
 
     LOG.info("Running Gravity Model: %s, with calibration %s", name, calibrate)
 
@@ -438,65 +430,55 @@ def _gravity_model(
     else:
         raise ValueError(f"Cost Function {gm_params.loc[name, 'function']} not found")
 
-    # TODO rewrite this function / make a wrapper to make this nicer
-    # gravity_model_args = gravity_model.MultiDistInput(
-    #    tld_file=tld_path,
-    #    tld_lookup_file=input_paths.cat_zone_correspondence_path,
-    #    cat_col="area",
-    #    min_col="from",
-    #    max_col="to",
-    #    ave_col="av_distance",
-    #    trips_col="observed",
-    #    lookup_cat_col="area",
-    #    lookup_zone_col="ntem_id",
-    #    log_path=csv_logging_path,
-    #    init_params=func_params,
-    #    # TODO furness tol? furness jac?
-    # )
-    #
     cost_distributions = []
 
+    #read in things we need for distribution
     cat_zone_correspondence = pd.read_csv(input_paths.cat_zone_correspondence_path)
     tld = pd.read_csv(tld_path)
+    #interate through different TLD categories
     for category in cat_zone_correspondence["area"].unique():
+        
+        #get a list of zones that use this category of TLD
         cat_zones = cat_zone_correspondence.loc[
             cat_zone_correspondence["area"] == category, "zone_id"
         ].to_numpy()
+        
+        #tell user if we have zones in cat->lookup that arent in zones 
         if not np.all(np.isin(cat_zones, zones)):
             missing_values = cat_zones[~np.isin(cat_zones, zones)]
             raise ValueError(
                 f"The following values from cat->zone lookup are not present in the tld zones: {missing_values}"
             )
 
-        # Find the indices of elements in A that are also in B
+        # get the indices
         cat_zone_indices = np.where(np.isin(cat_zones, zones))
 
+        # get tld for cat
         cat_tld = tld[tld["area"] == category]
+
         cat_cost_distribution = cost_utils.CostDistribution(
             cat_tld, "from", "to", "av_distance", "observed", "av_distance"
-        )  # TODO no unweighted average column. is this an issue?
+        )
+
         cost_distributions.append(
             gravity_model.MultiCostDistribution(
                 category, cat_cost_distribution, cat_zone_indices, func_params
             )
         )
 
-    # TODO this is a TERRIBLE way of doing this - sort it out
-    try:
+    if name in PA_MATRICES:
         calib_gm = gravity_model.MultiAreaGravityModelCalibrator(
             trip_ends["Productions"].to_numpy(),
             trip_ends["Attractions"].to_numpy(),
             cost_matrix_validated,
             cost_function,
-            # TODO add options for furness tol and furness jacobian,
         )
-    except KeyError:
+    else:
         calib_gm = gravity_model.MultiAreaGravityModelCalibrator(
             trip_ends["Origins"].to_numpy(),
             trip_ends["Destinations"].to_numpy(),
             cost_matrix_validated,
             cost_function,
-            # TODO add options for furness tol and furness jacobian,
         )
 
     if calibrate:
@@ -508,28 +490,38 @@ def _gravity_model(
         results = VanGravityModelResults(
             calib_gm.achieved_distribution, zones, gravity_model_results
         )
+
     else:
+
         gravity_model_results = calib_gm.run(cost_distributions, csv_logging_path)
 
         results = VanGravityModelResults(
             calib_gm.achieved_distribution, zones, gravity_model_results
         )
-
-    # calib_gm = CalibrateGravityModel(
-    #    trip_ends,
-    #    input_paths.cost_matrix_path,
-    #    (input_paths.trip_distributions_path, TRIP_DISTRIBUTION_SHEETS[name]),
-    #    input_paths.calibration_matrix_path,
-    #    internal_zones=internals,
-    # )
-    # calib_gm.calibrate_gravity_model(
-    #    function=gm_params.loc[name, "function"],
-    #    init_params=tuple(gm_params.loc[name, ["param1", "param2"]]),
-    #    calibrate=calibrate,
-    #    constraint=gm_params.loc[name, "furness_type"],
-    # )
     LOG.info("\tFinished, now writing outputs")
     return results
+
+
+def balance_trip_ends(trip_ends:pd.DataFrame, target_col:str, test_col:str)->pd.DataFrame:
+    
+    #determine difference in column totals
+    trip_end_difference = trip_ends[target_col].sum() - trip_ends[test_col].sum()
+    #avoid changing input out the function scope
+    balanced_trip_ends = trip_ends.copy()
+    
+    if np.abs(trip_end_difference) > PA_DIFFERENCE_TOL:
+        #calculate and apply factor to balance test col to target col
+        factor = balanced_trip_ends[target_col].sum() / balanced_trip_ends[test_col].sum()
+
+        LOG.warning(
+            f"{target_col} and {test_col} are imbalanced (difference"
+            f" = {trip_end_difference}) Factoring {test_col} to"
+            f" {target_col} (factor = {factor})"
+        )
+
+        balanced_trip_ends[test_col] *= factor
+
+    return balanced_trip_ends
 
 
 def run_gravity_model(
@@ -573,7 +565,6 @@ def run_gravity_model(
             input_paths,
             gm_params,
             calibrate,
-            internals,
             output_folder / f"gravity_model_{name}_calibration_log.csv",
         )
 
@@ -626,7 +617,7 @@ def run_gravity_model(
                         writer, sheet_name=f"Target Distribution {cat}", index=False
                     )
 
-            calib_gm.summary.to_excel(writer, sheet_name={"Gravity Model Info"})
+            calib_gm.summary.to_excel(writer, sheet_name="Gravity Model Info")
 
             # TODO We have already read this in inside _calibrate_gm: figure out if this stores in memory nicely
             cost_matrix = pd.read_csv(input_paths.cost_matrix_path, index_col=0)
