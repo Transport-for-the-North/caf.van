@@ -429,18 +429,18 @@ def _gravity_model(
 
     cost_distributions = []
 
-    #read in things we need for distribution
+    # read in things we need for distribution
     cat_zone_correspondence = pd.read_csv(input_paths.cat_zone_correspondence_path)
     tld = pd.read_csv(tld_path)
-    #interate through different TLD categories
+    # interate through different TLD categories
     for category in cat_zone_correspondence["area"].unique():
-        
-        #get a list of zones that use this category of TLD
+
+        # get a list of zones that use this category of TLD
         cat_zones = cat_zone_correspondence.loc[
             cat_zone_correspondence["area"] == category, "zone_id"
         ].to_numpy()
-        
-        #tell user if we have zones in cat->lookup that arent in zones 
+
+        # tell user if we have zones in cat->lookup that arent in zones
         if not np.all(np.isin(cat_zones, zones)):
             missing_values = cat_zones[~np.isin(cat_zones, zones)]
             raise ValueError(
@@ -499,15 +499,15 @@ def _gravity_model(
     return results
 
 
-def balance_trip_ends(trip_ends:pd.DataFrame, target_col:str, test_col:str)->pd.DataFrame:
-    
-    #determine difference in column totals
+def balance_trip_ends(trip_ends: pd.DataFrame, target_col: str, test_col: str) -> pd.DataFrame:
+
+    # determine difference in column totals
     trip_end_difference = trip_ends[target_col].sum() - trip_ends[test_col].sum()
-    #avoid changing input out the function scope
+    # avoid changing input out the function scope
     balanced_trip_ends = trip_ends.copy()
-    
+
     if np.abs(trip_end_difference) > PA_DIFFERENCE_TOL:
-        #calculate and apply factor to balance test col to target col
+        # calculate and apply factor to balance test col to target col
         factor = balanced_trip_ends[target_col].sum() / balanced_trip_ends[test_col].sum()
 
         LOG.warning(
@@ -518,8 +518,10 @@ def balance_trip_ends(trip_ends:pd.DataFrame, target_col:str, test_col:str)->pd.
 
         balanced_trip_ends[test_col] *= factor
 
-    else: 
-        LOG.debug(f"Trip ends look fine \ntarget total {trip_ends[target_col].sum()}, \ntest total {trip_ends[test_col].sum()} \ndifference {trip_end_difference}")
+    else:
+        LOG.debug(
+            f"Trip ends look fine \ntarget total {trip_ends[target_col].sum()}, \ntest total {trip_ends[test_col].sum()} \ndifference {trip_end_difference}"
+        )
 
     return balanced_trip_ends
 

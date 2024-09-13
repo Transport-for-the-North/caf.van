@@ -125,58 +125,60 @@ class CommuteWarehousePaths:
 class LGVInputPaths(caf.toolkit.BaseConfig):
     """Dataclass storing paths to all the input files for the LGV model."""
 
-    household_paths: DataPaths #TODO Land-use - change with land use rebase  
+    household_paths: DataPaths  # TODO Land-use - change with land use rebase
     """Paths for the households data and zone correspondence."""
-    bres_path: types.FilePath #TODO Land-use - change with land use rebase
+    bres_path: types.FilePath  # TODO Land-use - change with land use rebase
     """Path to the BRES data CSV at LSOA level."""
-    warehouse_path: types.FilePath #TODO Land-use - change with land use rebase
+    warehouse_path: types.FilePath  # TODO Land-use - change with land use rebase
     """Path for the warehouse floorspace data CSV at LSOA level."""
-    commute_warehouse_paths: CommuteWarehousePaths #TODO Land-use - change with land use rebase
-    parameters_path: types.FilePath  #TODO change for MultiTLD 
+    commute_warehouse_paths: (
+        CommuteWarehousePaths  # TODO Land-use - change with land use rebase
+    )
+    parameters_path: types.FilePath  # TODO change for MultiTLD
     """Path to the LGV parameters Excel workbook."""
-    qs606ew_path: types.FilePath  #TODO Land-use - change with land use rebase
+    qs606ew_path: types.FilePath  # TODO Land-use - change with land use rebase
     """Path to the England & Wales Census Occupation data CSV."""
-    qs606sc_path: types.FilePath  #TODO Land-use - change with land use rebase
+    qs606sc_path: types.FilePath  # TODO Land-use - change with land use rebase
     """Path to the Scottish Census Occupation data CSV."""
-    sc_w_dwellings_path: types.FilePath  #TODO Land-use - change with land use rebase
+    sc_w_dwellings_path: types.FilePath  # TODO Land-use - change with land use rebase
     """Path to the Scottish and Welsh dwellings data CSV."""
-    e_dwellings_path: types.FilePath  #TODO Land-use - change with land use rebase
+    e_dwellings_path: types.FilePath  # TODO Land-use - change with land use rebase
     """Path to the English dwellings data XLSX."""
-    ndr_floorspace_path: types.FilePath  #TODO Land-use - change with land use rebase
+    ndr_floorspace_path: types.FilePath  # TODO Land-use - change with land use rebase
     """Path to the NDR Business Floorspace CSV."""
-    lsoa_lookup_path: types.FilePath  #TODO Land-use - change with land use rebase
+    lsoa_lookup_path: types.FilePath  # TODO Land-use - change with land use rebase
     """Path to the LSOA to NoHAM zone correspondence CSV."""
-    msoa_lookup_path: types.FilePath # keep as is
+    msoa_lookup_path: types.FilePath  # keep as is
     """Path to the MSOA to NoHAM zone correspondence CSV."""
-    lad_lookup_path: types.FilePath # keep as is
+    lad_lookup_path: types.FilePath  # keep as is
     """Path to the Local Authority District to NoHAM zone correspondence
     CSV"""
-    model_study_area: types.FilePath #change this to a TLD zone lookup
+    model_study_area: types.FilePath  # change this to a TLD zone lookup
     """Path to CSV containing lookup for zones in model study area."""
-    cost_matrix_path: types.FilePath # keep as is TODO?
+    cost_matrix_path: types.FilePath  # keep as is TODO?
     """Path to CSV containing cost matrix, should be square matrix with
     zone numbers as column names and indices."""
-    calibration_matrix_path: Optional[types.FilePath] = None # keep as is TODO?
+    calibration_matrix_path: Optional[types.FilePath] = None  # keep as is TODO?
     """Path to CSV containing calibration matrix, should be square matrix
     with zone numbers as column names and indices."""
-    trip_distributions_path: dict[str, types.FilePath] #TODO Change for MultiTLD
+    trip_distributions_path: dict[str, types.FilePath]  # TODO Change for MultiTLD
     """Path to Excel Workbook containing all the trip cost distributions."""
     cat_zone_correspondence_path: types.FilePath
 
-    output_folder: types.DirectoryPath #keep as is
+    output_folder: types.DirectoryPath  # keep as is
     """Path to folder to save outputs to."""
-    normits_pa_folder: types.DirectoryPath #keep as is
+    normits_pa_folder: types.DirectoryPath  # keep as is
     """Path to the full PA Normits matrices, should contain all non home
     based and home based matrices"""
-    normits_to_msoa_lookup: types.FilePath #keep as is
+    normits_to_msoa_lookup: types.FilePath  # keep as is
     """Normits to MSOA(NTEM) lookup, this is NoHAM to NTEM lookup as the
     results are taken after normits results are converted back to NoHAM"""
-    normits_to_personal_factor: float #keep as is
+    normits_to_personal_factor: float  # keep as is
     """This is the factor that the personal data should have applied to
     just include van data 4% is a starting point"""
     personal_purposes: list[int] = fields.Field(
         default_factory=lambda: list(DEFAULT_PERSONAL_PURPOSES)
-    ) #keep as is
+    )  # keep as is
     """Personal purpose types defined by Normits"""
 
     _model_output_folder: Path | None = fields.PrivateAttr(None)
@@ -332,7 +334,6 @@ def household_projections(path: Path, zone_lookup: Path) -> pd.DataFrame:
     rezoned = Rezone.rezoneOD(households, lookup, dfCols=(columns[0],), rezoneCols=columns[1])
     rezoned.columns = ["Zone", "Households"]
     return rezoned
-
 
 
 def filtered_bres(

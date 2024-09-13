@@ -55,9 +55,7 @@ autodoc_typehints = "description"
 # Auto summary options
 autosummary_generate = True
 
-modindex_common_prefix = [
-"caf.",    "caf.van."
-]
+modindex_common_prefix = ["caf.", "caf.van."]
 
 
 # -- Options for HTML output -------------------------------------------------
