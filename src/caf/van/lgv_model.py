@@ -395,15 +395,12 @@ def _gravity_model(
     else:
         trip_ends = balance_trip_ends(trip_ends, "Origins", "Destinations")
 
-
     tld_path = input_paths.trip_distributions_path[name]
 
     # we have to do this because caf distribute does not look at index values, just order
     trip_ends = trip_ends.sort_index()  #
     # define zones to order everthing on
     zones = trip_ends.index.to_numpy()
-
-    
 
     LOG.info("Running Gravity Model: %s, with calibration %s", name, calibrate)
 
@@ -418,8 +415,8 @@ def _gravity_model(
 
         cost_function = cost_functions.BuiltInCostFunction.LOG_NORMAL.get_cost_function()
         func_params = {  # TODO how do we set input Params
-            "sigma": gm_params.loc[name, "param2"],
             "mu": gm_params.loc[name, "param1"],
+            "sigma": gm_params.loc[name, "param2"],
         }
     elif gm_params.loc[name, "function"] == "tanner":
         cost_function = cost_functions.BuiltInCostFunction.TANNER.get_cost_function()
@@ -457,7 +454,7 @@ def _gravity_model(
         cat_tld = tld[tld["area"] == category]
 
         cat_cost_distribution = cost_utils.CostDistribution(
-            cat_tld, "from", "to", "av_distance", "observed", "av_distance"
+            cat_tld, "from", "to", "av_distance", "normalised", "av_distance"
         )
 
         cost_distributions.append(
@@ -520,6 +517,9 @@ def balance_trip_ends(trip_ends:pd.DataFrame, target_col:str, test_col:str)->pd.
         )
 
         balanced_trip_ends[test_col] *= factor
+
+    else: 
+        LOG.debug(f"Trip ends look fine \ntarget total {trip_ends[target_col].sum()}, \ntest total {trip_ends[test_col].sum()} \ndifference {trip_end_difference}")
 
     return balanced_trip_ends
 
