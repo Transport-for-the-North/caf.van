@@ -400,6 +400,10 @@ def _gravity_model(
     # we have to do this because caf distribute does not look at index values, just order
     trip_ends = trip_ends.sort_index()  #
     # define zones to order everthing on
+    
+    if trip_ends.index.has_duplicates:
+        raise KeyError("Trip ends have duplicated zones labels. Please fix this")
+    
     zones = trip_ends.index.to_numpy()
 
     LOG.info("Running Gravity Model: %s, with calibration %s", name, calibrate)
@@ -408,6 +412,7 @@ def _gravity_model(
         input_paths.cost_matrix_path, index_col=0
     )  # TODO this should have validation
 
+    #nonzero returns a tuple with array of indices
     cost_matrix_validated = cost_matrix.loc[zones, zones].to_numpy()
 
     # different segments require different cost function and starting params - we determine extract these below
@@ -448,7 +453,8 @@ def _gravity_model(
             )
 
         # get the indices
-        cat_zone_indices = np.where(np.isin(cat_zones, zones))
+        # nonzero returns a tupe with an array of indices
+        cat_zone_indices = np.nonzero(np.isin(cat_zones, zones))[0]
 
         # get tld for cat
         cat_tld = tld[tld["area"] == category]
