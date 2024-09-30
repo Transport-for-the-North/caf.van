@@ -400,10 +400,10 @@ def _gravity_model(
     # we have to do this because caf distribute does not look at index values, just order
     trip_ends = trip_ends.sort_index()  #
     # define zones to order everthing on
-    
+
     if trip_ends.index.has_duplicates:
         raise KeyError("Trip ends have duplicated zones labels. Please fix this")
-    
+
     zones = trip_ends.index.to_numpy()
 
     LOG.info("Running Gravity Model: %s, with calibration %s", name, calibrate)
@@ -412,7 +412,7 @@ def _gravity_model(
         input_paths.cost_matrix_path, index_col=0
     )  # TODO this should have validation
 
-    #nonzero returns a tuple with array of indices
+    # nonzero returns a tuple with array of indices
     cost_matrix_validated = cost_matrix.loc[zones, zones].to_numpy()
 
     # different segments require different cost function and starting params - we determine extract these below
@@ -438,36 +438,19 @@ def _gravity_model(
     cat_zone_correspondence = pd.read_csv(input_paths.cat_zone_correspondence_path)
     tld = pd.read_csv(tld_path)
     # interate through different TLD categories
-    for category in cat_zone_correspondence["area"].unique():
-
-        # get a list of zones that use this category of TLD
-        cat_zones = cat_zone_correspondence.loc[
-            cat_zone_correspondence["area"] == category, "zone_id"
-        ].to_numpy()
-
-        # tell user if we have zones in cat->lookup that arent in zones
-        if not np.all(np.isin(cat_zones, zones)):
-            missing_values = cat_zones[~np.isin(cat_zones, zones)]
-            raise ValueError(
-                f"The following values from cat->zone lookup are not present in the tld zones: {missing_values}"
-            )
-
-        # get the indices
-        # nonzero returns a tupe with an array of indices
-        cat_zone_indices = np.nonzero(np.isin(cat_zones, zones))[0]
-
-        # get tld for cat
-        cat_tld = tld[tld["area"] == category]
-
-        cat_cost_distribution = cost_utils.CostDistribution(
-            cat_tld, "from", "to", "av_distance", "normalised", "av_distance"
-        )
-
-        cost_distributions.append(
-            gravity_model.MultiCostDistribution(
-                category, cat_cost_distribution, cat_zone_indices, func_params
-            )
-        )
+    cost_distributions = gravity_model.MultiCostDistribution.from_pandas(
+        pd.Series(zones),
+        tld,
+        cat_zone_correspondence,
+        func_params,
+        "area",
+        "from",
+        "to",
+        "av_distance",
+        "normalised",
+        "area",
+        "zone_id",
+    )
 
     if name in PA_MATRICES:
         calib_gm = gravity_model.MultiAreaGravityModelCalibrator(
@@ -488,6 +471,7 @@ def _gravity_model(
         gravity_model_results = calib_gm.calibrate(
             cost_distributions,
             csv_logging_path,  # TODO figure out which key word args with default values needed to be changed
+            verbose=2,
         )
 
         results = VanGravityModelResults(
