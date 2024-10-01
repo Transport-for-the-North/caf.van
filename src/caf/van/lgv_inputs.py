@@ -155,6 +155,8 @@ class LGVInputPaths(caf.toolkit.BaseConfig):
     CSV"""
     model_study_area: types.FilePath  # change this to a TLD zone lookup
     """Path to CSV containing lookup for zones in model study area."""
+    ca_lookup_path: types.FilePath
+    """Oath to MSOA to CA sector correspondance CSV"""
     cost_matrix_path: types.FilePath  # keep as is TODO?
     """Path to CSV containing cost matrix, should be square matrix with
     zone numbers as column names and indices."""

@@ -22,6 +22,8 @@ class MatrixReport:
         translation_factors_col: Optional[str] = None,
     ):
 
+        self.describe = pd.DataFrame()
+
         if translation is not None:
             if (
                 (translation_factors_col is None)
@@ -33,6 +35,11 @@ class MatrixReport:
                     " translation_to_col and translation_factors_col "
                     "must also be given"
                 )
+
+            self.describe["Original_Matrix"] = matrix_describe(matrix)
+
+            translated_describe_label = "Translated_Matrix"
+
 
             matrix = ctk.translation.pandas_matrix_zone_translation(
                 matrix,
@@ -52,13 +59,11 @@ class MatrixReport:
                 " translation_to_col or translation_factors_col are provided,"
                 " translation must also be given"
             )
+        else:
+            translated_describe_label = "Matrix"
         
         self.matrix = matrix
-        self.describe = matrix_describe(matrix)
-        self.describe["sum"] =  matrix.sum().sum()
-        self.row_sum = matrix.sum(axis=0)
-        self.column_sum = matrix.sum(axis=1)
-
+        self.describe[translated_describe_label] = matrix_describe(matrix)
 
 
 
@@ -81,6 +86,12 @@ class MatrixReport:
     @property
     def trip_ends(self)->pd.DataFrame:
         return pd.DataFrame({"row_sums":self.row_sum, "col_sums":self.column_sum})
+    @property
+    def row_sum(self)->pd.DataFrame:
+        return self.matrix.sum(axis=0)
+    @property
+    def column_sum(self)->pd.DataFrame:
+        return self.matrix.sum(axis=1)
 
     @classmethod
     def from_file(
@@ -107,6 +118,12 @@ class MatrixReport:
         )
 
 
-def matrix_describe(matrix: pd.DataFrame) -> pd.Series:
-
-    return matrix.stack().describe()
+def matrix_describe(matrix: pd.DataFrame, almost_zero: Optional[int] = None) -> pd.Series:
+    if almost_zero is None:
+        almost_zero = 1/matrix.size 
+    info = matrix.stack().describe(percentiles=[0.05, 0.25, 0.5, 0.75, 0.95])
+    info["sum"] = matrix.sum().sum()
+    info["zeros"] = (matrix==0).sum().sum()
+    info["almost_zeros"] = (matrix<almost_zero).sum().sum()
+    info["NaNs"] = matrix.isna().sum().sum()
+    return info
