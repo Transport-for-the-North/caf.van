@@ -74,7 +74,11 @@ class MatrixReport:
         else: 
             sheet_prefix:str = ""
 
-        self.describe.to_excel(writer, sheet_name=f"{sheet_prefix}Matrix_Summary")
+        if len(sheet_prefix)>=31:
+            raise ValueError("label cannot be over 30 characters as the sheets names will"
+                             " be truncated and will not be unique")
+
+        self.describe.to_excel(writer, sheet_name=f"{sheet_prefix}Summary")
 
         self.trip_ends.to_excel(writer, sheet_name=f"{sheet_prefix}Trip_Ends")
 
