@@ -601,6 +601,12 @@ def run_gravity_model(
         with pd.ExcelWriter(output_folder / (name + "-GM_log.xlsx")) as writer:
             # TODO write out metadata
 
+            summary = MatrixReport(
+                matrices[name], pd.read_csv(input_paths.ca_lookup_path), "NTEM_id", "CA_id", "NTEM_to_CA"
+            )
+            LOG.info(f"writing {name} summary to excel")
+            summary.write_to_excel(writer, output_matrix=True)
+
             for cat, gm_cat_results in calib_gm.info.items():
                 if calibrate:
                     gm_cat_results.plot_distributions().savefig(
@@ -829,7 +835,6 @@ def produce_annual_matrices(
         output_folder,
     )
         
-    matrix_summaries(matrices, pd.read_csv(input_paths.ca_lookup_path), output_folder/"matrix_summaries.xlsx")
 
     try:
         LOG.info("Calculating personal segment matrices from NorMITs car demand")
@@ -856,19 +861,6 @@ def produce_annual_matrices(
         )
 
     return LGVMatrices(**matrices, personal=personal_matrix)
-
-def matrix_summaries(matrices: dict[str, pd.DataFrame], translation: pd.DataFrame, output_path:Path)->None:
-
-    with pd.ExcelWriter(output_path, mode="w") as writer:
-        
-        for name, matrix in matrices.items():
-            
-            LOG.info(f"creating {name} summary")
-            summary = MatrixReport(
-                matrix, translation, "NTEM_id", "CA_id", "NTEM_to_CA"
-            )
-            LOG.info(f"writing {name} summary to excel")
-            summary.write_to_excel(writer, label=f"{name}", output_matrix=True)
 
 def main(input_paths: LGVInputPaths):
     """Runs the LGV model.
