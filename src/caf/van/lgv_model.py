@@ -80,6 +80,8 @@ FUNCTION_LABELS = {
 
 PA_DIFFERENCE_TOL = 1e-3
 
+DUMMY_CAT = 1
+
 
 ##### CLASSES #####
 @dataclass
@@ -379,7 +381,7 @@ class VanGravityModelResults:
         for key, results in info.items():
             summary_build[key] = results.summary
 
-        self.summary = pd.DataFrame(summary_build)
+        self.summary = pd.DataFrame(summary_build).transpose()
 
 
 def _gravity_model(
@@ -415,8 +417,18 @@ def _gravity_model(
     cost_matrix_validated = cost_matrix.loc[zones, zones].to_numpy()
 
     # different segments require different cost function and starting params - we determine extract these below
-    cat_zone_correspondence = pd.read_csv(gm_data.cat_zone_correspondence_path)
+
     tld = pd.read_csv(tld_path)
+
+    # read in cat zone lookup if it exists 
+    if gm_data.cat_zone_correspondance_path is not None:
+        cat_zone_correspondence = pd.read_csv(gm_data.cat_zone_correspondance_path)
+    else:
+        #create a lookup for the whole matrix if cat zone hasnt been given
+        cat_zone_correspondence = pd.DataFrame({"zone_id" : zones})
+        cat_zone_correspondence["area"] = DUMMY_CAT
+        tld["area"]= DUMMY_CAT
+
 
     if gm_data.cost_function == "log_normal":
         cost_function = cost_functions.BuiltInCostFunction.LOG_NORMAL.get_cost_function()
@@ -578,11 +590,10 @@ def run_gravity_model(
         # TODO put this back to normal once dev is done
         # try:
         gm_params = input_paths.gm_parameters[name]
-        calibrate = gm_params.loc[name, "calibrate"]
+        calibrate = gm_params.calibrate
         calib_gm = _gravity_model(
             te,
             name,
-            input_paths,
             gm_params,
             cost_matrix,
             calibrate,

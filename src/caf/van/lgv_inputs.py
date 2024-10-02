@@ -22,10 +22,9 @@ from typing import Any, Callable, Optional, Union, Literal
 
 
 import caf.toolkit
-from networkx import selfloop_edges
 import numpy as np
 import pandas as pd
-from pydantic import dataclasses, fields, model_validator, types
+from pydantic import dataclasses, fields, model_validator, field_validator,  types
 
 # Local Imports
 from caf.van import errors, utilities
@@ -645,6 +644,48 @@ class GMInputs:
     calibrate: bool
     cat_zone_correspondance_path: Optional[types.FilePath] = None
 
+    @field_validator("cost_function_params", mode="before")
+    @classmethod
+    def parse_parameters(cls, params: dict[str, str]|str)->dict[str|int, tuple[float, ...]]|tuple[float, ...]:
+        # keys will be read in as strings even if numeric. 
+        # try converting them to numeric if possible
+
+        if isinstance(params, dict):
+            checked_keys = {}
+            no_errors = True
+            
+            for key, vals in params.items():
+                try:
+                    checked_keys[int(key)] = vals
+                except ValueError:
+                    #if one isnt an int we dont convert any
+                    no_errors = False
+            if no_errors:
+                key_checked_params = checked_keys
+            else:
+                key_checked_params = params
+
+            processed_params = {}
+            for key, val in key_checked_params.items():
+                split_vals = []
+                for v in val.split(","):
+                    split_vals.append(float(v))
+                processed_params[key] = tuple(split_vals)
+            return processed_params
+        else:
+            assert isinstance(params, str)
+            split_vals = []
+            for v in params.split(","):
+                split_vals.append(float(v))
+            return tuple(split_vals)
+
+
+            
+            
+
+
+
+
 
     @model_validator(mode="after")
     def _check_cost_params(self) -> GMInputs:
@@ -665,8 +706,10 @@ class GMInputs:
                     " trip_length_distribution_path, must be defined"
                 )
 
-        if isinstance(self.cost_function, tuple):
-            if multi_tld:
+        if isinstance(self.cost_function_params, tuple):
+            #if we have a multi TLD and and using run mode (a.k.a. not self.calibrate)
+            # then we must have a dictionary
+            if multi_tld and not self.calibrate:
                 raise KeyError(
                     'if cat_zone_correspondance_path is passed when using "run" mode,'
                     " the cost_function_params must be passed as a dictionary with keys"
@@ -675,7 +718,7 @@ class GMInputs:
                 )
         else:
 
-            assert isinstance(self.cost_function, dict)
+            assert isinstance(self.cost_function_params, dict)
 
             correspondance_cats = set(
                 pd.read_csv(self.cat_zone_correspondance_path)["area"].unique()
@@ -686,6 +729,7 @@ class GMInputs:
                     'the "area" column in cat_zone_correspondance_path and '
                     "trip_length_distribution_path must have the same unique values"
                 )
+            
 
             if tld_cats != set(self.cost_function_params.keys()):
                 raise KeyError(
