@@ -14,7 +14,7 @@ import warnings
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Literal
 
 # Third Party
 from caf.distribute import gravity_model, cost_functions
@@ -31,6 +31,7 @@ from caf.van.delivery_segment import DeliveryTripEnds
 from caf.van.furnessing import annual_pa_to_od
 from caf.van.gravity_model import CalibrateGravityModel, calculate_vehicle_kms
 from caf.van.lgv_inputs import (
+    GMInputs,
     LGVInputPaths,
     lgv_parameters,
     read_gm_params,
@@ -384,8 +385,8 @@ class VanGravityModelResults:
 def _gravity_model(
     trip_ends: pd.DataFrame,
     name: str,
-    input_paths: LGVInputPaths,
-    gm_params: pd.DataFrame,
+    gm_data: GMInputs,
+    cost_matrix: pd.DataFrame,
     calibrate: bool,
     csv_logging_path: Path,
 ) -> VanGravityModelResults:
@@ -397,7 +398,7 @@ def _gravity_model(
     else:
         trip_ends = balance_trip_ends(trip_ends, "Origins", "Destinations")
 
-    tld_path = input_paths.trip_distributions_path[name]
+    tld_path = gm_data.trip_length_distribution_path
 
     # we have to do this because caf distribute does not look at index values, just order
     trip_ends = trip_ends.sort_index()  #
@@ -410,36 +411,38 @@ def _gravity_model(
 
     LOG.info("Running Gravity Model: %s, with calibration %s", name, calibrate)
 
-    cost_matrix = pd.read_csv(
-        input_paths.cost_matrix_path, index_col=0
-    )  # TODO this should have validation
-
     # nonzero returns a tuple with array of indices
     cost_matrix_validated = cost_matrix.loc[zones, zones].to_numpy()
 
     # different segments require different cost function and starting params - we determine extract these below
-    if gm_params.loc[name, "function"] == "log_normal":
+    cat_zone_correspondence = pd.read_csv(gm_data.cat_zone_correspondence_path)
+    tld = pd.read_csv(tld_path)
 
+    if gm_data.cost_function == "log_normal":
         cost_function = cost_functions.BuiltInCostFunction.LOG_NORMAL.get_cost_function()
-        func_params = {  # TODO how do we set input Params
-            "mu": gm_params.loc[name, "param1"],
-            "sigma": gm_params.loc[name, "param2"],
-        }
-    elif gm_params.loc[name, "function"] == "tanner":
+    elif gm_data.cost_function == "tanner":
         cost_function = cost_functions.BuiltInCostFunction.TANNER.get_cost_function()
-        func_params = {
-            "alpha": gm_params.loc[name, "param1"],
-            "beta": gm_params.loc[name, "param2"],
-        }
     else:
-        raise ValueError(f"Cost Function {gm_params.loc[name, 'function']} not found")
+        raise NotImplemented(
+            f"cost function {gm_data.cost_function} is not implemented, please use either log_normal "
+            "(mu, sigma) or tanner (alpha, beta)"
+        )
+
+    func_params = {}
+    if isinstance(gm_data.cost_function_params, dict):
+        # process params when they are a dict
+        for cat, params in gm_data.cost_function_params.items():
+            func_params[cat] = extract_cost_func_params(params, gm_data.cost_function)
+    else:
+        # process params when they are a tuple
+        for cat in tld["area"].unique():
+            func_params[cat] = extract_cost_func_params(
+                gm_data.cost_function_params, gm_data.cost_function
+            )
 
     cost_distributions = []
 
-    # read in things we need for distribution
-    cat_zone_correspondence = pd.read_csv(input_paths.cat_zone_correspondence_path)
-    tld = pd.read_csv(tld_path)
-    # interate through different TLD categories
+    # iterate through different TLD categories
     cost_distributions = gravity_model.MultiCostDistribution.from_pandas(
         pd.Series(zones),
         tld,
@@ -489,6 +492,26 @@ def _gravity_model(
         )
     LOG.info("\tFinished, now writing outputs")
     return results
+
+
+def extract_cost_func_params(
+    cost_funct_params: tuple[float, ...], cost_func_name: Literal["log_normal", "tanner"]
+) -> dict[str, float]:
+    if cost_func_name == "log_normal":
+
+        func_params = {  # TODO how do we set input Params
+            "mu": cost_funct_params[0],
+            "sigma": cost_funct_params[1],
+        }
+    elif cost_func_name == "tanner":
+        func_params = {
+            "alpha": cost_funct_params[0],
+            "beta": cost_funct_params[1],
+        }
+    else:
+        raise ValueError(f"Cost Function {cost_func_name} not found")
+
+    return func_params
 
 
 def balance_trip_ends(trip_ends: pd.DataFrame, target_col: str, test_col: str) -> pd.DataFrame:
@@ -543,22 +566,25 @@ def run_gravity_model(
         Trip matrices for each segment.
     """
     internals = read_study_area(input_paths.model_study_area)
-    gm_params = read_gm_params(input_paths.parameters_path)
+    # gm_params = read_gm_params(input_paths.parameters_path)
     matrices: dict[str, pd.DataFrame] = {}
     output_folder.mkdir(exist_ok=True)
 
+    cost_matrix = pd.read_csv(input_paths.cost_matrix_path, index_col=0)
 
     for name, te in trip_ends.asdict().items():
         if name == "zones":
             continue
         # TODO put this back to normal once dev is done
         # try:
+        gm_params = input_paths.gm_parameters[name]
         calibrate = gm_params.loc[name, "calibrate"]
         calib_gm = _gravity_model(
             te,
             name,
             input_paths,
             gm_params,
+            cost_matrix,
             calibrate,
             output_folder / f"gravity_model_{name}_calibration_log.csv",
         )
@@ -575,7 +601,7 @@ def run_gravity_model(
             # TODO KF: I am pretty sure this index and column labelling aligns, but I/you need to check
             pa_matrix = pd.DataFrame(calib_gm.distribution, index=te.index, columns=te.index)
             pa_matrix.to_csv(output_folder / (name + "-trip_matrix-PA.csv"))
-            
+
             matrix = annual_pa_to_od(
                 calib_gm.distribution.to_numpy(),
                 te.loc[calib_gm.zones, "Attractions"].values,
@@ -602,7 +628,11 @@ def run_gravity_model(
             # TODO write out metadata
 
             summary = MatrixReport(
-                matrices[name], pd.read_csv(input_paths.ca_lookup_path), "NTEM_id", "CA_id", "NTEM_to_CA"
+                matrices[name],
+                pd.read_csv(input_paths.ca_lookup_path),
+                "NTEM_id",
+                "CA_id",
+                "NTEM_to_CA",
             )
             LOG.info(f"writing {name} summary to excel")
             summary.write_to_excel(writer, output_matrix=True)
@@ -621,9 +651,6 @@ def run_gravity_model(
                     )
 
             calib_gm.summary.to_excel(writer, sheet_name="Gravity Model Info")
-
-            # TODO We have already read this in inside _calibrate_gm: figure out if this stores in memory nicely
-            cost_matrix = pd.read_csv(input_paths.cost_matrix_path, index_col=0)
 
             if name in PA_MATRICES:
                 vehicle_kms = calculate_vehicle_kms(pa_matrix, cost_matrix, internals)
@@ -834,7 +861,6 @@ def produce_annual_matrices(
         trip_ends,
         output_folder,
     )
-        
 
     try:
         LOG.info("Calculating personal segment matrices from NorMITs car demand")
@@ -861,6 +887,7 @@ def produce_annual_matrices(
         )
 
     return LGVMatrices(**matrices, personal=personal_matrix)
+
 
 def main(input_paths: LGVInputPaths):
     """Runs the LGV model.

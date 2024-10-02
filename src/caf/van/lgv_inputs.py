@@ -12,18 +12,20 @@ from __future__ import annotations
 import datetime as dt
 import enum
 import logging
+from multiprocessing import Value
 import re
 import string
 from pathlib import Path
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Optional, Union, Literal
 
 # Third Party
 
 
 import caf.toolkit
+from networkx import selfloop_edges
 import numpy as np
 import pandas as pd
-from pydantic import dataclasses, fields, types
+from pydantic import dataclasses, fields, model_validator, types
 
 # Local Imports
 from caf.van import errors, utilities
@@ -161,11 +163,9 @@ class LGVInputPaths(caf.toolkit.BaseConfig):
     """Path to CSV containing cost matrix, should be square matrix with
     zone numbers as column names and indices."""
     calibration_matrix_path: Optional[types.FilePath] = None  # keep as is TODO?
-    """Path to CSV containing calibration matrix, should be square matrix
-    with zone numbers as column names and indices."""
-    trip_distributions_path: dict[str, types.FilePath]  # TODO Change for MultiTLD
-    """Path to Excel Workbook containing all the trip cost distributions."""
-    cat_zone_correspondence_path: types.FilePath
+    """Path to CSV containing calibration matrix, should be square matrix"""
+
+    gm_parameters: dict[str, GMInputs]
 
     output_folder: types.DirectoryPath  # keep as is
     """Path to folder to save outputs to."""
@@ -635,3 +635,64 @@ def read_gm_params(path: Path) -> pd.DataFrame:
     df.loc[:, "furness_type"] = df["furness_type"].replace(furn_rep)
     df.loc[:, "calibrate"] = df["calibrate"].isin(calib_true)
     return df
+
+
+@dataclasses.dataclass
+class GMInputs:
+    trip_length_distribution_path: types.FilePath
+    cost_function: Literal["log_normal", "tanner"]
+    cost_function_params: tuple[float, ...] | dict[str | int, tuple[float, ...]]
+    calibrate: bool
+    cat_zone_correspondance_path: Optional[types.FilePath] = None
+
+
+    @model_validator(mode="after")
+    def _check_cost_params(self) -> GMInputs:
+
+        multi_tld = True
+
+        try:
+            tld_cats = set(
+                pd.read_csv(self.trip_length_distribution_path)["area"].unique()
+            )
+
+        except KeyError:
+            if self.cat_zone_correspondance_path is None:
+                multi_tld = False
+            else:
+                raise ValueError(
+                    "If cat_zone_correspondance is passed, the area column in"
+                    " trip_length_distribution_path, must be defined"
+                )
+
+        if isinstance(self.cost_function, tuple):
+            if multi_tld:
+                raise KeyError(
+                    'if cat_zone_correspondance_path is passed when using "run" mode,'
+                    " the cost_function_params must be passed as a dictionary with keys"
+                    ' of the unique values in the "area" column in '
+                    "cat_zone_correspondance_path and trip_length_distribution_path"
+                )
+        else:
+
+            assert isinstance(self.cost_function, dict)
+
+            correspondance_cats = set(
+                pd.read_csv(self.cat_zone_correspondance_path)["area"].unique()
+            )
+
+            if tld_cats != correspondance_cats:
+                raise KeyError(
+                    'the "area" column in cat_zone_correspondance_path and '
+                    "trip_length_distribution_path must have the same unique values"
+                )
+
+            if tld_cats != set(self.cost_function_params.keys()):
+                raise KeyError(
+                    'if cat_zone_correspondance_path is passed when using "run" mode,'
+                    " the cost_function_params must be passed as a dictionary with keys"
+                    ' of the unique values in the "area" column in '
+                    "cat_zone_correspondance_path and trip_length_distribution_path"
+                )
+                
+        return self
