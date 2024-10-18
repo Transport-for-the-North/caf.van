@@ -176,7 +176,7 @@ parameters and a description of what value should be provided.
 .. table:: Required parameters for the Van Model, parameters must be
    labelled exactly as given.
 
-   ===
+   +----------------+-----------+---------------------------------------------+
    | Parameter      | Data Type | Description                                 |
    +================+===========+=============================================+
    | LGV growth     | Real      | A factor to increase the LGV trips from the |

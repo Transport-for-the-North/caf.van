@@ -48,11 +48,11 @@ and All Other Employment before being combined together into a single
 set of service productions and attractions. The flowchart below outlines
 the service trip ends methodology.
 
-.. figure:: _static/images/LGV_methodology-Servicing.png
-   :alt: LGV service productions and attractions trip ends methodology -
+.. figure:: _static/images/LGV_methodology-Servicing.drawio.svg
+   :alt: Van service productions and attractions trip ends methodology -
       flowchart
 
-   LGV service productions and attractions trip ends methodology
+   Van service productions and attractions trip ends methodology
 
 Delivery Trip Ends
 ~~~~~~~~~~~~~~~~~~
@@ -81,10 +81,10 @@ for all three types of delivery trip.
 .. todo::
    Update flowchart to show trips are factored using delivery growth factor
 
-.. figure:: _static/images/LGV_methodology-Delivery.png
-   :alt: LGV commuting productions trip ends methodology - flowchart
+.. figure:: _static/images/LGV_methodology-Delivery.drawio.svg
+   :alt: Van delivery trip ends methodology - flowchart
 
-   LGV commuting productions trip ends methodology - flowchart
+   Van delivery trip ends methodology
 
 Commuting Trip Ends
 ~~~~~~~~~~~~~~~~~~~
@@ -106,15 +106,15 @@ each type of trip end.
 .. todo::
    Update flowchart to show trips are factored using growth factor
 
-.. figure:: _static/images/LGV_methodology-Commuting-Productions.png
-   :alt: LGV commuting productions trip ends methodology - flowchart
+.. figure:: _static/images/LGV_methodology-Commuting-Productions.drawio.svg
+   :alt: Van commuting productions trip ends methodology - flowchart
 
-   LGV commuting productions trip ends methodology
+   Van commuting productions trip ends methodology
 
-.. figure:: _static/images/LGV_methodology-Commuting-Attractions.png
-   :alt: LGV commuting attractions trip ends methodology - flowchart
+.. figure:: _static/images/LGV_methodology-Commuting-Attractions.drawio.svg
+   :alt: Van commuting attractions trip ends methodology - flowchart
 
-   LGV commuting attractions trip ends methodology
+   Van commuting attractions trip ends methodology
 
 Gravity Model
 -------------
