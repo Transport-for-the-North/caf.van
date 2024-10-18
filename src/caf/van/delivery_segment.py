@@ -187,8 +187,13 @@ class DeliveryTripEnds:
 
         if self.parameters.depots_infill is None:
             return depots
-
-        missing = [i for i in self.parameters.depots_infill if i not in self.households.index]
+        
+        try:
+            infill = [int(z) for z in self.parameters.depots_infill]
+        except ValueError:
+            infill = self.parameters.depots_infill
+        
+        missing = [i for i in infill if i not in self.households.index]
         if missing:
             raise errors.MissingDataError("Households for zones", missing)
 
