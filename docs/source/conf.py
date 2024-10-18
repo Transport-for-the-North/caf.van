@@ -36,6 +36,7 @@ extensions = [
     "sphinx.ext.autosectionlabel",
     "sphinx_gallery.gen_gallery",
     "sphinx.ext.intersphinx",
+    "sphinx.ext.todo",
 ]
 
 templates_path = ["_templates", "_templates/autosummary"]
@@ -77,10 +78,23 @@ sphinx_gallery_conf = {
 
 # Intersphinx settings
 intersphinx_mapping = {
-    "python": ('https://docs.python.org/3', None),
+    "python": ("https://docs.python.org/3", None),
     "caf.toolkit": ("https://caftoolkit.readthedocs.io/en/latest/", None),
+    "caf.distribute": ("https://cafdistribute.readthedocs.io/en/stable/", None),
 }
 intersphinx_timeout = 30
+
+
+# Todo settings
+def get_env_bool(name: str, default: bool) -> bool:
+    value = os.getenv(name, default)
+    if isinstance(value, bool):
+        return value
+    return value.lower().strip() in ("true", "t", "yes", "y", "1")
+
+
+todo_include_todos = get_env_bool("SPHINX_INCLUDE_TODOS", False)
+todo_emit_warnings = True
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

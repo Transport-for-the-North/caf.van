@@ -1,20 +1,25 @@
-LGV Model Inputs
+Van Model Inputs
 ================
 
-The LGV model has a number of input files which can be provided in the
+The Van model has a number of input files which can be provided in the
 GUI, or via a configuration file (example below). This section details
-all of the input files which are needed in order to run the LGV model.
+all of the input files which are needed in order to run the Van model.
 
-To run the LGV model with a configuration file it needs to be ran from
+To run the Van model with a configuration file it needs to be ran from
 command line. The command for running it is
-**``python -m LFT.lgv_model -c "path/to/config.yml"``**, this command
+``python -m LFT.lgv_model -c "path/to/config.yml"``, this command
 should be ran from the Anaconda prompt after activating the environment
 (see `Running Local Freight Tool <#running-local-freight-tool>`__ for
 more information). An example of the configuration file is shown below.
 
-**Note:** *help text for running the tool through the command line can
-be seen with ``python -m LFT.lgv_model -h`` and an example config file
-can be created with the command ``python -m LFT.lgv_model -e``.*
+.. note::
+   Help text for running the tool through the command line can
+   be seen with ``python -m LFT.lgv_model -h`` and an example config file
+   can be created with the command ``python -m LFT.lgv_model -e``.
+
+
+.. todo::
+   Update the example config below to reflect recent changes.
 
 .. code:: yaml
 
@@ -58,20 +63,19 @@ This data should be provided in a comma-separated values (CSV) file.
 
 .. table:: Required columns for the UK household projections data
 
-   +------------+------+-------------------------------------------------+
-   | Column     | Data | Description                                     |
-   | Name       | Type |                                                 |
-   +============+======+=================================================+
-   | Area       | Text | MSOA area code e.g. E02003616                   |
-   | D          |      |                                                 |
-   | escription |      |                                                 |
-   +------------+------+-------------------------------------------------+
-   | HHs        | Real | The number of households projected to be in     |
-   |            |      | that MSOA zone                                  |
-   +------------+------+-------------------------------------------------+
-   | Jobs       | Real | The number of jobs projected to be in that MSOA |
-   |            |      | zone                                            |
-   +------------+------+-------------------------------------------------+
+   +-------------+------+-------------------------------------------------+
+   | Column      | Data | Description                                     |
+   | Name        | Type |                                                 |
+   +=============+======+=================================================+
+   | Area        | Text | MSOA area code e.g. E02003616                   |
+   | Description |      |                                                 |
+   +-------------+------+-------------------------------------------------+
+   | HHs         | Real | The number of households projected to be in     |
+   |             |      | that MSOA zone                                  |
+   +-------------+------+-------------------------------------------------+
+   | Jobs        | Real | The number of jobs projected to be in that MSOA |
+   |             |      | zone                                            |
+   +-------------+------+-------------------------------------------------+
 
 In addition to the households data the model also requires a zone
 correspondence file which provides the lookup between the MSOA and the
@@ -98,7 +102,7 @@ The Business Register and Employment Survey (BRES) is available from
 `NOMIS <https://www.nomisweb.co.uk/datasets/newbres6pub>`__ and contains
 the number of employees for different industrial sectors at LSOA
 (Scottish data zone) level, at time of writing the data is provided up
-to 2019. The LGV model requires the data to be extracted for all LSOAs
+to 2019. The van model requires the data to be extracted for all LSOAs
 (England and Wales) and data zones (Scotland) at the model year, all
 broad industrial groups and all employees should be included in the
 output.
@@ -111,134 +115,11 @@ correspondence file discussed in `Other Zone
 Correspondences <#other-zone-correspondences>`__ will be used to
 translate the BRES data to the model zone system.
 
-.. table:: Required columns for the BRES data, column names must be
-   exactly as listed. Any columns not listed will be ignored.
-
-   +--------------------------------------------------+---+----------------+
-   | Column Name                                      | D | Description    |
-   |                                                  | a |                |
-   |                                                  | t |                |
-   |                                                  | a |                |
-   |                                                  | T |                |
-   |                                                  | y |                |
-   |                                                  | p |                |
-   |                                                  | e |                |
-   +==================================================+===+================+
-   | Area                                             | T | De             |
-   |                                                  | e | scription/name |
-   |                                                  | x | of area type   |
-   |                                                  | t |                |
-   +--------------------------------------------------+---+----------------+
-   | mnemonic                                         | T | Data zone or   |
-   |                                                  | e | LSOA area code |
-   |                                                  | x |                |
-   |                                                  | t |                |
-   +--------------------------------------------------+---+----------------+
-   | A : Agriculture, forestry and fishing            | R | Number of      |
-   |                                                  | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | B : Mining and quarrying                         | R | Number of      |
-   |                                                  | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | C : Manufacturing                                | R | Number of      |
-   |                                                  | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | D : Electricity, gas, steam and air conditioning | R | Number of      |
-   | supply                                           | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | E : Water supply; sewerage, waste management and | R | Number of      |
-   | remediation activities                           | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | F : Construction                                 | R | Number of      |
-   |                                                  | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | G : Wholesale and retail trade; repair of motor  | R | Number of      |
-   | vehicles and motorcycles                         | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | H : Transportation and storage                   | R | Number of      |
-   |                                                  | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | I : Accommodation and food service activities    | R | Number of      |
-   |                                                  | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | J : Information and communication                | R | Number of      |
-   |                                                  | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | K : Financial and insurance activities           | R | Number of      |
-   |                                                  | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | L : Real estate activities                       | R | Number of      |
-   |                                                  | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | M : Professional, scientific and technical       | R | Number of      |
-   | activities                                       | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | N : Administrative and support service           | R | Number of      |
-   | activities                                       | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | O : Public administration and defence;           | R | Number of      |
-   | compulsory social security                       | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | P : Education                                    | R | Number of      |
-   |                                                  | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | Q : Human health and social work activities      | R | Number of      |
-   |                                                  | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | R : Arts, entertainment and recreation           | R | Number of      |
-   |                                                  | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | S : Other service activities                     | R | Number of      |
-   |                                                  | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | T : Activities of households as                  | R | Number of      |
-   | employers;undifferentiated goods-and             | e | employees for  |
-   | services-producing activities of households for  | a | this industry  |
-   | own use                                          | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | U : Activities of extraterritorial organisations | R | Number of      |
-   | and bodies                                       | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
+.. csv-table:: Required columns for the BRES data, column names must be exactly as listed.
+      Any columns not listed will be ignored.
+   :file: _static/tables/bres_data_columns.csv
+   :widths: 50, 5, 45
+   :header-rows: 1
 
 Warehouse Data
 --------------
@@ -246,8 +127,7 @@ Warehouse Data
 Warehouse floorspace area data is used for calculating trip ends for the
 delivery and commute segments. The warehouse floorspace data used by
 Transport for the North is aggregated from Ordnance Survey's Address
-Base Premium and Master map data, the methodology for which is outlined
-in the Local Freight Tool - Warehouse Data technical note [1]_.
+Base Premium and Master map data.
 
 The following four warehouse floorspace input files are required (all at
 LSOA zoning):
@@ -264,57 +144,57 @@ should be a CSV file with two columns, as defined in the table below.
 
 .. table:: Column definitions for the warehouse floorspace input files.
 
-   +-----------------------+------------------+---------------------------+
-   | Column Name           | Data Type        | Description               |
-   +=======================+==================+===========================+
-   | LSOA11CD              | Text             | LSOA zone ID.             |
-   +-----------------------+------------------+---------------------------+
-   | area                  | Real             | Total warehouse           |
-   |                       |                  | floorspace for the LSOA   |
-   |                       |                  | (:math:`m^2`).            |
-   +-----------------------+------------------+---------------------------+
+   +--------------+------------+------------------------------------+
+   | Column Name  | Data Type  | Description                        |
+   +==============+============+====================================+
+   | LSOA11CD     | Text       | LSOA zone ID.                      |
+   +--------------+------------+------------------------------------+
+   | area         | Real       | Total warehouse floorspace for the |
+   |              |            | LSOA (:math:`m^2`).                |
+   +--------------+------------+------------------------------------+
 
-**Note: any missing LSOAs are assumed to have zero floorspace.**\ \*
+.. note::
+   Any missing LSOAs are assumed to have zero floorspace.
 
-LGV Parameters Spreadsheet
+Van Parameters Spreadsheet
 --------------------------
 
 This input should be an Excel spreadsheet containing a variety of sheets
-with different parameters for the LGV model. Each of the required sheets
+with different parameters for the van model. Each of the required sheets
 in this input file are discussed in the following sections.
+
+.. todo::
+   Update documentation on parameters spreadsheet to reflect recent changes.
 
 Parameters
 ~~~~~~~~~~
 
-The sheet named “Parameters” should contain two columns with the headers
-“Parameter” and “Value”. The following table gives the names of the
+The sheet named "Parameters" should contain two columns with the headers
+"Parameter" and "Value". The following table gives the names of the
 parameters and a description of what value should be provided.
 
-.. table:: Required parameters for the LGV model, parameters must be
+.. table:: Required parameters for the Van Model, parameters must be
    labelled exactly as given.
 
-   +-------------+------+------------------------------------------------+
-   | Parameter   | Data | Description                                    |
-   |             | Type |                                                |
-   +=============+======+================================================+
-   | LGV growth  | Real | A factor to increase the LGV trips from the    |
-   |             |      | van survey year to the model year              |
-   +-------------+------+------------------------------------------------+
-   | Average new | Real | The average new house size in :math:`m^2`      |
-   | house size  |      |                                                |
-   +-------------+------+------------------------------------------------+
-   | Scotland    | Real | The proportion of SOC821 occupations in the    |
-   | S           | (0 - | SOC82 segment                                  |
-   | OC821/SOC82 | 1)   |                                                |
-   +-------------+------+------------------------------------------------+
-   | Model Year  | Int  | The model year e.g. 2018                       |
-   |             | eger |                                                |
-   +-------------+------+------------------------------------------------+
+   ===
+   | Parameter      | Data Type | Description                                 |
+   +================+===========+=============================================+
+   | LGV growth     | Real      | A factor to increase the LGV trips from the |
+   |                |           | van survey year to the model year           |
+   +----------------+-----------+---------------------------------------------+
+   | Average new    | Real      | The average new house size in :math:`m^2`   |
+   | house size     |           |                                             |
+   +----------------+-----------+---------------------------------------------+
+   | Scotland       | Real      | The proportion of SOC821 occupations        |
+   | SOC821 / SOC82 | (0 - 1)   | in the SOC82 segment.                       |
+   +----------------+-----------+---------------------------------------------+
+   | Model Year     | Integer   | The model year e.g. 2018                    |
+   +----------------+-----------+---------------------------------------------+
 
 Commute Trips by Main Usage
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The sheet named “Commute trips by main usage” should contain the annual
+The sheet named "Commute trips by main usage" should contain the annual
 number of commute van trips from the van survey by usage type. The
 following usage types should be included:
 
@@ -329,22 +209,17 @@ the table below lists the columns.
 
 .. table:: Required columns for the commute trips by main usage sheet.
 
-   +--------+----------+--------------------------------------------------+
-   | Column | Data     | Description                                      |
-   | Name   | Type     |                                                  |
-   +========+==========+==================================================+
-   | Main   | C        | Usage code for each of the types listed above    |
-   | usage  | haracter |                                                  |
-   |        | (1)      |                                                  |
-   +--------+----------+--------------------------------------------------+
-   | Trips  | Real     | The annual number of commuting LGV trips for     |
-   |        |          | that usage type                                  |
-   +--------+----------+--------------------------------------------------+
+   =========== ============= ============================================================
+   Column Name Data Type     Description
+   =========== ============= ============================================================
+   Main Usage  Character (1) Usage code for each of the types listed above
+   Trips       Real          The annual number of commuting LGV trips for that usage type
+   =========== ============= ============================================================
 
 Commute Trips by Land Use
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The sheet named “Commute trips by land use” should contain the annual
+The sheet named "Commute trips by land use" should contain the annual
 number of commute van trips from the van survey by land use type. The
 following land uses should be included:
 
@@ -371,7 +246,7 @@ the table below lists the columns.
 Annual Service Trips
 ~~~~~~~~~~~~~~~~~~~~
 
-The sheet named “Annual Service Trips” should contain the annual number
+The sheet named "Annual Service Trips" should contain the annual number
 of LGV service trips by land use type from the DfT van survey. The sheet
 should contain the following land uses:
 
@@ -398,112 +273,33 @@ the table below lists the columns.
 Delivery Segment Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The sheet name “Delivery Segment Parameters” contains various mandatory
+The sheet name "Delivery Segment Parameters" contains various mandatory
 parameters, listed in the table below. The sheet should have the column
-headers “Parameter” and “Value” on the first row.
+headers "Parameter" and "Value" on the first row.
 
-.. table:: Required parameters for the delivery segment sheet,
+.. csv-table:: Required parameters for the delivery segment sheet,
    parameters should be named exactly as written.
-
-   +-----------+-----+---------------------------------------------------+
-   | Parameter | D   | Description                                       |
-   |           | ata |                                                   |
-   |           | T   |                                                   |
-   |           | ype |                                                   |
-   +===========+=====+===================================================+
-   | Annual    | I   | The total annual trip productions for the         |
-   | Trip      | nte | delivery parcel stem segment from the DfT van     |
-   | Pr        | ger | survey, for the **base year**.                    |
-   | oductions |     |                                                   |
-   | - Parcel  |     |                                                   |
-   | Stem      |     |                                                   |
-   +-----------+-----+---------------------------------------------------+
-   | Annual    | I   | The total annual trips for the delivery parcel    |
-   | Trips -   | nte | bush segment from the DfT van survey, for the     |
-   | Parcel    | ger | **base year**.                                    |
-   | Bush      |     |                                                   |
-   +-----------+-----+---------------------------------------------------+
-   | Annual    | I   | The total annual trips for the delivery grocery   |
-   | Trips -   | nte | bush segment from the DfT van survey, for the     |
-   | Grocery   | ger | **base year**.                                    |
-   | Bush      |     |                                                   |
-   +-----------+-----+---------------------------------------------------+
-   | Delivery  | R   | Growth factor to apply to the annual delivery     |
-   | Growth    | eal | trips to factor to forecast year.                 |
-   | Factor    | (>  |                                                   |
-   |           | 0)  |                                                   |
-   +-----------+-----+---------------------------------------------------+
-   | B2C vs    | R   | The ratio of business-to-customer vs              |
-   | B2B       | eal | business-to-business delivery trips               |
-   | Weighting | (0  |                                                   |
-   |           | -   |                                                   |
-   |           | 1)  |                                                   |
-   +-----------+-----+---------------------------------------------------+
-   | Depots    | Com | List of all zones in areas that aren't covered by |
-   | Infill    | ma- | the warehouse dataset (e.g. Scotland), these      |
-   | Zones     | sep | zones will have depots allocated based on number  |
-   |           | ara | of households.                                    |
-   |           | ted |                                                   |
-   |           | l   |                                                   |
-   |           | ist |                                                   |
-   +-----------+-----+---------------------------------------------------+
+   :file: _static/tables/delivery_sheet_columns.csv
+   :header-rows: 1
+   :widths: 20, 10, 70
 
 Commute Warehouse Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The sheet named “Commute Warehouse Parameters” should contain all the
+The sheet named "Commute Warehouse Parameters" should contain all the
 parameters for the warehouse input calculations, including the weighting
 factors and infilling parameters. The table below describes all the
 required values and their use, the different weighting factors
-correspond to the input files described in `Warehouse
-Data <#warehouse-data>`__).
+correspond to the input files described in :ref:`warehouse data`.
 
-.. table:: Description of the commute warehouse parameters
-
-   +-----------------------+--------------------------------+-------------+
-   | Parameter             | Data Type                      | Description |
-   +=======================+================================+=============+
-   | Weighting - High      | Number                         | Factor to   |
-   |                       |                                | apply to    |
-   |                       |                                | the high    |
-   |                       |                                | relevance   |
-   |                       |                                | warehouse   |
-   |                       |                                | floorspace  |
-   |                       |                                | input.      |
-   +-----------------------+--------------------------------+-------------+
-   | Weighting - Medium    | Number                         | Factor to   |
-   |                       |                                | apply to    |
-   |                       |                                | the medium  |
-   |                       |                                | relevance   |
-   |                       |                                | warehouse   |
-   |                       |                                | floorspace  |
-   |                       |                                | input.      |
-   +-----------------------+--------------------------------+-------------+
-   | Weighting - Low       | Number                         | Factor to   |
-   |                       |                                | apply to    |
-   |                       |                                | the low     |
-   |                       |                                | relevance   |
-   |                       |                                | warehouse   |
-   |                       |                                | floorspace  |
-   |                       |                                | input.      |
-   +-----------------------+--------------------------------+-------------+
-   | Model Zone Infill     | Comma-separated list           | List of     |
-   |                       |                                | model zones |
-   |                       |                                | in commute  |
-   |                       |                                | warehouse   |
-   |                       |                                | data which  |
-   |                       |                                | should be   |
-   |                       |                                | infilled.   |
-   +-----------------------+--------------------------------+-------------+
-   | Zone Infill Method    | Text (from options below)      | Method for  |
-   |                       |                                | infilling   |
-   |                       |                                | model       |
-   |                       |                                | zones.      |
-   +-----------------------+--------------------------------+-------------+
+.. csv-table:: Description of the commute warehouse parameters
+   :file: _static/tables/commute_parameters_columns.csv
+   :header-rows: 1
+   :widths: 20, 10, 70
 
 Zone infill method calculates an infill value after all the warehouse
 data has been factored and combined and then infills any zones in the
-“Model Zone Infill” list, which don't contain non-zero values already.
+"Model Zone Infill" list, which don't contain non-zero values already.
 The following methods can be chosen for calculating the infill value:
 
 -  min: minimum value from existing data (including zeros)
@@ -515,11 +311,13 @@ The following methods can be chosen for calculating the infill value:
 Gravity Model Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-The sheet named “Gravity Model Parameters” should contains parameters
-for the gravity model for each of the six LGV model segments (Service,
+The sheet named "Gravity Model Parameters" should contains parameters
+for the gravity model for each of the six van model segments (Service,
 Delivery Parcel Stem, Delivery Parcel Bush, Delivery Grocery, Commuting
 Drivers and Commuting Skilled Trades). The sheet contains six columns,
 listed in the table below, with the headers on the first row.
+
+.. todo:: Move description of these to config where they now are
 
 .. table:: Required columns for the gravity model parameters sheet.
 
@@ -527,7 +325,7 @@ listed in the table below, with the headers on the first row.
    | Column | Data    | Description                                      |
    | Name   | Type    |                                                  |
    +========+=========+==================================================+
-   | S      | Text    | The name of the LGV model segment e.g. Service   |
+   | S      | Text    | The name of the van model segment e.g. Service   |
    | egment |         |                                                  |
    +--------+---------+--------------------------------------------------+
    | F      | Text    | The type of furnessing to do, see `Gravity       |
@@ -563,7 +361,7 @@ listed in the table below, with the headers on the first row.
 Time Period Factors
 ~~~~~~~~~~~~~~~~~~~
 
-The sheet named “Time Period Factors” should contain all the factors for
+The sheet named "Time Period Factors" should contain all the factors for
 converting from the annual matrices to the time periods for each model
 segment, see Ian Williams' technical note[^lgvn_design] for more detail
 on each segment. The table should contain one factor for each time
@@ -580,66 +378,47 @@ each segment and time period separately.
 
    M_{tp} = M_{annual} \times f_{tp}
 
-**Note:** *the time period factors are expected to convert from annual
-trips to average daily time period, therefore each factor should be less
-than, approximately, 1/365.*
+.. note::
+   The time period factors are expected to convert from annual
+   trips to average daily time period, therefore each factor should be less
+   than, approximately, 1/365.
 
 .. table:: Required columns for the time period factors sheet.
 
-   +-----------+---+------------------------------------------------------+
-   | Column    | D | Description                                          |
-   | Names     | a |                                                      |
-   |           | t |                                                      |
-   |           | a |                                                      |
-   |           | T |                                                      |
-   |           | y |                                                      |
-   |           | p |                                                      |
-   |           | e |                                                      |
-   +===========+===+======================================================+
-   | Time      | T | The name of the time period, will be used for naming |
-   | Period    | e | the outputs                                          |
-   |           | x |                                                      |
-   |           | t |                                                      |
-   +-----------+---+------------------------------------------------------+
-   | Service   | R | The factor to multiply the annual matrix by to get   |
-   |           | e | the average daily time period (e.g. AM) for this     |
-   |           | a | segment                                              |
-   |           | l |                                                      |
-   +-----------+---+------------------------------------------------------+
-   | Delivery  | R | The factor to multiply the annual matrix by to get   |
-   | Parcel    | e | the average daily time period (e.g. AM) for this     |
-   | Stem      | a | segment                                              |
-   |           | l |                                                      |
-   +-----------+---+------------------------------------------------------+
-   | Delivery  | R | The factor to multiply the annual matrix by to get   |
-   | Parcel    | e | the average daily time period (e.g. AM) for this     |
-   | Bush      | a | segment                                              |
-   |           | l |                                                      |
-   +-----------+---+------------------------------------------------------+
-   | Delivery  | R | The factor to multiply the annual matrix by to get   |
-   | Grocery   | e | the average daily time period (e.g. AM) for this     |
-   |           | a | segment                                              |
-   |           | l |                                                      |
-   +-----------+---+------------------------------------------------------+
-   | Commuting | R | The factor to multiply the annual matrix by to get   |
-   | Drivers   | e | the average daily time period (e.g. AM) for this     |
-   |           | a | segment                                              |
-   |           | l |                                                      |
-   +-----------+---+------------------------------------------------------+
-   | Commuting | R | The factor to multiply the annual matrix by to get   |
-   | Skilled   | e | the average daily time period (e.g. AM) for this     |
-   | Trades    | a | segment                                              |
-   |           | l |                                                      |
-   +-----------+---+------------------------------------------------------+
+   +----------------+------+--------------------------------------------------------+
+   | Column Names   | Data | Description                                            |
+   |                | Type |                                                        |
+   +================+======+========================================================+
+   | Time           | Text | The name of the time period, will be used for naming   |
+   | Period         |      | the outputs.                                           |
+   +----------------+------+--------------------------------------------------------+
+   | Service        | Real | The factor to multiply the annual matrix by to get the |
+   |                |      | average daily time period (e.g. AM) for this segment.  |
+   +----------------+------+--------------------------------------------------------+
+   | Delivery       | Real | The factor to multiply the annual matrix by to get the |
+   | Parcel Stem    |      | average daily time period (e.g. AM) for this segment.  |
+   +----------------+------+--------------------------------------------------------+
+   | Delivery       | Real | The factor to multiply the annual matrix by to get the |
+   | Parcel Bush    |      | average daily time period (e.g. AM) for this segment   |
+   +----------------+------+--------------------------------------------------------+
+   | Delivery       | Real | The factor to multiply the annual matrix by to get the |
+   | Grocery        |      | average daily time period (e.g. AM) for this segment   |
+   +----------------+------+--------------------------------------------------------+
+   | Commuting      | Real | The factor to multiply the annual matrix by to get the |
+   | Drivers        |      | average daily time period (e.g. AM) for this segment   |
+   +----------------+------+--------------------------------------------------------+
+   | Commuting      | Real | The factor to multiply the annual matrix by to get the |
+   | Skilled Trades |      | average daily time period (e.g. AM) for this segment   |
+   +----------------+------+--------------------------------------------------------+
 
 LGV Trip Distributions Spreadsheet
 ----------------------------------
 
 The trip distributions spreadsheet should contain a sheets with
 distributions for the different segments. The worksheets should be named
-“Commuting”, “Service”, “Delivery” and “Delivery Bush” and will be used
+"Commuting", "Service", "Delivery" and "Delivery Bush" and will be used
 for the relevant segment. Each worksheet should have the name of the
-cost distribution and it's units in cell A1, e.g. “Average Length (km)”,
+cost distribution and it's units in cell A1, e.g. "Average Length (km)",
 and the column headers for the distribution table in row two. The
 distribution tables require four columns which are listed in the table
 below.
@@ -647,26 +426,21 @@ below.
 .. table:: Required columns for the trip distribution tables, column
    headers should be on row two of each sheet.
 
-   +-----+----+-----------------------------------------------------------+
-   | Col | Da | Description                                               |
-   | umn | ta |                                                           |
-   | N   | Ty |                                                           |
-   | ame | pe |                                                           |
-   +=====+====+===========================================================+
-   | ob  | Re | The number of observed trips in this bin                  |
-   | ser | al |                                                           |
-   | ved |    |                                                           |
-   +-----+----+-----------------------------------------------------------+
-   | st  | Re | The start (inclusive) of the bin in the same units as the |
-   | art | al | `Cost Matrix <#cost-matrix>`__                            |
-   +-----+----+-----------------------------------------------------------+
-   | end | Re | The end (exclusive) of the bin in the same units as the   |
-   |     | al | `Cost Matrix <#cost-matrix>`__                            |
-   +-----+----+-----------------------------------------------------------+
-   | a   | Re | The weighted average of the cost value for this bin, in   |
-   | ver | al | the same units as the `Cost Matrix <#cost-matrix>`__      |
-   | age |    |                                                           |
-   +-----+----+-----------------------------------------------------------+
+   +-------------+------+-----------------------------------------------------------+
+   | Column Name | Data | Description                                               |
+   |             | Type |                                                           |
+   +=============+======+===========================================================+
+   | observed    | Real | The number of observed trips in this bin                  |
+   +-------------+------+-----------------------------------------------------------+
+   | start       | Real | The start (inclusive) of the bin in the same units as the |
+   |             |      | `Cost Matrix <#cost-matrix>`__                            |
+   +-------------+------+-----------------------------------------------------------+
+   | end         | Real | The end (exclusive) of the bin in the same units as the   |
+   |             |      | `Cost Matrix <#cost-matrix>`__                            |
+   +-------------+------+-----------------------------------------------------------+
+   | average     | Real | The weighted average of the cost value for this bin, in   |
+   |             |      | the same units as the `Cost Matrix <#cost-matrix>`__      |
+   +-------------+------+-----------------------------------------------------------+
 
 Census Occupation Data
 ----------------------
@@ -684,38 +458,29 @@ the units persons.
 
 .. table:: Required columns for the QS606EW occupation data CSV.
 
-   +-------------------------------------+-----+-------------------------+
-   | Column Name                         | D   | Description             |
-   |                                     | ata |                         |
-   |                                     | T   |                         |
-   |                                     | ype |                         |
-   +=====================================+=====+=========================+
-   | 2011 super output area - lower      | T   | LSOA name               |
-   | layer                               | ext |                         |
-   +-------------------------------------+-----+-------------------------+
-   | mnemonic                            | T   | LSOA area code          |
-   |                                     | ext |                         |
-   +-------------------------------------+-----+-------------------------+
-   | All categories: Occupation          | I   | Total occupation        |
-   |                                     | nte |                         |
-   |                                     | ger |                         |
-   +-------------------------------------+-----+-------------------------+
-   | 51. Skilled agricultural and        | I   | Occupation numbers for  |
-   | related trades                      | nte | this segment            |
-   |                                     | ger |                         |
-   +-------------------------------------+-----+-------------------------+
-   | 52. Skilled metal, electrical and   | I   | Occupation numbers for  |
-   | electronic trades                   | nte | this segment            |
-   |                                     | ger |                         |
-   +-------------------------------------+-----+-------------------------+
-   | 53. Skilled construction and        | I   | Occupation numbers for  |
-   | building trades                     | nte | this segment            |
-   |                                     | ger |                         |
-   +-------------------------------------+-----+-------------------------+
-   | 821. Road Transport Drivers         | I   | Occupation numbers for  |
-   |                                     | nte | this segment            |
-   |                                     | ger |                         |
-   +-------------------------------------+-----+-------------------------+
+   +-------------------------------+---------+-------------------------+
+   | Column Name                   | Data    | Description             |
+   |                               | Type    |                         |
+   +===============================+=========+=========================+
+   | 2011 super output area -      | Text    | LSOA name               |
+   | lower layer                   |         |                         |
+   +-------------------------------+---------+-------------------------+
+   | mnemonic                      | Text    | LSOA area code          |
+   +-------------------------------+---------+-------------------------+
+   | All categories: Occupation    | Integer | Total occupation        |
+   +-------------------------------+---------+-------------------------+
+   | 51. Skilled agricultural and  | Integer | Occupation numbers for  |
+   | related trades                |         | this segment            |
+   +-------------------------------+---------+-------------------------+
+   | 52. Skilled metal, electrical | Integer | Occupation numbers for  |
+   | and electronic trades         |         | this segment            |
+   +-------------------------------+---------+-------------------------+
+   | 53. Skilled construction and  | Integer | Occupation numbers for  |
+   | building trades               |         | this segment            |
+   +-------------------------------+---------+-------------------------+
+   | 821. Road Transport Drivers   | Integer | Occupation numbers for  |
+   |                               |         | this segment            |
+   +-------------------------------+---------+-------------------------+
 
 The QS606UK census table should contain the occupation data extracted
 for Scotland only at datazone level and should be provided with the
@@ -765,9 +530,8 @@ Excel Workbook containing the English data and a CSV containing the
 Scottish and Welsh data.
 
 The English dwellings data is provided, at Local Authority District
-(LAD), in Table 123 on the `Live tables on housing supply: net
-additional
-dwellings <https://www.gov.uk/government/statistical-data-sets/live-tables-on-net-supply-of-housing>`__
+(LAD), in Table 123 on the `Live tables on housing supply: net additional dwellings
+<https://www.gov.uk/government/statistical-data-sets/live-tables-on-net-supply-of-housing>`__
 page of the UK government website. The data is expected to be converted
 to an Excel workbook before providing to the tool but no changes to the
 formatting should be made, the workbook should have sheets labelled with
@@ -802,12 +566,11 @@ the required columns is given in the table below
 The Scottish and Welsh dwellings data should be input as one CSV
 containing the values for both countries, both datasets can be
 downloaded off the internet separately. The Scottish data is available
-within `National Records of Scotland Household
-Estimates <https://www.nrscotland.gov.uk/statistics-and-data/statistics/statistics-by-theme/households/household-estimates/2019>`__
+within `National Records of Scotland Household Estimates
+<https://www.nrscotland.gov.uk/statistics-and-data/statistics/statistics-by-theme/households/household-estimates/2019>`__
 dataset, table 2 contains the number of dwellings by council area for
-recent years. The Welsh data is available on the `Dwelling stock
-estimates
-page <https://statswales.gov.wales/Catalogue/Housing/Dwelling-Stock-Estimates/dwellingstockestimates-by-localauthority-tenure>`__
+recent years. The Welsh data is available on the `Dwelling stock estimates page
+<https://statswales.gov.wales/Catalogue/Housing/Dwelling-Stock-Estimates/dwellingstockestimates-by-localauthority-tenure>`__
 of the StatsWales website and should be obtained for the model year and
 the model year plus one. The data should be combined and provided to the
 tool as a CSV, the required columns are given in the table below.
@@ -833,8 +596,8 @@ NDR Business Data
 -----------------
 
 The non-domestic rating business floorspace data is available in the NDR
-Business Floorspace tables Excel spreadsheet on
-`GOV.UK <https://www.gov.uk/government/statistics/non-domestic-rating-stock-of-properties-including-business-floorspace-2019>`__
+Business Floorspace tables Excel spreadsheet on `GOV.UK
+<https://www.gov.uk/government/statistics/non-domestic-rating-stock-of-properties-including-business-floorspace-2019>`__
 for the whole UK. The tables provide the business floorspace by
 administrative area for various years and different sectors, the tool
 requires the data from the various tables to be compiled into a single
@@ -897,17 +660,17 @@ columns required in the input CSV file.
    |                 | er |                                               |
    +-----------------+----+-----------------------------------------------+
 
-**Note:** The column names should include the actual model year (and the
-years before and after) instead of 2018.
+.. note::
+   The column names should include the actual model year (and the
+   years before and after) instead of 2018.
 
 Other Zone Correspondences
 --------------------------
 
 Three other more generic zone correspondence CSVs are required for
 converting LSOAs, MSOAs and LADs to the model zone system. These
-correspondence files are used for converting the `Census Occupation
-Data <#census-occupation-data>`__, `Dwellings Data <#dwellings-data>`__
-and `NDR Business Data <#ndr-business-data>`__. All zone correspondence
+correspondence files are used for converting the :ref:`census occupation data`,
+:ref:`dwellings data` and :ref:`ndr business data`. All zone correspondence
 CSV files have the same format with column names on the first row and
 three required columns, listed in the table below.
 
@@ -943,17 +706,17 @@ table below.
    | ternal | or 0)       | study area                                    |
    +--------+-------------+-----------------------------------------------+
 
-**Note:** This should be a complete list of all zones.
+.. note:: This should be a complete list of all zones.
 
 Cost Matrix
 -----------
 
 Matrix CSV containing the cost values for all zones in the model, the
-units of the costs should be the same as the units in the `LGV Trip
-Distributions Spreadsheet <#lgv-trip-distributions-spreadsheet>`__. The
-CSV file should be in square matrix format where the first column and
-row contains all the zone numbers, an example of a three by three matrix
-with the same costs for all zones is shown below.
+units of the costs should be the same as the units in the
+:ref:`lgv trip distributions spreadsheet`. The CSV file should be in
+square matrix format where the first column and row contains all the
+zone numbers, an example of a three by three matrix with the same costs
+for all zones is shown below.
 
 .. table:: Example 3x3 matrix
 
@@ -968,20 +731,16 @@ with the same costs for all zones is shown below.
 Calibration Matrix
 ------------------
 
-The calibration matrix should be a CSV in the same format as `Cost
-Matrix <#cost-matrix>`__. This matrix is used during the gravity model
+The calibration matrix should be a CSV in the same format as :ref:`cost matrix`.
+This matrix is used during the gravity model
 process to adjust the impact of trips between certain zone pairs and
-should have positive values around 0 - 2. The `Gravity
-Model <#gravity-model>`__ section outlines the methodology where this
-input is used.
+should have positive values around 0 - 2. The :ref:`gravity model` section
+outlines the methodology where this input is used.
 
 Output Folder
 -------------
 
 The parent directory where all the outputs will be saved. A new
-sub-folder will be created with the name convention “LGV Model Outputs -
-{date} {time}” (e.g. “LGV Model Outputs - 2021-08-05 19.15.32”) will be
-created to store the outputs for a single run of the LGV model.
-
-.. [1]
-   Local Freight Tool - Warehouse Data Technical Note (April - May 2023)
+sub-folder will be created with the name convention "LGV Model Outputs -
+{date} {time}" (e.g. "LGV Model Outputs - 2021-08-05 19.15.32") will be
+created to store the outputs for a single run of the van model.

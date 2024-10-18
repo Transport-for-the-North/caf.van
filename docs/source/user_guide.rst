@@ -15,20 +15,16 @@ Installation information goes here
 Tutorials and examples for useful functionality.
 
 
-LGV Model
+Van Model
 ---------
 
-The LGV model is a transport demand model which includes calculating trip ends,
+The van model is a transport demand model which includes calculating trip ends,
 using a gravity model to generate annual trip matrices and converting the annual
-matrices to time periods. The methodology of the LGV model is based on
-Ian Williams' technical note "LGVN Model Design" [1]_.
+matrices to time periods.
 
 The following sections contain detailed information on the expected
 inputs and outputs, as well as some information on the methodology for
-the LGV model.
-
-.. [1]
-   Ian Williams. 030 LGVN Model Design, v4.0. July 2021.
+the van model.
 
 .. toctree::
    :maxdepth: 2
