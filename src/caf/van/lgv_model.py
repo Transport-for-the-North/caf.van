@@ -19,6 +19,8 @@ from typing import Callable, Literal
 # Third Party
 from caf.distribute import gravity_model, cost_functions
 
+import caf.distribute.gravity_model
+import caf.distribute.gravity_model.multi_area
 from caf.toolkit import cost_utils
 import numpy as np
 import pandas as pd
@@ -460,13 +462,13 @@ def _gravity_model(
         tld,
         cat_zone_correspondence,
         func_params,
-        "area",
-        "from",
-        "to",
-        "av_distance",
-        "normalised",
-        "area",
-        "zone_id",
+        tld_cat_col="area",
+        tld_min_col="from",
+        tld_max_col="to",
+        tld_avg_col="av_distance",
+        tld_trips_col="normalised",
+        lookup_cat_col="area",
+        lookup_zone_col="zone_id",
     )
 
     if name in PA_MATRICES:
@@ -488,6 +490,7 @@ def _gravity_model(
         gravity_model_results = calib_gm.calibrate(
             cost_distributions,
             csv_logging_path,  # TODO figure out which key word args with default values needed to be changed
+            caf.distribute.gravity_model.multi_area.GMCalibParams(),
             verbose=2,
         )
 
