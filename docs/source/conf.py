@@ -81,7 +81,8 @@ autodoc_typehints = "description"
 
 # Auto summary options
 autosummary_generate = True
-autosummary_imported_members = True
+# TODO(MB): Sort imports within caf.van so this can be switched back to True
+autosummary_imported_members = False
 modindex_common_prefix = ["caf.", "caf.van."]
 
 # -- Options for Sphinx Examples gallery -------------------------------------

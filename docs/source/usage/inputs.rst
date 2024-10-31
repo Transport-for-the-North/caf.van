@@ -117,7 +117,7 @@ translate the BRES data to the model zone system.
 
 .. csv-table:: Required columns for the BRES data, column names must be exactly as listed.
       Any columns not listed will be ignored.
-   :file: _static/tables/bres_data_columns.csv
+   :file: ../_static/tables/bres_data_columns.csv
    :widths: 50, 5, 45
    :header-rows: 1
 
@@ -279,7 +279,7 @@ headers "Parameter" and "Value" on the first row.
 
 .. csv-table:: Required parameters for the delivery segment sheet,
    parameters should be named exactly as written.
-   :file: _static/tables/delivery_sheet_columns.csv
+   :file: ../_static/tables/delivery_sheet_columns.csv
    :header-rows: 1
    :widths: 20, 10, 70
 
@@ -293,7 +293,7 @@ required values and their use, the different weighting factors
 correspond to the input files described in :ref:`warehouse data`.
 
 .. csv-table:: Description of the commute warehouse parameters
-   :file: _static/tables/commute_parameters_columns.csv
+   :file: ../_static/tables/commute_parameters_columns.csv
    :header-rows: 1
    :widths: 20, 10, 70
 

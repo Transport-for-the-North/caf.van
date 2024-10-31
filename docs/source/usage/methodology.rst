@@ -48,7 +48,7 @@ and All Other Employment before being combined together into a single
 set of service productions and attractions. The flowchart below outlines
 the service trip ends methodology.
 
-.. figure:: _static/images/LGV_methodology-Servicing.drawio.svg
+.. figure:: ../_static/images/LGV_methodology-Servicing.drawio.svg
    :alt: Van service productions and attractions trip ends methodology -
       flowchart
 
@@ -81,7 +81,7 @@ for all three types of delivery trip.
 .. todo::
    Update flowchart to show trips are factored using delivery growth factor
 
-.. figure:: _static/images/LGV_methodology-Delivery.drawio.svg
+.. figure:: ../_static/images/LGV_methodology-Delivery.drawio.svg
    :alt: Van delivery trip ends methodology - flowchart
 
    Van delivery trip ends methodology
@@ -106,12 +106,12 @@ each type of trip end.
 .. todo::
    Update flowchart to show trips are factored using growth factor
 
-.. figure:: _static/images/LGV_methodology-Commuting-Productions.drawio.svg
+.. figure:: ../_static/images/LGV_methodology-Commuting-Productions.drawio.svg
    :alt: Van commuting productions trip ends methodology - flowchart
 
    Van commuting productions trip ends methodology
 
-.. figure:: _static/images/LGV_methodology-Commuting-Attractions.drawio.svg
+.. figure:: ../_static/images/LGV_methodology-Commuting-Attractions.drawio.svg
    :alt: Van commuting attractions trip ends methodology - flowchart
 
    Van commuting attractions trip ends methodology
