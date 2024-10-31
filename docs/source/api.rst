@@ -1,12 +1,12 @@
-Module API Documentation
-========================
+API Reference
+=============
 
-This section shows the detailed documentation for caf.van, last
-updated on |today|.
+This section shows the detailed documentation for CAF.van, last updated on |today|.
 
 .. note::
+   - For quick start guide see :ref:`quick start`
    - For more in-depth user guide and tutorial see :ref:`user guide`
-   - For code examples see :ref:`examples`
+   - For code examples see :ref:`code examples`
 
 .. autosummary::
     :toctree: _autosummary/
