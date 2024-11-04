@@ -582,12 +582,19 @@ def run_gravity_model(
         Trip matrices for each segment.
     """
     internals = read_study_area(input_paths.model_study_area)
-    # gm_params = read_gm_params(input_paths.parameters_path)
     matrices: dict[str, pd.DataFrame] = {}
     output_folder.mkdir(exist_ok=True)
 
     cost_matrix = pd.read_csv(input_paths.cost_matrix_path, index_col=0)
-
+    # Pandas casts column names to str, even if theyre numerical (I can't find a parameter to change this)
+    # therefore we try to convert to ints
+    try:
+        cost_matrix.columns = [int(x) for x in cost_matrix.columns]
+    
+    # This is for the case where they are strings
+    except ValueError: 
+        pass
+    
     for name, te in trip_ends.asdict().items():
         if name == "zones":
             continue
