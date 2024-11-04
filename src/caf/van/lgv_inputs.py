@@ -17,6 +17,7 @@ import re
 import string
 from pathlib import Path
 from typing import Any, Callable, Optional, Union, Literal
+import glob
 
 # Third Party
 
@@ -25,6 +26,7 @@ import caf.toolkit
 import numpy as np
 import pandas as pd
 from pydantic import dataclasses, fields, model_validator, field_validator,  types
+from caf.core import DVector, ZoningSystem
 
 # Local Imports
 from caf.van import errors, utilities
@@ -122,11 +124,17 @@ class CommuteWarehousePaths:
     low: Optional[types.FilePath] = None
     high: Optional[types.FilePath] = None
 
+@dataclasses.dataclass
+class DwellingPaths:
+    occupied: types.DirectoryPath
+    zc_path: types.FilePath
+    unoccupied: Optional[types.DirectoryPath] = None
+
 
 class LGVInputPaths(caf.toolkit.BaseConfig):
     """Dataclass storing paths to all the input files for the LGV model."""
-
-    household_paths: DataPaths  # TODO Land-use - change with land use rebase
+    zoning: str
+    household_paths: DwellingPaths  # TODO Land-use - change with land use rebase
     """Paths for the households data and zone correspondence."""
     bres_path: types.FilePath  # TODO Land-use - change with land use rebase
     """Path to the BRES data CSV at LSOA level."""
@@ -304,7 +312,7 @@ def write_example_config(path: Path | None) -> None:
     LOG.info("Written example config: %s", path)
 
 
-def household_projections(path: Path, zone_lookup: Path) -> pd.DataFrame:
+def household_projections(occupied_paths: Path, zone_lookup: Path,model_zoning: str, unoccupied_paths: Optional[Path]=None) -> pd.DataFrame:
     """Reads the household projections CSV and converts to model zone system.
 
     CSV should contain two columns with headers as defined in
@@ -323,18 +331,20 @@ def household_projections(path: Path, zone_lookup: Path) -> pd.DataFrame:
         Household projections in the model zone system with columns
         'Zone' and 'Households'.
     """
-    households = utilities.read_csv(
-        path, "Household projections", columns=HH_PROJECTIONS_HEADER
-    )
 
-    # Authority and County found in TEMPro outputs as well as MSOAs
-    columns = list(HH_PROJECTIONS_HEADER.keys())
-    households = households.loc[~households[columns[0]].isin(["Authority", "County"]), :]
+    households = DVector.concat_from_dir(occupied_paths,ZoningSystem.get_zoning("lsoa_2021"))
 
+    if unoccupied_paths is not None:
+        unoccupied = DVector.concat_from_dir(occupied_paths, ZoningSystem.get_zoning("lsoa_2021"))
+        households = households + unoccupied
+    
     lookup = Rezone.read(zone_lookup, None)
-    rezoned = Rezone.rezoneOD(households, lookup, dfCols=(columns[0],), rezoneCols=columns[1])
-    rezoned.columns = ["Zone", "Households"]
-    return rezoned
+
+    translated = households.translate_zoning(model_zoning,lookup)
+    
+    return translated
+
+
 
 
 def filtered_bres(

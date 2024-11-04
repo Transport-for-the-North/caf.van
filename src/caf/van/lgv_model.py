@@ -321,6 +321,7 @@ def calculate_trip_ends(
         input_paths.parameters_path,
         lgv_growth,
         model_zones,
+        input_paths.zoning
     )
     service.read()
     service.trip_ends.to_csv(output_folder / "service_trip_ends.csv")

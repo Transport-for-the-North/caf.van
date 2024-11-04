@@ -206,6 +206,8 @@ class DataPaths:
     zc_path: pydantic.FilePath
 
 
+
+
 def check_file_path(
     path: Path, name: str, *extensions: str, return_path: bool = False
 ) -> Union[bool, Path]:

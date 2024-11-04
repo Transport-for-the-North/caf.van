@@ -60,6 +60,7 @@ class ServiceTripEnds:
         service_trips: Path,
         scale_factor: float,
         model_zones: pd.Series,
+        zone_name:str, 
     ):
         """Initialise class by checking input files exist and are expected type."""
         # Check all given parameters
@@ -73,6 +74,8 @@ class ServiceTripEnds:
         if self._scale_factor <= 0:
             raise ValueError(f"scale_factor should be >= 0 not {self._scale_factor}")
         # Initlise instance variables defined later
+        self._zone_name = zone_name
+
         self.households = None
         self.bres = None
         self.total_trips = None
@@ -83,13 +86,13 @@ class ServiceTripEnds:
 
     def _check_paths(
         self,
-        household_paths: utilities.DataPaths,
+        household_paths: lgv_inputs.DwellingPaths,
         bres_paths: utilities.DataPaths,
         service_trips: Path,
     ):
         """Checks the input files exist and are the expected type."""
         extensions = (".csv", ".txt")
-        for nm, paths in (("Households", household_paths), ("BRES", bres_paths)):
+        for nm, paths in (("BRES", bres_paths),):#TODO validate dwelling paths
             utilities.check_file_path(paths.path, f"{nm} data", *extensions)
             utilities.check_file_path(paths.zc_path, f"{nm} lookup", *extensions)
         self._household_paths = household_paths
@@ -130,7 +133,7 @@ class ServiceTripEnds:
             Reads, filters and converts the BRES input CSV.
         """
         self.households = lgv_inputs.household_projections(
-            self._household_paths.path, self._household_paths.zc_path
+            self._household_paths.occupied, self._household_paths.zc_path, self._zone_name
         )
         self.households.set_index("Zone", inplace=True)
         self.bres = lgv_inputs.filtered_bres(
