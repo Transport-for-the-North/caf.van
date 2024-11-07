@@ -25,8 +25,8 @@ import glob
 import caf.toolkit
 import numpy as np
 import pandas as pd
-from pydantic import dataclasses, fields, model_validator, field_validator,  types
-from caf.core import DVector, ZoningSystem
+from pydantic import dataclasses, fields, model_validator, field_validator, types
+from caf.base import DVector, ZoningSystem
 
 # Local Imports
 from caf.van import errors, utilities
@@ -124,15 +124,17 @@ class CommuteWarehousePaths:
     low: Optional[types.FilePath] = None
     high: Optional[types.FilePath] = None
 
+
 @dataclasses.dataclass
 class DwellingPaths:
-    occupied: types.DirectoryPath
+    occupied: types.FilePath
     zc_path: types.FilePath
-    unoccupied: Optional[types.DirectoryPath] = None
+    unoccupied: Optional[types.FilePath] = None
 
 
 class LGVInputPaths(caf.toolkit.BaseConfig):
     """Dataclass storing paths to all the input files for the LGV model."""
+
     zoning: str
     household_paths: DwellingPaths  # TODO Land-use - change with land use rebase
     """Paths for the households data and zone correspondence."""
@@ -312,7 +314,11 @@ def write_example_config(path: Path | None) -> None:
     LOG.info("Written example config: %s", path)
 
 
-def household_projections(occupied_paths: Path, zone_lookup: Path,model_zoning: str, unoccupied_paths: Optional[Path]=None) -> pd.DataFrame:
+def household_projections(
+    occupied_paths: Path,
+    zone_lookup: Path,
+    unoccupied_paths: Optional[Path] = None,
+) -> pd.DataFrame:
     """Reads the household projections CSV and converts to model zone system.
 
     CSV should contain two columns with headers as defined in
@@ -332,19 +338,24 @@ def household_projections(occupied_paths: Path, zone_lookup: Path,model_zoning: 
         'Zone' and 'Households'.
     """
 
-    households = DVector.concat_from_dir(occupied_paths,ZoningSystem.get_zoning("lsoa_2021"))
+    zone_correspondence = pd.read_csv(zone_lookup)
+
+    households = DVector.load(occupied_paths).translate_zoning(
+        ZoningSystem.get_zoning("NorMITs"), trans_vector=zone_correspondence
+    ).data
+
+    households_agg = households.sum()
 
     if unoccupied_paths is not None:
-        unoccupied = DVector.concat_from_dir(occupied_paths, ZoningSystem.get_zoning("lsoa_2021"))
-        households = households + unoccupied
-    
-    lookup = Rezone.read(zone_lookup, None)
+        unoccupied = DVector.load(unoccupied_paths).translate_zoning(
+        ZoningSystem.get_zoning("NorMITs"), trans_vector=zone_correspondence
+    ).data
+        households_agg = (households_agg + unoccupied.sum())
 
-    translated = households.translate_zoning(model_zoning,lookup)
-    
-    return translated
+    households_agg = households_agg.to_frame(name="Households")
+    households_agg.index.name = "Zone"
 
-
+    return households_agg
 
 
 def filtered_bres(
@@ -656,19 +667,21 @@ class GMInputs:
 
     @field_validator("cost_function_params", mode="before")
     @classmethod
-    def parse_parameters(cls, params: dict[str, str]|str)->dict[str|int, tuple[float, ...]]|tuple[float, ...]:
-        # keys will be read in as strings even if numeric. 
+    def parse_parameters(
+        cls, params: dict[str, str] | str
+    ) -> dict[str | int, tuple[float, ...]] | tuple[float, ...]:
+        # keys will be read in as strings even if numeric.
         # try converting them to numeric if possible
 
         if isinstance(params, dict):
             checked_keys = {}
             no_errors = True
-            
+
             for key, vals in params.items():
                 try:
                     checked_keys[int(key)] = vals
                 except ValueError:
-                    #if one isnt an int we dont convert any
+                    # if one isnt an int we dont convert any
                     no_errors = False
             if no_errors:
                 key_checked_params = checked_keys
@@ -689,23 +702,13 @@ class GMInputs:
                 split_vals.append(float(v))
             return tuple(split_vals)
 
-
-            
-            
-
-
-
-
-
     @model_validator(mode="after")
     def _check_cost_params(self) -> GMInputs:
 
         multi_tld = True
 
         try:
-            tld_cats = set(
-                pd.read_csv(self.trip_length_distribution_path)["area"].unique()
-            )
+            tld_cats = set(pd.read_csv(self.trip_length_distribution_path)["area"].unique())
 
         except KeyError:
             if self.cat_zone_correspondance_path is None:
@@ -717,7 +720,7 @@ class GMInputs:
                 )
 
         if isinstance(self.cost_function_params, tuple):
-            #if we have a multi TLD and and using run mode (a.k.a. not self.calibrate)
+            # if we have a multi TLD and and using run mode (a.k.a. not self.calibrate)
             # then we must have a dictionary
             if multi_tld and not self.calibrate:
                 raise KeyError(
@@ -739,7 +742,6 @@ class GMInputs:
                     'the "area" column in cat_zone_correspondance_path and '
                     "trip_length_distribution_path must have the same unique values"
                 )
-            
 
             if tld_cats != set(self.cost_function_params.keys()):
                 raise KeyError(
@@ -748,5 +750,5 @@ class GMInputs:
                     ' of the unique values in the "area" column in '
                     "cat_zone_correspondance_path and trip_length_distribution_path"
                 )
-                
+
         return self

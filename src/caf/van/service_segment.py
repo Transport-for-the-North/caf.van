@@ -133,9 +133,9 @@ class ServiceTripEnds:
             Reads, filters and converts the BRES input CSV.
         """
         self.households = lgv_inputs.household_projections(
-            self._household_paths.occupied, self._household_paths.zc_path, self._zone_name
+            self._household_paths.occupied, self._household_paths.zc_path,  self._household_paths.unoccupied
         )
-        self.households.set_index("Zone", inplace=True)
+
         self.bres = lgv_inputs.filtered_bres(
             self._bres_paths.path, self._bres_paths.zc_path, self.BRES_AGGREGATION
         )

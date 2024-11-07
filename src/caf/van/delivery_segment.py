@@ -143,18 +143,22 @@ class DeliveryTripEnds:
         self,
         warehouse_paths: utilities.DataPaths,
         bres_paths: utilities.DataPaths,
-        household_paths: utilities.DataPaths,
+        household_paths: lgv_inputs.DwellingPaths,
         parameters_path: Path,
     ):
         """Checks the input files exist and are the expected type."""
         extensions = (".csv", ".txt")
         for name, paths in (
             ("Warehouse", warehouse_paths),
-            ("Households", household_paths),
             ("BRES", bres_paths),
         ):
             utilities.check_file_path(paths.path, f"{name} data", *extensions)
             utilities.check_file_path(paths.zc_path, f"{name} lookup", *extensions)
+
+        utilities.check_file_path(household_paths.occupied, "Households Data", ".dvec")
+        utilities.check_file_path(household_paths.zc_path, "Households lookup", *extensions)
+        if household_paths.unoccupied is not None:
+            utilities.check_file_path(household_paths.unoccupied, "Households", ".dvec")
 
         self._warehouse_paths = warehouse_paths
         self._household_paths = household_paths
@@ -248,9 +252,8 @@ class DeliveryTripEnds:
         )
 
         self.households = lgv_inputs.household_projections(
-            self._household_paths.path, self._household_paths.zc_path
+            self._household_paths.occupied, self._household_paths.zc_path, self._household_paths.unoccupied, 
         )
-        self.households.set_index("Zone", inplace=True)
 
         self.depots = self._infill_depots(self.depots)
 
