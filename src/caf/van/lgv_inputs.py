@@ -151,12 +151,8 @@ class LGVInputPaths(caf.toolkit.BaseConfig):
     """Path to the England & Wales Census Occupation data CSV."""
     qs606sc_path: types.FilePath  # TODO Land-use - change with land use rebase
     """Path to the Scottish Census Occupation data CSV."""
-    sc_w_dwellings_path: types.FilePath  # TODO Land-use - change with land use rebase
-    """Path to the Scottish and Welsh dwellings data CSV."""
-    e_dwellings_path: types.FilePath  # TODO Land-use - change with land use rebase
-    """Path to the English dwellings data XLSX."""
-    ndr_floorspace_path: types.FilePath  # TODO Land-use - change with land use rebase
-    """Path to the NDR Business Floorspace CSV."""
+    constructions_path: types.FilePath
+    """Path to GB construction data csv"""
     lsoa_lookup_path: types.FilePath  # TODO Land-use - change with land use rebase
     """Path to the LSOA to NoHAM zone correspondence CSV."""
     msoa_lookup_path: types.FilePath  # keep as is

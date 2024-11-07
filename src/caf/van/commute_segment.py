@@ -120,7 +120,6 @@ class CommuteTripEnds:
         self.commute_trips_main_usage = {}
         self.commute_trips_land_use = {}
         self.trip_productions = None
-        self.TEMPro_data = {}
         self.attractor_factors = {}
         self.ATTRACTION_FUNCTIONS = {
             "Construction": self._calc_construction_factors,
@@ -228,175 +227,28 @@ class CommuteTripEnds:
             rezoneCols=cols[1:],
         )
 
-    def _read_dwellings_data(self):
-        """Read in, calculate and rezone additional dwellings data.
-
-        Returns
-        -------
-        pd.DataFrame
-            Additional dwellings data in model zone system.
-        """
-
-        # Read in additional dwellings data for England
-        if not self.params:
-            self._read_commute_tables()
-
-        e_dwellings, _ = read_english_dwellings(
-            self.paths.e_dwellings_path, self.params["Model Year"]
-        )
-
-        # Calculate total additional construction (net additions + demolitions)
-        e_dwellings["additional dwellings"] = (
-            e_dwellings["Net Additions"] + 2 * e_dwellings["Demolitions"]
-        )
-
-        # Calculate ratio of additional construction over net additional dwellings
-        additional_net_ratio = (
-            e_dwellings["additional dwellings"].sum() / e_dwellings["Net Additions"].sum()
-        )
-
-        sc_w_dwellings, _ = read_sc_w_dwellings(
-            self.paths.sc_w_dwellings_path, self.params["Model Year"]
-        )
-
-        # Calculate additional construction
-        sc_w_dwellings.loc[:, "additional dwellings"] = (
-            sc_w_dwellings.loc[:, str(self.params["Model Year"])]
-            - sc_w_dwellings.loc[:, str(self.params["Model Year"] - 1)]
-        ) * additional_net_ratio
-
-        # Concatenate the dwellings data
-        cols = ["zone", "additional dwellings"]
-        dwellings = pd.concat([e_dwellings[cols], sc_w_dwellings[cols]], axis=0)
-
-        # Convert to floorspace
-        dwellings["floorspace"] = (
-            dwellings["additional dwellings"] * self.params["Average new house size"]
-        )
-
-        dwellings.drop(axis=1, labels=["additional dwellings"], inplace=True)
-
-        # rezone dwellings data from LAD to model zone system
-        cols = dwellings.columns
-
-        # Assign to floorspace dictionary
-        return Rezone.rezoneOD(
-            dwellings,
-            self.zone_lookups["lad lookup"],
-            dfCols=(cols[0],),
-            rezoneCols=cols[1:],
-        )
-
-    def _read_ndr(self):
-        """Reads in NDR Business floorspace data, calculates additional
-        floorspace and rezoned to model zone system.
-
-        Returns
-        -------
-        pd.DataFrame
-            Dataframe with NDR additional floorspace data for England and Wales
-        """
-
-        # Check input parameters have been read in
-        if not self.params:
-            self._read_commute_tables()
-
-        ndr, _ = read_ndr_floorspace(self.paths.ndr_floorspace_path, self.params["Model Year"])
-
-        # distinguish columns by year
-        previous_yr = [col for col in ndr.columns if str(self.params["Model Year"] - 1) in col]
-        current_yr = [col for col in ndr.columns if str(self.params["Model Year"]) in col]
-
-        # sort lists alphabetically to ensure they are in the same category order
-        previous_yr.sort()
-        current_yr.sort()
-
-        # Calculate floorspace differences
-        for i, col in enumerate(current_yr):
-            ndr.loc[:, f"{col.split('_')[-1]}"] = (
-                ndr.loc[:, col] - ndr.loc[:, previous_yr[i]]
-            ).abs()
-
-        # Sum all differences
-        ndr["floorspace"] = ndr[BUSINESS_CATEGORIES].sum(axis=1)
-
-        # only include relevant columns
-        ndr = ndr[["zone", "floorspace"]]
-
-        # rezone to model zone system
-        return Rezone.rezoneOD(
-            ndr,
-            self.zone_lookups["lad lookup"],
-            dfCols=(ndr.columns[0],),
-            rezoneCols=ndr.columns[1:],
-        )
-
-    def _read_household_projections(self):
-        """Reads in household projections data."""
-        households = utilities.read_csv(
-            self.paths.household_paths.path,
-            name="Household projections",
-            columns=self.HH_PROJECTIONS_HEADER,
-        ).rename(columns=self.HH_RENAME)
-
-        # Authority and County found in TEMPro outputs as well as MSOAs
-        households = households.loc[~households["zone"].isin(["Authority", "County"]), :]
-
-        # get sum of jobs
-        self.TEMPro_data["EW jobs"] = households[
-            households.zone.str.startswith("E") | households.zone.str.startswith("W")
-        ].jobs.sum()
-
-        # get Scottish jobs data
-        scottish_jobs = households[["zone", "jobs"]][households.zone.str.startswith("S")]
-
-        # rezone to model zone system
-        if not self.zone_lookups:
-            self._read_zone_lookups()
-
-        self.TEMPro_data["S jobs"] = Rezone.rezoneOD(
-            scottish_jobs,
-            self.zone_lookups["msoa lookup"],
-            dfCols=(scottish_jobs.columns[0],),
-            rezoneCols=scottish_jobs.columns[1:],
-        )
-        # Job data is not required for households
-        households.drop(axis=1, labels=["jobs"], inplace=True)
-        self.TEMPro_data["households"] = Rezone.rezoneOD(
-            households,
-            self.zone_lookups["msoa lookup"],
-            dfCols=(households.columns[0],),
-            rezoneCols=households.columns[1:],
-        )
-
     def _calc_construction_factors(self):
         """Calculates the total change in sqm in residential and business
         floorspace and uses it to calculate construction attractor factors
         """
         # get residential floorspace
-        residential_floorspace = self._read_dwellings_data()
 
-        # get business floorspace for England and Wales
-        ndr_floorspace = self._read_ndr()
+        construction = pd.read_csv(self.paths.constructions_path, index_col="zone")
 
-        # Estimate Scottish business floorspace from job data
-        if not self.TEMPro_data:
-            self._read_household_projections()
-
-        scottish_floorspace = self.TEMPro_data["S jobs"].copy()
-        scottish_floorspace.loc[:, "floorspace"] = (
-            scottish_floorspace["jobs"]
-            * ndr_floorspace.floorspace.sum()
-            / self.TEMPro_data["EW jobs"]
+        # we calculate total builds as net additional dwellings + 2*demolitions as for net dwellings to be >= 0 each demolished
+        # building needs to be replaces (only true if additional dwellings >=0)
+        construction["total_resi_builds"] = construction["additional_dwellings"] + (
+            2 * construction["demolished_dwellings"]
         )
-        scottish_floorspace = scottish_floorspace[["zone", "floorspace"]]
 
-        # combine all floorspace differences
+        construction["residential_floorspace"] = (
+            construction["total_resi_builds"] * self.params["Average new house size"]
+        )
+
         floorspace = (
-            pd.concat([residential_floorspace, ndr_floorspace, scottish_floorspace])
-            .groupby("zone")
-            .sum()
-        )
+            construction["business_floorspace"] + construction["residential_floorspace"]
+        ).to_frame(name="floorspace")
+
         self.attractor_factors["Construction"] = (floorspace / floorspace.sum()).rename(
             columns={"floorspace": "factor"}
         )
@@ -405,11 +257,13 @@ class CommuteTripEnds:
         """Calculates residential attractor factors from TEMPro households
         data.
         """
-        if not self.TEMPro_data:
-            self._read_household_projections()
-        households = self.TEMPro_data["households"]
-        households.index = households["zone"]
-        households["factor"] = households["households"] / households["households"].sum()
+        
+        households = lgv_inputs.household_projections(
+            self.paths.household_paths.occupied,
+            self.paths.household_paths.zc_path,
+            self.paths.household_paths.unoccupied,
+        )
+        households["factor"] = households["Households"] / households["Households"].sum()
         self.attractor_factors["Residential"] = households[["factor"]]
 
     def _calc_employment_factors(self):

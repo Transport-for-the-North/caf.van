@@ -80,14 +80,17 @@ def generate_construction(
         "LAD18_to_normits_v3_3",
     )
 
-    e_dwellings = e_dwellings.rename(
+    england_growth = e_dwellings.join(ndr_floorspace, how="left")
+
+
+    england_growth = england_growth.rename(
         columns={
             "Net Additions": "additional_dwellings",
             "Demolitions": "demolished_dwellings",
+            "floorspace": "business_floorspace"
         }
     )
 
-    england_growth = e_dwellings.join(ndr_floorspace, how="left")
 
 
     # Calculate ratio of additional construction over net additional dwellings
@@ -96,7 +99,7 @@ def generate_construction(
     )
 
     england_floorspace_factor = (
-        england_growth["floorspace"].sum() / england_growth["additional_dwellings"].sum()
+        england_growth["business_floorspace"].sum() / england_growth["additional_dwellings"].sum()
     )
 
 
@@ -111,12 +114,12 @@ def generate_construction(
         sw_dwellings["additional_dwellings"] * england_demo_factor
     )
 
-    sw_dwellings["floorspace"] = (
+    sw_dwellings["business_floorspace"] = (
         sw_dwellings["additional_dwellings"] * england_floorspace_factor
     )
 
     # Concatenate the dwellings data
-    cols = ["additional_dwellings", "demolished_dwellings", "floorspace"]
+    cols = ["additional_dwellings", "demolished_dwellings", "business_floorspace"]
 
     growth = england_growth[cols] + sw_dwellings[cols]
 
