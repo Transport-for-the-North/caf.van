@@ -150,14 +150,24 @@ class DeliveryTripEnds:
         plain_text_extensions = (".csv", ".txt")
         dvec_extensions = (".dvec", ".hdf", "h5")
 
-        utilities.check_file_path(warehouse_paths.path, f"warehouse data", *plain_text_extensions)
-        utilities.check_file_path(warehouse_paths.zc_path, f"warehouse lookup", *plain_text_extensions)
+        utilities.check_file_path(
+            warehouse_paths.path, f"warehouse data", *plain_text_extensions
+        )
+        utilities.check_file_path(
+            warehouse_paths.zc_path, f"warehouse lookup", *plain_text_extensions
+        )
 
         utilities.check_file_path(employment_paths.path, "employment Data", *dvec_extensions)
-        utilities.check_file_path(employment_paths.zc_path, "employment lookup", *plain_text_extensions)
-        
-        utilities.check_file_path(household_paths.occupied, "Households Data", *dvec_extensions)
-        utilities.check_file_path(household_paths.zc_path, "Households lookup", *plain_text_extensions)
+        utilities.check_file_path(
+            employment_paths.zc_path, "employment lookup", *plain_text_extensions
+        )
+
+        utilities.check_file_path(
+            household_paths.occupied, "Households Data", *dvec_extensions
+        )
+        utilities.check_file_path(
+            household_paths.zc_path, "Households lookup", *plain_text_extensions
+        )
         if household_paths.unoccupied is not None:
             utilities.check_file_path(household_paths.unoccupied, "Households", ".dvec")
 
@@ -263,7 +273,7 @@ class DeliveryTripEnds:
         self.employment = lgv_inputs.filtered_employment(
             self._employment_paths, self.EMPLOYMENT_AGGREGATION
         )
-       
+
     @classmethod
     def read_parameters(cls, path: Path) -> DeliveryParameters:
         """Extract expected parameters from the given spreadsheet.
