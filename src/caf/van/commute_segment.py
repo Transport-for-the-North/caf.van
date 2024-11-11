@@ -96,11 +96,11 @@ class CommuteTripEnds:
         "Delivery Segment Parameters": {"Parameter": str, "Value": str},
     }
 
-    BRES_AGGREGATION = {
+    EMPLOYMENT_AGGREGATION = {
         "Non-Construction": list(
             chain(
-                lgv_inputs.letters_range(end="E"),
-                lgv_inputs.letters_range(start="G", end="S"),
+                range(1, 6),  # A - E (1-5)
+                range(7, 20),  # G - S (7-19)
             )
         )
     }
@@ -257,7 +257,7 @@ class CommuteTripEnds:
         """Calculates residential attractor factors from TEMPro households
         data.
         """
-        
+
         households = lgv_inputs.household_projections(
             self.paths.household_paths.occupied,
             self.paths.household_paths.zc_path,
@@ -270,14 +270,14 @@ class CommuteTripEnds:
         """Calculates employment attractor factors from BRES data"""
         if not self.zone_lookups:
             self._read_zone_lookups()
-        bres = lgv_inputs.filtered_bres(
-            self.paths.bres_path, self.zone_lookups["lsoa lookup"], self.BRES_AGGREGATION
-        ).rename(columns={"Zone": "zone"})
-        bres.index = bres["zone"]
-        bres["factor"] = (
-            bres[self.BRES_AGGREGATION.keys()] / bres[self.BRES_AGGREGATION.keys()].sum()
+        employment = lgv_inputs.filtered_employment(
+            self.paths.employment_paths, self.EMPLOYMENT_AGGREGATION
         )
-        self.attractor_factors["Employment"] = bres[["factor"]]
+        employment["factor"] = (
+            employment[self.EMPLOYMENT_AGGREGATION.keys()]
+            / employment[self.EMPLOYMENT_AGGREGATION.keys()].sum()
+        )
+        self.attractor_factors["Employment"] = employment[["factor"]]
 
     def estimate_productions(self):
         """Reads in files and estimates trip productions by zone and employment

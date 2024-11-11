@@ -22,6 +22,7 @@ import glob
 # Third Party
 
 
+import caf.base
 import caf.toolkit
 import numpy as np
 import pandas as pd
@@ -132,13 +133,19 @@ class DwellingPaths:
     unoccupied: Optional[types.FilePath] = None
 
 
+@dataclasses.dataclass
+class EmploymentPaths:
+    path: types.FilePath
+    zc_path: types.FilePath
+
+
 class LGVInputPaths(caf.toolkit.BaseConfig):
     """Dataclass storing paths to all the input files for the LGV model."""
 
     zoning: str
     household_paths: DwellingPaths  # TODO Land-use - change with land use rebase
     """Paths for the households data and zone correspondence."""
-    bres_path: types.FilePath  # TODO Land-use - change with land use rebase
+    employment_paths: EmploymentPaths  # TODO Land-use - change with land use rebase
     """Path to the BRES data CSV at LSOA level."""
     warehouse_path: types.FilePath  # TODO Land-use - change with land use rebase
     """Path for the warehouse floorspace data CSV at LSOA level."""
@@ -336,17 +343,23 @@ def household_projections(
 
     zone_correspondence = pd.read_csv(zone_lookup)
 
-    households = DVector.load(occupied_paths).translate_zoning(
-        ZoningSystem.get_zoning("NorMITs"), trans_vector=zone_correspondence
-    ).data
+    households = (
+        DVector.load(occupied_paths)
+        .translate_zoning(ZoningSystem.get_zoning("NorMITs"), trans_vector=zone_correspondence)
+        .data
+    )
 
     households_agg = households.sum()
 
     if unoccupied_paths is not None:
-        unoccupied = DVector.load(unoccupied_paths).translate_zoning(
-        ZoningSystem.get_zoning("NorMITs"), trans_vector=zone_correspondence
-    ).data
-        households_agg = (households_agg + unoccupied.sum())
+        unoccupied = (
+            DVector.load(unoccupied_paths)
+            .translate_zoning(
+                ZoningSystem.get_zoning("NorMITs"), trans_vector=zone_correspondence
+            )
+            .data
+        )
+        households_agg = households_agg + unoccupied.sum()
 
     households_agg = households_agg.to_frame(name="Households")
     households_agg.index.name = "Zone"
@@ -354,10 +367,9 @@ def household_projections(
     return households_agg
 
 
-def filtered_bres(
-    path: Path,
-    zone_lookup: Union[Path, pd.DataFrame],
-    aggregation: dict[str, tuple[str]],
+def filtered_employment(
+    paths: EmploymentPaths,
+    aggregation: dict[str, tuple[int]],
 ) -> pd.DataFrame:
     """Read and filter the ONS BRES data CSV.
 
@@ -387,38 +399,28 @@ def filtered_bres(
         is the column name).
     """
 
-    def extract_letters(name: str) -> str:
-        """Extracts the industry letter from the column name."""
-        match = re.match(r"^([A-Z])\s:[\w,;\- ]+$", name)
-        if match:
-            return match.group(1)
-        return name
+    emp = caf.base.DVector.load(paths.path)
 
-    bres = utilities.read_csv(path, "BRES", columns=BRES_HEADER, skiprows=8)
-    # Drop any completely empty columns and any rows with missing values
-    bres.dropna(axis=1, how="all", inplace=True)
-    bres.dropna(axis=0, how="any", inplace=True)
-    bres.rename(columns=extract_letters, inplace=True)
-    ZONE_COL = "Zone"
-    bres.rename(columns={"mnemonic": ZONE_COL}, inplace=True)
-    # Aggregate and rename industry columns
-    include = [ZONE_COL]
-    for agg, columns in aggregation.items():
-        missing = [c for c in columns if c not in bres.columns]
-        if missing:
-            raise errors.MissingColumnsError("BRES", missing)
-        bres[agg] = bres[list(columns)].sum(axis=1)
-        include.append(agg)
-    bres = bres[include].copy()
+    emp = emp.translate_zoning(
+        ZoningSystem.get_zoning("NorMITs"), trans_vector=pd.read_csv(paths.zc_path)
+    )
+    agg_emp = emp.aggregate(["sic_1_digit"])
+    emp_data = agg_emp.data
 
-    # Convert to model zone system
-    include.remove(ZONE_COL)
-    if isinstance(zone_lookup, pd.DataFrame):
-        lookup = zone_lookup
-    else:
-        lookup = Rezone.read(zone_lookup, None)
-    rezoned = Rezone.rezoneOD(bres, lookup, dfCols=("Zone",), rezoneCols=include)
-    return rezoned
+    code_cat_correspondence = {}
+    for replacement, values in aggregation.items():
+        for v in values:
+            code_cat_correspondence[v] = replacement
+
+    cat_emp_data = emp_data.rename(index=code_cat_correspondence)
+
+    cat_emp_data = cat_emp_data[cat_emp_data.index.isin(aggregation.keys())]
+
+    cat_emp_data = cat_emp_data.groupby("sic_1_digit").sum()
+
+    filtered_employment_data = cat_emp_data.transpose(copy=True)
+
+    return filtered_employment_data
 
 
 def letters_range(start: str = "A", end: str = "Z") -> str:

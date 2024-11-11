@@ -1,4 +1,4 @@
-caf.distribute @ git+https://github.com/Transport-for-the-North/caf.distribute@type-hint-fix
+caf.distribute>=0.8.1
 caf.toolkit>=0.7.4#update this when updated 
 Jinja2>=2.11
 matplotlib=3.9.*
@@ -8,5 +8,5 @@ pandas>=1.4.4
 PyYAML>=5.4.1
 scipy>=1.14.0
 versioningit>=3.1.2
-caf.core
+caf.base
 

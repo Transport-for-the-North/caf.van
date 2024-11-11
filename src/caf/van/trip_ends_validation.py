@@ -19,7 +19,7 @@ def create_plot(
     data_id_col: str,
     geom_id_col: str,
 ) -> None:
-    
+
     data_cols = data.select_dtypes(include=[np.number]).columns.to_list()
 
     geo_data_df = geometry.merge(data, left_on=geom_id_col, right_on=data_id_col)
@@ -39,7 +39,7 @@ def create_plot(
             ax.set_title(col)
             ax.get_xaxis().set_visible(False)
             ax.get_yaxis().set_visible(False)
-            ax.set_aspect((bounds[2]-bounds[0])/(bounds[3]-bounds[1]))
+            ax.set_aspect((bounds[2] - bounds[0]) / (bounds[3] - bounds[1]))
             geo_data.plot(col, legend=True, ax=ax, legend_kwds={"label": "Trips"})
 
             pdf.savefig()
@@ -70,7 +70,11 @@ def summarise_tlds(
         )
 
         create_plot(
-            translated_trip_ends.reset_index(), geom, output_path / file_name, "LAD_id", "LAD21CD"
+            translated_trip_ends.reset_index(),
+            geom,
+            output_path / file_name,
+            "LAD_id",
+            "LAD21CD",
         )
 
 

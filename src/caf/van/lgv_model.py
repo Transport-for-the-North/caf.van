@@ -307,10 +307,6 @@ def calculate_trip_ends(
     """
     output_folder.mkdir(exist_ok=True)
 
-    bres_paths = DataPaths(
-        "LGV BRES Data", input_paths.bres_path, input_paths.lsoa_lookup_path
-    )
-
     model_zones: pd.Series = pd.read_csv(input_paths.model_study_area, usecols=["zone"])[
         "zone"
     ]
@@ -319,11 +315,11 @@ def calculate_trip_ends(
     LOG.info("Calculating Service trip ends")
     service = ServiceTripEnds(
         input_paths.household_paths,
-        bres_paths,
+        input_paths.employment_paths,
         input_paths.parameters_path,
         lgv_growth,
         model_zones,
-        input_paths.zoning
+        input_paths.zoning,
     )
     service.read()
     service.trip_ends.to_csv(output_folder / "service_trip_ends.csv")
@@ -334,7 +330,7 @@ def calculate_trip_ends(
         DataPaths(
             "LGV Delivery Warehouse", input_paths.warehouse_path, input_paths.lsoa_lookup_path
         ),
-        bres_paths,
+        input_paths.employment_paths,
         input_paths.household_paths,
         input_paths.parameters_path,
         year,
@@ -423,15 +419,14 @@ def _gravity_model(
 
     tld = pd.read_csv(tld_path)
 
-    # read in cat zone lookup if it exists 
+    # read in cat zone lookup if it exists
     if gm_data.cat_zone_correspondance_path is not None:
         cat_zone_correspondence = pd.read_csv(gm_data.cat_zone_correspondance_path)
     else:
-        #create a lookup for the whole matrix if cat zone hasnt been given
-        cat_zone_correspondence = pd.DataFrame({"zone_id" : zones})
+        # create a lookup for the whole matrix if cat zone hasnt been given
+        cat_zone_correspondence = pd.DataFrame({"zone_id": zones})
         cat_zone_correspondence["area"] = DUMMY_CAT
-        tld["area"]= DUMMY_CAT
-
+        tld["area"] = DUMMY_CAT
 
     if gm_data.cost_function == "log_normal":
         cost_function = cost_functions.BuiltInCostFunction.LOG_NORMAL.get_cost_function()
@@ -590,11 +585,11 @@ def run_gravity_model(
     # therefore we try to convert to ints
     try:
         cost_matrix.columns = [int(x) for x in cost_matrix.columns]
-    
+
     # This is for the case where they are strings
-    except ValueError: 
+    except ValueError:
         pass
-    
+
     for name, te in trip_ends.asdict().items():
         if name == "zones":
             continue

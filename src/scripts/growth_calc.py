@@ -82,26 +82,24 @@ def generate_construction(
 
     england_growth = e_dwellings.join(ndr_floorspace, how="left")
 
-
     england_growth = england_growth.rename(
         columns={
             "Net Additions": "additional_dwellings",
             "Demolitions": "demolished_dwellings",
-            "floorspace": "business_floorspace"
+            "floorspace": "business_floorspace",
         }
     )
 
-
-
     # Calculate ratio of additional construction over net additional dwellings
     england_demo_factor = (
-        england_growth["demolished_dwellings"].sum() / england_growth["additional_dwellings"].sum()
+        england_growth["demolished_dwellings"].sum()
+        / england_growth["additional_dwellings"].sum()
     )
 
     england_floorspace_factor = (
-        england_growth["business_floorspace"].sum() / england_growth["additional_dwellings"].sum()
+        england_growth["business_floorspace"].sum()
+        / england_growth["additional_dwellings"].sum()
     )
-
 
     e_dwellings.merge
 
@@ -222,6 +220,10 @@ def read_english_dwellings(
     return dwellings, data_columns
 
 
-constructions = generate_construction(SCOT_WALES_DWELLINGS, ENGLAND_DWELLINGS, NDR_FLOORSPACE, 2023)
+constructions = generate_construction(
+    SCOT_WALES_DWELLINGS, ENGLAND_DWELLINGS, NDR_FLOORSPACE, 2023
+)
 constructions.index.name = "zone"
-constructions.to_csv(r"U:\Lot3_LFT\2.LGV Model\LGV Model Inputs\constructions_normits_v3_3.csv")
+constructions.to_csv(
+    r"U:\Lot3_LFT\2.LGV Model\LGV Model Inputs\constructions_normits_v3_3.csv"
+)

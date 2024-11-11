@@ -864,7 +864,7 @@ def main(params: ForecastInputsConfig) -> None:
 
         name = "bres_data"
         forecast_paths[name], totals_comparison[name] = grow_bres(
-            base_config.bres_path,
+            base_config.employment_paths,
             grown_inputs_folder / f"grown_BRES_{params.forecast_year}.csv",
             growth,
             params.forecast_year,
