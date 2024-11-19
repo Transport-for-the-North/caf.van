@@ -468,7 +468,7 @@ class CommuteTripEnds:
         return self.trip_attractions
 
     @property
-    def trips(self) -> pd.DataFrame:
+    def trips(self) -> dict[str, pd.DataFrame]:
         """Dict[pd.DataFrame] : dictionary with keys Skilled trades and
         Drivers, with values being the trip dataframes, each with productions
         and attractions as columns and zones as indices."""

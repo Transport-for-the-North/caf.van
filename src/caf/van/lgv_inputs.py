@@ -167,7 +167,9 @@ class LGVInputPaths(caf.toolkit.BaseConfig):
     lad_lookup_path: types.FilePath  # keep as is
     """Path to the Local Authority District to NoHAM zone correspondence
     CSV"""
-    model_study_area: types.FilePath  # change this to a TLD zone lookup
+    tripend_balancing_regions_path: types.FilePath
+    """Path to csv containing trip end balancing regions"""
+    model_study_area: types.FilePath  # This isnt used - get rid
     """Path to CSV containing lookup for zones in model study area."""
     ca_lookup_path: types.FilePath
     """Oath to MSOA to CA sector correspondance CSV"""

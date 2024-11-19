@@ -312,6 +312,11 @@ def calculate_trip_ends(
     ]
     model_zones.name = "Zone"
 
+    if input_paths.tripend_balancing_regions_path is not None:
+        regions = pd.read_csv(input_paths.tripend_balancing_regions_path)
+    else:
+        regions = None
+
     LOG.info("Calculating Service trip ends")
     service = ServiceTripEnds(
         input_paths.household_paths,
@@ -322,7 +327,6 @@ def calculate_trip_ends(
         input_paths.zoning,
     )
     service.read()
-    service.trip_ends.to_csv(output_folder / "service_trip_ends.csv")
 
     # Calculate the delivery trip ends and save outputs
     LOG.info("Calculating Delivery trip ends")
@@ -337,9 +341,6 @@ def calculate_trip_ends(
         model_zones,
     )
     delivery.read()
-    delivery.parcel_stem_trip_ends.to_csv(output_folder / "delivery_parcel_stem_trip_ends.csv")
-    delivery.parcel_bush_trip_ends.to_csv(output_folder / "delivery_parcel_bush_trip_ends.csv")
-    delivery.grocery_bush_trip_ends.to_csv(output_folder / "delivery_grocery_trip_ends.csv")
 
     # Calculate commuting trip ends and save output
     LOG.info("Calculating Commuting trip ends")
@@ -348,15 +349,122 @@ def calculate_trip_ends(
     for key in commute_trips:
         commute_trips[key].to_csv(output_folder / Path(f"commute_{key}_trip_ends.csv"))
 
+    if regions is not None:
+        LOG.info("Balancing Trip Ends")
+        service_te = balance_trip_ends(
+            service.trip_ends, regions, "Productions", "Attractions", "Service"
+        )
+        delivery_parcel_stem_te = balance_trip_ends(
+            delivery.parcel_stem_trip_ends,
+            regions,
+            "Productions",
+            "Attractions",
+            "Delivery Parcel Stem",
+        )
+        delivery_parcel_bush_te = balance_trip_ends(
+            delivery.parcel_bush_trip_ends,
+            regions,
+            "Origins",
+            "Destinations",
+            "Parcel Bush Trip Ends",
+        )
+        delivery_grocery_bush_te = balance_trip_ends(
+            delivery.grocery_bush_trip_ends,
+            regions,
+            "Origins",
+            "Destinations",
+            "Grocery Bush Trip Ends",
+        )
+        commute_drivers = balance_trip_ends(
+            commute_trips["Drivers"],
+            regions,
+            "Productions",
+            "Attractions",
+            "Commuting Drivers",
+        )
+        commute_skilled_trades = balance_trip_ends(
+            commute_trips["Skilled trades"],
+            regions,
+            "Productions",
+            "Attractions",
+            "Skilled Trades",
+        )
+
+    else:
+        service_te = service_te
+        delivery_parcel_stem_te = delivery_parcel_stem_te
+        delivery_parcel_bush_te = delivery_parcel_bush_te
+        delivery_grocery_bush_te = delivery_grocery_bush_te
+        commute_drivers = commute_drivers
+        commute_skilled_trades = commute_skilled_trades
+
+    service_te.to_csv(output_folder / "service_trip_ends.csv")
+    delivery_parcel_stem_te.to_csv(output_folder / "delivery_parcel_stem_trip_ends.csv")
+    delivery_parcel_bush_te.to_csv(output_folder / "delivery_parcel_bush_trip_ends.csv")
+    delivery_grocery_bush_te.to_csv(output_folder / "delivery_grocery_trip_ends.csv")
+    commute_drivers.to_csv(output_folder / "commute_drivers_trip_ends.csv")
+    commute_skilled_trades.to_csv(
+        output_folder / Path(f"commute_skilled_trades_trip_ends.csv")
+    )
+
     LOG.info("\tDone with trip ends")
     return LGVTripEnds(
-        service=service.trip_ends,
-        delivery_parcel_stem=delivery.parcel_stem_trip_ends,
-        delivery_parcel_bush=delivery.parcel_bush_trip_ends,
-        delivery_grocery=delivery.grocery_bush_trip_ends,
-        commuting_drivers=commute_trips["Drivers"],
-        commuting_skilled_trades=commute_trips["Skilled trades"],
+        service=service_te,
+        delivery_parcel_stem=delivery_parcel_stem_te,
+        delivery_parcel_bush=delivery_parcel_bush_te,
+        delivery_grocery=delivery_grocery_bush_te,
+        commuting_drivers=commute_drivers,
+        commuting_skilled_trades=commute_skilled_trades,
     )
+
+
+def balance_trip_ends(
+    trip_ends: pd.DataFrame,
+    regions: pd.DataFrame,
+    control_col: str,
+    variable_col: str,
+    name: str,
+) -> pd.DataFrame:
+
+    # Create a copy so we don't change anything out of function scope
+    balanced_trip_ends = trip_ends.copy()
+
+    # check all zones are in the region correspondence
+    if trip_ends.index.isin(~regions["zone_id"]).any():
+        raise KeyError(
+            "Trip Ends Balancing Regions have zones missing when compared to trip ends"
+        )
+
+    # iterate through unique areas (we dont care what the areas are, just want the zones within each)
+    for r in regions["area"].sort_values().unique():
+        # Get the zones we want to balance
+        zones = regions.loc[regions["area"] == r, "zone_id"]
+
+        # calculate difference between control and variable columns
+        trip_end_difference = (
+            balanced_trip_ends.loc[zones, control_col].sum()
+            - balanced_trip_ends.loc[zones, variable_col].sum()
+        )
+
+        if np.abs(trip_end_difference) > PA_DIFFERENCE_TOL:
+            # calculate factor needed to make variable sum equal control sum
+            factor = (
+                balanced_trip_ends.loc[zones, control_col].sum()
+                / balanced_trip_ends.loc[zones, variable_col].sum()
+            )
+            # apply factor
+            balanced_trip_ends.loc[zones, variable_col] *= factor
+            LOG.warning(
+                f"{control_col} and {variable_col} are imbalanced in for"
+                f" {name} region {r} (difference= {trip_end_difference})."
+                f" Factoring {variable_col} to {control_col} (factor = {factor})"
+            )
+
+        else:
+            LOG.info(
+                f"Trip ends for {name}: {r} look fine -- difference: {trip_end_difference}"
+            )
+    return balanced_trip_ends
 
 
 class VanGravityModelResults:
@@ -394,10 +502,6 @@ def _gravity_model(
     """Internal function used in `run_gravity_model` for running the GM with calibration."""
 
     # check PA/OD are balanced - if not balance and add warning with difference
-    if name in PA_MATRICES:
-        trip_ends = balance_trip_ends(trip_ends, "Attractions", "Productions")
-    else:
-        trip_ends = balance_trip_ends(trip_ends, "Origins", "Destinations")
 
     tld_path = gm_data.trip_length_distribution_path
 
@@ -523,33 +627,6 @@ def extract_cost_func_params(
         raise ValueError(f"Cost Function {cost_func_name} not found")
 
     return func_params
-
-
-def balance_trip_ends(trip_ends: pd.DataFrame, target_col: str, test_col: str) -> pd.DataFrame:
-
-    # determine difference in column totals
-    trip_end_difference = trip_ends[target_col].sum() - trip_ends[test_col].sum()
-    # avoid changing input out the function scope
-    balanced_trip_ends = trip_ends.copy()
-
-    if np.abs(trip_end_difference) > PA_DIFFERENCE_TOL:
-        # calculate and apply factor to balance test col to target col
-        factor = balanced_trip_ends[target_col].sum() / balanced_trip_ends[test_col].sum()
-
-        LOG.warning(
-            f"{target_col} and {test_col} are imbalanced (difference"
-            f" = {trip_end_difference}) Factoring {test_col} to"
-            f" {target_col} (factor = {factor})"
-        )
-
-        balanced_trip_ends[test_col] *= factor
-
-    else:
-        LOG.debug(
-            f"Trip ends look fine \ntarget total {trip_ends[target_col].sum()}, \ntest total {trip_ends[test_col].sum()} \ndifference {trip_end_difference}"
-        )
-
-    return balanced_trip_ends
 
 
 def run_gravity_model(
