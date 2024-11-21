@@ -237,9 +237,38 @@ class CommuteTripEnds:
 
         # we calculate total builds as net additional dwellings + 2*demolitions as for net dwellings to be >= 0 each demolished
         # building needs to be replaces (only true if additional dwellings >=0)
+
+        if (
+            construction["demolished_dwellings"] < 0
+        ).any():  # negative demolitions not allowed
+            raise ValueError(
+                "Demolitions smaller than 0 were found in the construction data. "
+                "these are not allowed!"
+            )
+
+        # we want to raise an error if
+        # (additonal dwellings < 0) AND (|additonal dwelling| > demolished dwellings)
+        # which is equivelent below. We do this as otherwise we will end up with negative builds,
+        # which makes no sense
+        if (
+            (-construction["additional_dwellings"]) > construction["demolished_dwellings"]
+        ).any():
+            raise ValueError(
+                "Zones with negative additional dwellings must have enough demolitions"
+                " to account for the net drop in dwellings"
+            )
+
         construction["total_resi_builds"] = construction["additional_dwellings"] + (
             2 * construction["demolished_dwellings"]
         )
+
+        # we should have caught all possibilities that would happen above
+        # BUT I'm prety stupid - so this is here just in case
+        if (construction["total_resi_builds"] < 0).any():
+            raise ValueError(
+                "total residential build has atleast one negative value. Please review constructions inputs"
+                "total residential build = additional dwellings[this is net value] + 2 x demolished dwellings"
+            )
 
         construction["residential_floorspace"] = (
             construction["total_resi_builds"] * self.params["Average new house size"]
