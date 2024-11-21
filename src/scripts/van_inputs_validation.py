@@ -3,26 +3,30 @@
 
 ##### IMPORTS #####
 
-import pathlib
+# Built-Ins
 import logging
+import pathlib
 import re
 import shutil
 import warnings
 
+# Third Party
+import caf.base as cb
 import caf.toolkit as ctk
 import numpy as np
 import pandas as pd
 import pydantic
+
+# Local Imports
 import caf.van as cvn
 from caf.van import lgv_inputs
-import caf.base as cb
 
 ##### CONSTANTS #####
 
 _NAME = pathlib.Path(__file__).stem
 LOG = logging.getLogger(_NAME)
 _CONFIG_FILE = pathlib.Path(__file__).with_suffix(".yml")
-MOVE_LOOKUPS_TO_OUTPUTS = True
+MOVE_LOOKUPS_TO_OUTPUTS = False
 
 
 ##### CLASSES & FUNCTIONS #####
@@ -85,73 +89,97 @@ def main() -> None:
         systems = find_zoning_systems(cb.zoning.ZONE_CACHE_HOME)
 
         zoning_systems = _ZoningSystemRetriever()
-
-        zone_lookups = [
-            (van_config.lsoa_lookup_path, "lsoa_2011"),
-            (van_config.msoa_lookup_path, "ntem"),
-            (van_config.lad_lookup_path, "lad_2020"),
-            (van_config.ca_lookup_path, "ca_sector_2020"),
-            (van_config.household_paths.zc_path, "lsoa_2021"),
-            (van_config.employment_paths.zc_path, "lsoa_2021"),
-        ]
         to_zone = zoning_systems.get("normits")
 
-        for path, name in zone_lookups:
-            if MOVE_LOOKUPS_TO_OUTPUTS:
-                LOG.info("Copying %s to %s", path.name, parameters.output_folder)
-                shutil.copy(path, parameters.output_folder)
-
-            LOG.info("Checking %s", path.name)
-            try:
-                from_zone = zoning_systems.get(name)
-            except FileNotFoundError:
-                warnings.warn(
-                    f"Cannot find zone system {name}, those zones"
-                    f" will not be checked fully for {path.name}"
-                )
-                from_zone = None
-
-            lookup = pd.read_csv(path)
-
-            to_zone_id, to_zone_name = find_id_column(to_zone.name, lookup)
-            from_zone_id, from_zone_name = find_id_column(name, lookup)
-
-            _check_zone_lookup(
-                lookup, to_zone_id, to_zone, f"{to_zone_name}_to_{from_zone_name}"
-            )
-            _check_zone_lookup(
-                lookup, from_zone_id, from_zone, f"{from_zone_name}_to_{to_zone_name}"
-            )
-
-        gm_segments = [
-            "service",
-            "delivery_parcel_stem",
-            "commuting_drivers",
-            "commuting_skilled_trades",
-        ]
-        for segment in gm_segments:
-            try:
-                params: lgv_inputs.GMInputs = getattr(van_config, segment)
-            except AttributeError:
-                continue
-
-            if params.cat_zone_correspondance_path is None:
-                continue
-
-            LOG.info(
-                "Checking area lookup for %s from %s",
-                segment,
-                params.cat_zone_correspondance_path.name,
-            )
-            area_lookup = pd.read_csv(
-                params.cat_zone_correspondance_path, usecols=["area", "zone_id"]
-            )
-            _check_zones("zone_id", to_zone, area_lookup["zone_id"].to_numpy())
+        _check_all_zone_lookups(parameters, van_config, zoning_systems, to_zone)
+        _check_gm_area_lookups(van_config, to_zone)
 
         # Check cost matrix
         LOG.info("Checking cost matrix %s", van_config.cost_matrix_path.name)
         cost_matrix = ctk.io.read_csv_matrix(van_config.cost_matrix_path, "square")
         _check_zones("cost_matrix_index", to_zone, cost_matrix.index.to_numpy())
+
+        # Check constructions
+        LOG.info("Checking construction data %s", van_config.constructions_path)
+        constructions = pd.read_csv(
+            van_config.constructions_path,
+            usecols=[
+                "zone",
+                "additional_dwellings",
+                "demolished_dwellings",
+                "business_floorspace",
+            ],
+        )
+        _check_zones("constructions_zones", to_zone, constructions["zone"].to_numpy())
+        LOG.info("Constructions info:\n%s", constructions.describe())
+
+
+def _check_all_zone_lookups(
+    parameters: _Config,
+    van_config: lgv_inputs.LGVInputPaths,
+    zoning_systems: _ZoningSystemRetriever,
+    to_zone: cb.ZoningSystem,
+):
+    zone_lookups = [
+        (van_config.lsoa_lookup_path, "lsoa_2011"),
+        (van_config.msoa_lookup_path, "ntem"),
+        (van_config.lad_lookup_path, "lad_2020"),
+        (van_config.ca_lookup_path, "ca_sector_2020"),
+        (van_config.household_paths.zc_path, "lsoa_2021"),
+        (van_config.employment_paths.zc_path, "lsoa_2021"),
+    ]
+
+    for path, name in zone_lookups:
+        if MOVE_LOOKUPS_TO_OUTPUTS:
+            LOG.info("Copying %s to %s", path.name, parameters.output_folder)
+            shutil.copy(path, parameters.output_folder)
+
+        LOG.info("Checking %s", path.name)
+        try:
+            from_zone = zoning_systems.get(name)
+        except FileNotFoundError:
+            warnings.warn(
+                f"Cannot find zone system {name}, those zones"
+                f" will not be checked fully for {path.name}"
+            )
+            from_zone = None
+
+        lookup = pd.read_csv(path)
+
+        to_zone_id, to_zone_name = find_id_column(to_zone.name, lookup)
+        from_zone_id, from_zone_name = find_id_column(name, lookup)
+
+        _check_zone_lookup(lookup, to_zone_id, to_zone, f"{to_zone_name}_to_{from_zone_name}")
+        _check_zone_lookup(
+            lookup, from_zone_id, from_zone, f"{from_zone_name}_to_{to_zone_name}"
+        )
+
+
+def _check_gm_area_lookups(van_config: lgv_inputs.LGVInputPaths, to_zone: cb.ZoningSystem):
+    gm_segments = [
+        "service",
+        "delivery_parcel_stem",
+        "commuting_drivers",
+        "commuting_skilled_trades",
+    ]
+    for segment in gm_segments:
+        try:
+            params: lgv_inputs.GMInputs = getattr(van_config, segment)
+        except AttributeError:
+            continue
+
+        if params.cat_zone_correspondance_path is None:
+            continue
+
+        LOG.info(
+            "Checking area lookup for %s from %s",
+            segment,
+            params.cat_zone_correspondance_path.name,
+        )
+        area_lookup = pd.read_csv(
+            params.cat_zone_correspondance_path, usecols=["area", "zone_id"]
+        )
+        _check_zones("zone_id", to_zone, area_lookup["zone_id"].to_numpy())
 
 
 def _check_zone_lookup(
