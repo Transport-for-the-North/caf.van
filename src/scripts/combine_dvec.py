@@ -48,7 +48,7 @@ def zone_dvec(in_path: str, out_path: str) -> None:
         import_data=data,
         segmentation=segmentation,
         zoning_system=caf.base.ZoningSystem.get_zoning("lsoa_2021"),
-    )  # .save(out_path)
+    ).save(out_path)
 
 
 

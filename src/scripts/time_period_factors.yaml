@@ -1,0 +1,7 @@
+van_stats_path: C:\Users\KieranFishwick\Downloads\van-statistics-2019-to-2020.ods
+day_distribution_path: C:\Users\KieranFishwick\Downloads\tra0308-traffic-distribution-by-time-of-day-and-selected-vehicle-type.ods
+month_distribution_path: C:\Users\KieranFishwick\Downloads\tra0305-traffic-distribution-by-month.ods
+month: March
+day: Tuesday
+year: 2023
+out_path: path\to\somewhere\outpath.csv
