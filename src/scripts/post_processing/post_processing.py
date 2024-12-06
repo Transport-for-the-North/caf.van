@@ -6,13 +6,21 @@ import pathlib
 import pandas as pd
 import caf.toolkit as ctk
 
-MATRIX_DIR = pathlib.Path(
+VOA_MATRIX_DIR = pathlib.Path(
     r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\development_outputs\2023_NorMITs_VOA\time period matrices"
 )
-OUTPATH = pathlib.Path(
-    r"C:\Users\KieranFishwick\OneDrive - Transport for the North\Documents\caf-van_rebase\processed_tp\2023_NoHAM_VOA"
+NO_VOA_MATRIX_DIR = pathlib.Path(
+    r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\development_outputs\2023_NorMITs_no_VOA\time period matrices"
 )
-SEGMENTS = ["combined", "service", "delivery", "commute"]
+VOA_OUTPATH = pathlib.Path(
+    r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\development_outputs\2023_NorMITs_VOA\tp_noham"
+)
+
+NO_VOA_OUTPATH = pathlib.Path(
+    r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\development_outputs\2023_NorMITs_no_VOA\tp_noham"
+)
+
+SEGMENTS = ["combined", "service", "delivery", "commuting"]
 TRANSLATION = r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\inputs\normits_v3.3_noham_v3.7_trans 1.csv"
 
 
@@ -43,10 +51,10 @@ def process_matrices(
             name = pathlib.Path(path).stem
             print(f"read {name}")
             for seg in segments:
-                if seg.lower() == "combined":
-                    sorted_matrices[seg].append(matrix)
-                    continue
-                elif seg.lower() in name.lower():
+                #if seg.lower() == "combined":
+                #    sorted_matrices[seg].append(matrix)
+                #    continue
+                if seg.lower() in name.lower():
                     sorted_matrices[seg].append(matrix)
 
         # sum matrices
@@ -70,17 +78,20 @@ def process_matrices(
 
         translation = pd.read_csv(translation_path)
 
+        translated = {}
+
         for name, matrix in collated_matrices.items():
             print(f"translating {name}")
-            translation[name] = ctk.translation.pandas_matrix_zone_translation(
+            translated[name] = ctk.translation.pandas_matrix_zone_translation(
                 matrix,
                 translation,
                 "normits_v3.3_id",
-                "noham_v3.7",
+                "noham_v3.7_id",
                 "normits_v3.3_to_noham_v3.7_spatial",
             )
 
-            translation[name].to_csv(tp_output_dir/ f"{name}.csv")
+            translated[name].to_csv(tp_output_dir/ f"{name}.csv")
 
         
-process_matrices(MATRIX_DIR,SEGMENTS, TRANSLATION, OUTPATH)
+process_matrices(VOA_MATRIX_DIR,SEGMENTS, TRANSLATION, VOA_OUTPATH)
+process_matrices(NO_VOA_MATRIX_DIR,SEGMENTS, TRANSLATION, NO_VOA_MATRIX_DIR)
