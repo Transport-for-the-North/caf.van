@@ -123,10 +123,14 @@ class MatrixReport:
         )
 
 
-def matrix_describe(matrix: pd.DataFrame, almost_zero: Optional[int] = None) -> pd.Series:
+def matrix_describe(matrix: pd.DataFrame, almost_zero: Optional[float] = None) -> pd.Series:
     if almost_zero is None:
         almost_zero = 1 / matrix.size
+
     info = matrix.stack().describe(percentiles=[0.05, 0.25, 0.5, 0.75, 0.95])
+
+    info["columns"] = len(matrix.columns)
+    info["rows"] = len(matrix.index)
     info["sum"] = matrix.sum().sum()
     info["zeros"] = (matrix == 0).sum().sum()
     info["almost_zeros"] = (matrix < almost_zero).sum().sum()
