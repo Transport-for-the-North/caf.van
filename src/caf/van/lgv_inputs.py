@@ -664,6 +664,7 @@ class GMInputs:
     cost_function_params: tuple[float, ...] | dict[str | int, tuple[float, ...]]
     calibrate: bool
     cat_zone_correspondance_path: Optional[types.FilePath] = None
+    furness_jacobian: bool = True
 
     @field_validator("cost_function_params", mode="before")
     @classmethod
