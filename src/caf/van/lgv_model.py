@@ -590,7 +590,7 @@ def _gravity_model(
         gravity_model_results = calib_gm.calibrate(
             cost_distributions,
             csv_logging_path,  # TODO figure out which key word args with default values needed to be changed
-            caf.distribute.gravity_model.multi_area.GMCalibParams(),
+            caf.distribute.gravity_model.multi_area.GMCalibParams(furness_jac=gm_data.furness_jacobian),
             verbose=2,
         )
 

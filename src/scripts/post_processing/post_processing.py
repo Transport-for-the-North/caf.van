@@ -30,14 +30,17 @@ def process_matrices(
     translation_path: pathlib.Path,
     output_path: pathlib.Path,
 ) -> None:
-    tp_dir = os.listdir(matrix_dir)
+    #path.glob(*)
+    
+    tp_dir =[x for x in matrix_dir.iterdir() if x.is_dir()]
+
     print(f"{len(tp_dir)} tps found")
 
     for dir in tp_dir:
 
         print(f"processing {dir}")
 
-        tp_output_dir = output_path/dir
+        tp_output_dir = output_path/dir.stem
 
         tp_output_dir.mkdir(exist_ok=True, parents=True)
 
@@ -48,13 +51,17 @@ def process_matrices(
         sorted_matrices = collections.defaultdict(lambda: [])
         for path in matrix_paths:
             matrix = pd.read_csv(path, index_col=0)
-            name = pathlib.Path(path).stem
+            name: str = pathlib.Path(path).stem
             print(f"read {name}")
             for seg in segments:
-                #if seg.lower() == "combined":
-                #    sorted_matrices[seg].append(matrix)
-                #    continue
-                if seg.lower() in name.lower():
+                if seg.lower() == "combined":
+                    if "combined" in name.lower() or "personal" in name.lower():
+                        print(f"leaving out {name} combined matrix")
+                        continue
+                    print(f"Adding {name} to combined matrices")
+                    sorted_matrices[seg].append(matrix)
+                    continue
+                elif seg.lower() in name.lower():
                     sorted_matrices[seg].append(matrix)
 
         # sum matrices
