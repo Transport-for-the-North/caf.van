@@ -31,7 +31,7 @@ import caf.distribute
 from caf.van.commute_segment import CommuteTripEnds
 from caf.van.delivery_segment import DeliveryTripEnds
 from caf.van.furnessing import annual_pa_to_od
-from caf.van.gravity_model import CalibrateGravityModel, calculate_vehicle_kms
+
 from caf.van.lgv_inputs import (
     GMInputs,
     LGVInputPaths,
@@ -1053,3 +1053,85 @@ def lgv_arg_parser() -> argparse.ArgumentParser:
         help="If given will write an example config " "file to the current working directory",
     )
     return parser
+
+
+def _check_gm_inputs(
+    trip_ends: pd.DataFrame, costs: pd.DataFrame, calibration: pd.DataFrame = None
+) -> tuple[pd.DataFrame]:
+    """Sorts the indices and checks the input DataFrames for `gravity_model`."""
+    # Copy the DataFrames so links to them outside this function aren't edited
+    data = [trip_ends.copy(), costs.copy()]
+    names = ["trip_ends", "costs"]
+    if calibration is not None:
+        data.append(calibration.copy())
+        names.append("calibration")
+    for nm, df in zip(names, data):
+        df.sort_index(axis=0, inplace=True)
+        if df.index.has_duplicates:
+            raise ValueError(f"duplicates not allowed in `{nm}` index")
+        if df.columns.has_duplicates:
+            raise ValueError(f"duplicates not allowed in `{nm}` columns")
+        if nm == "trip_ends":
+            continue
+        df.sort_index(axis=1, inplace=True)
+        if not (df.index.equals(data[0].index) and df.columns.equals(data[0].index)):
+            raise ValueError(
+                f"`{nm}` must be a square matrix with same zones as "
+                "`trip_ends` for gravity model calculations"
+            )
+    # Raise error if costs contains zeros
+    zero_costs = np.sum((costs == 0).values)
+    if zero_costs > 0:
+        raise ValueError(f"{zero_costs} zeros in cost matrix")
+    return data
+
+def calculate_vehicle_kms(
+    matrix: pd.DataFrame, distances: pd.DataFrame, internals: set[int] = None
+) -> pd.DataFrame:
+    """Summarise number of trips and vehicle kilometres by internal/external.
+
+    Parameters
+    ----------
+    matrix : pd.DataFrame
+        Square trip matrix, indices and columns should be
+        zone numbers.
+    distances : pd.DataFrame
+        Square matrix of distances with the same indices
+        and columns as `matrix`
+    internals : set[int], optional
+        Set of all internal zone numbers.
+
+    Returns
+    -------
+    pd.DataFrame
+        The number of trips and vehicle kilometres in the
+        matrix, if `internals` is given then splits the totals
+        into II, IE, EI and EE.
+    """
+    matrix, distances = _check_gm_inputs(matrix, distances)
+    trips = {"All Trips": np.sum(matrix.values)}
+    vehicle_kms = {"All Trips": np.sum((matrix * distances).values)}
+    if internals:
+        internals = set(internals)
+        externals = list(set(matrix.index) - internals)
+        internals = list(internals)
+
+        filters = {
+            "Internal-Internal": (internals, internals),
+            "Internal-External": (internals, externals),
+            "External-Internal": (externals, internals),
+            "External-External": (externals, externals),
+        }
+        for nm, (index, cols) in filters.items():
+            trips[nm] = np.sum(matrix.loc[index, cols].values)
+            vehicle_kms[nm] = np.sum(
+                (matrix.loc[index, cols] * distances.loc[index, cols]).values
+            )
+    df = pd.DataFrame(
+        {("Trips", "Value"): trips, ("Vehicle Kilometers", "Value"): vehicle_kms}
+    )
+    if internals:
+        for c in df.columns.get_level_values(0):
+            df.loc[:, (c, "Percentage")] = df[(c, "Value")] / df.loc["All Trips", (c, "Value")]
+        df.sort_index(axis=1, level=0, sort_remaining=False, inplace=True)
+    return df
