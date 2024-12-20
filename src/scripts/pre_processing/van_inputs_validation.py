@@ -124,7 +124,7 @@ def _check_all_zone_lookups(
         (van_config.lsoa_lookup_path, "lsoa_2011"),
         (van_config.msoa_lookup_path, "ntem"),
         (van_config.lad_lookup_path, "lad_2020"),
-        (van_config.ca_lookup_path, "ca_sector_2020"),
+        (van_config.summary_zone_translation.path, "ca_sector_2020"),
         (van_config.household_paths.zc_path, "lsoa_2021"),
         (van_config.employment_paths.zc_path, "lsoa_2021"),
     ]

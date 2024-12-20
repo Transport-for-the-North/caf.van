@@ -721,10 +721,10 @@ def run_gravity_model(
 
             summary = MatrixReport(
                 matrices[name],
-                pd.read_csv(input_paths.ca_lookup_path),
-                "normits_v3_3_id",
-                "CA_sector_id",
-                "normits_v3_3_to_CA_sector",
+                pd.read_csv(input_paths.summary_zone_translation.path),
+                f"{input_paths.summary_zone_translation.from_zoning}_id",
+                f"{input_paths.summary_zone_translation.to_zoning}_id",
+                f"{input_paths.summary_zone_translation.from_zoning}_to_{input_paths.summary_zone_translation.to_zoning}",
             )
             LOG.info(f"writing {name} summary to excel")
             summary.write_to_excel(writer, output_matrix=True)

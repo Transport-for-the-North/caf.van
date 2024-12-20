@@ -136,7 +136,14 @@ class DwellingPaths:
 class EmploymentPaths:
     path: types.FilePath
     zc_path: types.FilePath
+    
 
+@dataclasses.data
+class ZoneTranslationDefinition:
+    """Contains the path and column names of the zone translation."""
+    path: types.FilePath
+    from_zoning: str
+    to_zoning: str
 
 class LGVInputPaths(caf.toolkit.BaseConfig):
     """Dataclass storing paths to all the input files for the LGV model."""
@@ -170,16 +177,15 @@ class LGVInputPaths(caf.toolkit.BaseConfig):
     """Path to csv containing trip end balancing regions"""
     model_study_area: types.FilePath  # This isnt used - get rid
     """Path to CSV containing lookup for zones in model study area."""
-    ca_lookup_path: types.FilePath
-    """Oath to MSOA to CA sector correspondance CSV"""
+    summary_zone_translation: ZoneTranslationDefinition
+    """Path to MSOA to CA sector correspondance CSV"""
     cost_matrix_path: types.FilePath  # keep as is TODO?
     """Path to CSV containing cost matrix, should be square matrix with
     zone numbers as column names and indices."""
     calibration_matrix_path: Optional[types.FilePath] = None  # keep as is TODO?
     """Path to CSV containing calibration matrix, should be square matrix"""
-
     gm_parameters: dict[str, GMInputs]
-
+    """Dictionary of gravity model parameters for each segment."""
     output_folder: types.DirectoryPath  # keep as is
     """Path to folder to save outputs to."""
     normits_pa_folder: types.DirectoryPath  # keep as is
