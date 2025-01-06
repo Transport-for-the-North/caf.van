@@ -20,7 +20,7 @@ def main():
     args = parser.parse_args()
 
     if args.example:
-        lgv_inputs.write_example_config(args.config_file)
+        lgv_inputs.LGVInputPaths.write_example(lgv_inputs.EXAMPLE_CONFIG_NAME)
 
     elif args.config_file is not None:
         # Run the LGV model without displaying the UI if config is given

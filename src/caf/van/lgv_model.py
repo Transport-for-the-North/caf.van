@@ -13,7 +13,7 @@ import pprint
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Literal, Optional
+from typing import Literal, Optional
 
 # Third Party
 from caf.distribute import gravity_model, cost_functions
@@ -67,7 +67,7 @@ NTEM_PURPOSES = {"hb": list(range(1, 9)), "nhb": [12, 13, 14, 15, 16, 18]}
 """NTEM purpose to hb/nhb correspondence."""
 
 PERSONAL_TIME_PERIODS = [1, 2, 3, 4]
-"""Time periods to aggregate NHB together for."""
+"""Time periods to aggregate NHB together."""
 
 TRIP_DISTRIBUTION_COLS = dict.fromkeys(
     ("start", "end", "average", "observed proportions"), float
@@ -468,20 +468,20 @@ def balance_trip_ends(
 
 
 class VanGravityModelResults:
-    """Contains the results and information for a gravity model run or calibration.
-    """    
+    """Contains the results and information for a gravity model run or calibration."""
+
     distribution: pd.DataFrame
     """ Distributed trip matrix.
-    """    
+    """
     summary: pd.DataFrame
     """ High level summary of the calibration/run.
-    """    
+    """
     zones: np.ndarray
     """ Zones IDs within the matrix.
-    """    
+    """
     info: dict[str | int, gravity_model.GravityModelResults]
     """ Detailed information for the calibration/run.
-    """    
+    """
 
     def __init__(
         self,
@@ -535,7 +535,6 @@ def _gravity_model(
         cat_zone_correspondence = pd.DataFrame({"zone_id": zones})
         cat_zone_correspondence["area"] = DUMMY_CAT
         tld["area"] = DUMMY_CAT
-
 
     # Define the cost function and parameters
     if gm_data.cost_function == "log_normal":
@@ -634,7 +633,7 @@ def extract_cost_func_params(
     ------
     ValueError
         If the cost function name is not recognised.
-    """    
+    """
     if cost_func_name == "log_normal":
 
         func_params = {
@@ -688,13 +687,13 @@ def run_gravity_model(
         pass
 
     for name, te in trip_ends.asdict().items():
-        
+
         if name == "zones":
             continue
 
         gm_params = input_paths.gm_parameters[name]
         calibrate = gm_params.calibrate
-        calib_gm = _gravity_model(
+        calib_gm: VanGravityModelResults = _gravity_model(
             te,
             name,
             gm_params,

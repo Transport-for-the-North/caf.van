@@ -30,9 +30,9 @@ def process_matrices(
     translation_path: pathlib.Path,
     output_path: pathlib.Path,
 ) -> None:
-    #path.glob(*)
-    
-    tp_dir =[x for x in matrix_dir.iterdir() if x.is_dir()]
+    # path.glob(*)
+
+    tp_dir = [x for x in matrix_dir.iterdir() if x.is_dir()]
 
     print(f"{len(tp_dir)} tps found")
 
@@ -40,10 +40,9 @@ def process_matrices(
 
         print(f"processing {dir}")
 
-        tp_output_dir = output_path/dir.stem
+        tp_output_dir = output_path / dir.stem
 
         tp_output_dir.mkdir(exist_ok=True, parents=True)
-
 
         # sort matrices
         matrix_paths = glob.glob(str(matrix_dir / dir / "*.csv"))
@@ -97,8 +96,8 @@ def process_matrices(
                 "normits_v3.3_to_noham_v3.7_spatial",
             )
 
-            translated[name].to_csv(tp_output_dir/ f"{name}.csv")
+            translated[name].to_csv(tp_output_dir / f"{name}.csv")
 
-        
-process_matrices(VOA_MATRIX_DIR,SEGMENTS, TRANSLATION, VOA_OUTPATH)
-process_matrices(NO_VOA_MATRIX_DIR,SEGMENTS, TRANSLATION, NO_VOA_MATRIX_DIR)
+
+process_matrices(VOA_MATRIX_DIR, SEGMENTS, TRANSLATION, VOA_OUTPATH)
+process_matrices(NO_VOA_MATRIX_DIR, SEGMENTS, TRANSLATION, NO_VOA_MATRIX_DIR)

@@ -16,7 +16,7 @@ from caf.toolkit import translation as ctktranslation
 
 
 class MatrixReportInput(ctk.BaseConfig):
-    #TODO(kf) make Translation optional
+    # TODO(kf) make Translation optional
     matrices_path: dict[str, pathlib.Path]
     translation_path: pathlib.Path
     from_zoning: str
@@ -25,31 +25,31 @@ class MatrixReportInput(ctk.BaseConfig):
 
     def run(self):
 
-        matrices:dict[str, pd.DataFrame] = {}
+        matrices: dict[str, pd.DataFrame] = {}
         for name, path in self.matrices_path.items():
             matrix = pd.read_csv(path)
 
-
             if "origin" in matrix.columns and "destination" in matrix.columns:
-                matrix = ctk.pandas_utils.long_to_wide_infill(matrix.set_index(["origin", "destination"])["trips"])
-            
+                matrix = ctk.pandas_utils.long_to_wide_infill(
+                    matrix.set_index(["origin", "destination"])["trips"]
+                )
+
             matrices[name] = matrix
 
-
-        from_col = f"{self.from_zoning}_id" 
+        from_col = f"{self.from_zoning}_id"
         to_col = f"{self.to_zoning}_id"
         factor_col = f"{self.from_zoning}_to_{self.to_zoning}"
 
-        translation = pd.read_csv(self.translation_path, usecols=[from_col, to_col, factor_col])
-        #TODO(kf) add validation of from and to col not in factor col
+        translation = pd.read_csv(
+            self.translation_path, usecols=[from_col, to_col, factor_col]
+        )
+        # TODO(kf) add validation of from and to col not in factor col
 
         with pd.ExcelWriter(self.outpath, mode="w") as writer:
 
             for name, matrix in matrices.items():
                 report = MatrixReport(matrix, translation, from_col, to_col, factor_col)
                 report.write_to_excel(writer, name, True)
-
-                
 
 
 class MatrixReport:
@@ -130,8 +130,6 @@ class MatrixReport:
         if output_matrix is True:
             self.matrix.to_excel(writer, sheet_name=f"{sheet_prefix}Matrix")
 
-        
-
     @property
     def trip_ends(self) -> pd.DataFrame:
         return pd.DataFrame({"row_sums": self.row_sum, "col_sums": self.column_sum})
@@ -183,7 +181,12 @@ def matrix_describe(matrix: pd.DataFrame, almost_zero: Optional[int] = None) -> 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--config", help = "Path to config file to use", default=r"matrix_summary_config.yaml")
+    parser.add_argument(
+        "-c",
+        "--config",
+        help="Path to config file to use",
+        default=r"matrix_summary_config.yaml",
+    )
     args = parser.parse_args()
 
     report = MatrixReportInput.load_yaml(args.config)

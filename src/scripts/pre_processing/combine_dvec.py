@@ -51,8 +51,10 @@ def zone_dvec(in_path: str, out_path: str) -> None:
     ).save(out_path)
 
 
-
-zone_dvec(r"F:\Working\Land-Use\OUTPUTS_base_employment_bres_approach_a_weighting_2_level_check\02_Final Outputs\Output E6.hdf", r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\inputs\TfN-Land-Use-Pop\jobs-26-11-24.dvec")
+zone_dvec(
+    r"F:\Working\Land-Use\OUTPUTS_base_employment_bres_approach_a_weighting_2_level_check\02_Final Outputs\Output E6.hdf",
+    r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\inputs\TfN-Land-Use-Pop\jobs-26-11-24.dvec",
+)
 
 
 concat_dvecs(

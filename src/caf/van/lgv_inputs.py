@@ -16,8 +16,7 @@ from multiprocessing import Value
 import re
 import string
 from pathlib import Path
-from typing import Any, Callable, Optional, Union, Literal
-import glob
+from typing import Any, Callable, Optional, Literal
 
 # Third Party
 
@@ -36,41 +35,16 @@ from caf.van.utilities import DataPaths
 
 ##### CONSTANTS #####
 LOG = logging.getLogger(__name__)
+
 HH_PROJECTIONS_HEADER = {"Area Description": str, "HHs": float}
 """Column names (and data types) for input CSV to `household_projections` function."""
-BRES_HEADER: dict[str, type] = {
-    "Area": str,
-    "mnemonic": str,
-    "A : Agriculture, forestry and fishing": float,
-    "B : Mining and quarrying": float,
-    "C : Manufacturing": float,
-    "D : Electricity, gas, steam and air conditioning supply": float,
-    "E : Water supply; sewerage, waste management and remediation activities": float,
-    "F : Construction": float,
-    "G : Wholesale and retail trade; repair of motor vehicles and motorcycles": float,
-    "H : Transportation and storage": float,
-    "I : Accommodation and food service activities": float,
-    "J : Information and communication": float,
-    "K : Financial and insurance activities": float,
-    "L : Real estate activities": float,
-    "M : Professional, scientific and technical activities": float,
-    "N : Administrative and support service activities": float,
-    "O : Public administration and defence; compulsory social security": float,
-    "P : Education": float,
-    "Q : Human health and social work activities": float,
-    "R : Arts, entertainment and recreation": float,
-    "S : Other service activities": float,
-    (
-        "T : Activities of households as employers;undifferentiated "
-        "goods-and services-producing activities of households for own use"
-    ): float,
-    "U : Activities of extraterritorial organisations and bodies": float,
-}
-"""Column names (and data types) for input CSV to `filtered_bres` function."""
+
 LGV_PARAMETERS_SHEET = "Parameters"
 """Name of the sheet containing the main LGV parameters."""
+
 LGV_PARAMETERS_COLUMNS = {"Parameter": str, "Value": float}
 """Column names in the `LGV_PARAMETERS_SHEET`."""
+
 LGV_PARAMETERS = {
     "lgv_growth": "LGV growth",
     "avg_new_house_size": "Average new house size",
@@ -78,8 +52,10 @@ LGV_PARAMETERS = {
     "year": "Model Year",
 }
 """Names of the parameters (values) expected and their internal code name (keys)."""
+
 TIME_PERIOD_SHEET = "Time Period Factors"
 """Name of the Excel Worksheet containing the time period factors."""
+
 TIME_PERIOD_COLUMNS = {
     "time_period": ("Time Period", str),
     "service": ("Service", float),
@@ -91,8 +67,10 @@ TIME_PERIOD_COLUMNS = {
     "personal": ("Personal", float),
 }
 """Name and dtype of the expected columns in the time period table."""
+
 GM_PARAMS_SHEET = "Gravity Model Parameters"
 """Name of the Excel Worksheet containing the gravity model parameters."""
+
 GM_PARAMS_COLUMNS = {
     "segment": ("Segment", str),
     "furness_type": ("Furness Constraint Type", str),
@@ -102,6 +80,7 @@ GM_PARAMS_COLUMNS = {
     "calibrate": ("Run Calibration", str),
 }
 """Name and dtype of the expected columns in the gravity model parameters table."""
+
 LGV_SEGMENTS = [
     "service",
     "delivery_parcel_stem",
@@ -111,8 +90,12 @@ LGV_SEGMENTS = [
     "commuting_skilled_trades",
 ]
 "Names of the LGV segments."
+
 EXAMPLE_CONFIG_NAME = "LGV_config_example.yml"
+"""Name of the example config file to write."""
+
 DEFAULT_PERSONAL_PURPOSES = (3, 4, 5, 6, 7, 8, 13, 14, 15, 16, 18)
+"""Default personal purposes to include in the LGV model."""
 
 
 ##### CLASSES #####
@@ -121,72 +104,89 @@ class CommuteWarehousePaths:
     """Paths to LSOA warehouse data for the commute segment."""
 
     medium: types.FilePath
+    """Path to the medium weighted warehouse data."""
     low: Optional[types.FilePath] = None
+    """Path to the low weighted warehouse data."""
     high: Optional[types.FilePath] = None
+    """Path to the high weighted warehouse data."""
 
 
 @dataclasses.dataclass
 class DwellingPaths:
+    """Paths to the TfN dwelling CSVs and zone correspondence."""
+
     occupied: types.FilePath
+    """Path to the occupied dwellings data DVector.
+    No specific segmentation is required as it is aggregated to total households by zone."""
     zc_path: types.FilePath
+    """Path to the zone correspondence CSV."""
     unoccupied: Optional[types.FilePath] = None
+    """Path to the unoccupied dwellings data DVector. 
+    No specific segmentation is required as it is aggregated to total households by zone."""
 
 
 @dataclasses.dataclass
 class EmploymentPaths:
+    """Path to the TfN employment land-use data and zone correspondence."""
+
     path: types.FilePath
+    """Path to the TfN Land-use DVector. Required segmentation is 'sic_1_digit'."""
     zc_path: types.FilePath
-    
+    """Path to the zone correspondence CSV."""
+
 
 @dataclasses.data
 class ZoneTranslationDefinition:
     """Contains the path and column names of the zone translation."""
+
     path: types.FilePath
+    """Path to the zone translation CSV."""
     from_zoning: str
+    """Name of the zoning to translate from."""
     to_zoning: str
+    """Name of the zoning to translate to."""
+
 
 class LGVInputPaths(caf.toolkit.BaseConfig):
     """Dataclass storing paths to all the input files for the LGV model."""
 
     zoning: str
-    household_paths: DwellingPaths  # TODO Land-use - change with land use rebase
+    """Name of the zoning system to use for the model."""
+    household_paths: DwellingPaths
     """Paths for the households data and zone correspondence."""
-    employment_paths: EmploymentPaths  # TODO Land-use - change with land use rebase
-    """Path to the BRES data CSV at LSOA level."""
-    warehouse_path: types.FilePath  # TODO Land-use - change with land use rebase
-    """Path for the warehouse floorspace data CSV at LSOA level."""
-    commute_warehouse_paths: (
-        CommuteWarehousePaths  # TODO Land-use - change with land use rebase
-    )
-    parameters_path: types.FilePath  # TODO change for MultiTLD
+    employment_paths: EmploymentPaths
+    """Paths to the TfN employment land-use data."""
+    warehouse_path: types.FilePath
+    """Path for the warehouse floorspace data CSV at LSOA level for the delivery segment."""
+    commute_warehouse_paths: CommuteWarehousePaths
+    """Paths to the LSOA warehouse data for the commute segment."""
+    parameters_path: types.FilePath
     """Path to the LGV parameters Excel workbook."""
-    qs606ew_path: types.FilePath  # TODO Land-use - change with land use rebase
-    """Path to the England & Wales Census Occupation data CSV."""
-    qs606sc_path: types.FilePath  # TODO Land-use - change with land use rebase
-    """Path to the Scottish Census Occupation data CSV."""
+    qs606ew_path: types.FilePath
+    """Path to the 2011 England & Wales Census Occupation data CSV."""
+    qs606sc_path: types.FilePat
+    """Path to the 2011 Scottish Census Occupation data CSV."""
     constructions_path: types.FilePath
-    """Path to GB construction data csv"""
-    lsoa_lookup_path: types.FilePath  # TODO Land-use - change with land use rebase
+    """Path to GB construction data csv."""
+    lsoa_lookup_path: types.FilePath
     """Path to the LSOA to NoHAM zone correspondence CSV."""
-    msoa_lookup_path: types.FilePath  # keep as is
+    msoa_lookup_path: types.FilePath
     """Path to the MSOA to NoHAM zone correspondence CSV."""
-    lad_lookup_path: types.FilePath  # keep as is
+    lad_lookup_path: types.FilePath
     """Path to the Local Authority District to NoHAM zone correspondence
     CSV"""
     tripend_balancing_regions_path: types.FilePath
     """Path to csv containing trip end balancing regions"""
-    model_study_area: types.FilePath  # This isnt used - get rid
+    model_study_area: types.FilePath  # TODO(KF) This isnt used - get rid
     """Path to CSV containing lookup for zones in model study area."""
     summary_zone_translation: ZoneTranslationDefinition
     """Path to MSOA to CA sector correspondance CSV"""
-    cost_matrix_path: types.FilePath  # keep as is TODO?
+    cost_matrix_path: types.FilePath
     """Path to CSV containing cost matrix, should be square matrix with
     zone numbers as column names and indices."""
-    calibration_matrix_path: Optional[types.FilePath] = None  # keep as is TODO?
-    """Path to CSV containing calibration matrix, should be square matrix"""
     gm_parameters: dict[str, GMInputs]
     """Dictionary of gravity model parameters for each segment."""
-    output_folder: types.DirectoryPath  # keep as is
+    output_folder: types.DirectoryPath
     """Path to folder to save outputs to."""
     normits_pa_folder: types.DirectoryPath  # keep as is
     """Path to the full PA Normits matrices, should contain all non home
@@ -199,35 +199,9 @@ class LGVInputPaths(caf.toolkit.BaseConfig):
     just include van data 4% is a starting point"""
     personal_purposes: list[int] = fields.Field(
         default_factory=lambda: list(DEFAULT_PERSONAL_PURPOSES)
-    )  # keep as is
+    )
     """Personal purpose types defined by Normits"""
-
     _model_output_folder: Path | None = fields.PrivateAttr(None)
-
-    @classmethod
-    def write_example(cls, path: Path, **examples: str) -> None:
-        """Write examples to a config file.
-
-        Parameters
-        ----------
-        path : Path
-            Path to the YAML file to write.
-        examples : str
-            Fields of the config to write, any missing fields
-            are filled in with their default value (if they have
-            one) or 'REQUIRED' / 'OPTIONAL'.
-        """
-        data = {}
-        for name, field in cls.__fields__.items():
-            if field.default is not None:
-                value = field.default
-            else:
-                value = "REQUIRED" if field.required else "OPTIONAL"
-
-            data[name] = examples.get(name, value)
-
-        example = cls.construct(**data)
-        example.save_yaml(path)
 
     @property
     def model_output_folder(self) -> Path:
@@ -254,7 +228,6 @@ class InfillMethod(enum.Enum):
     ZERO = "zero"
 
     @classmethod
-    @property
     def method_lookup(cls) -> dict[InfillMethod, InfillFunction]:
         """Lookup for the infill functions."""
         return {
@@ -267,63 +240,10 @@ class InfillMethod(enum.Enum):
 
     def method(self) -> InfillFunction:
         """Function to calculate infilling value."""
-        return self.method_lookup[self]
+        return self.method_lookup()[self]
 
 
 ##### FUNCTIONS #####
-def write_example_config(path: Path | None) -> None:
-    """Write an example config file to given `path`."""
-    if path is None:
-        path = Path(EXAMPLE_CONFIG_NAME)
-
-    commute_warehouse_doc = (
-        "CSV of LSOA warehouse floorspace for commute "
-        "segment ({weight} weighting), {required}"
-    )
-
-    with dataclasses.set_validation(DataPaths, False):
-        with dataclasses.set_validation(CommuteWarehousePaths, False):
-            example_data = dict(
-                household_paths=DataPaths(
-                    "LGV Households",
-                    "CSV of households data",
-                    "Zone correspondence CSV",
-                ),
-                bres_path="Path to the BRES data CSV at LSOA level",
-                warehouse_path="Path for the warehouse floorspace data CSV at LSOA level",
-                commute_warehouse_paths=CommuteWarehousePaths(
-                    commute_warehouse_doc.format(weight="medium", required="required"),
-                    commute_warehouse_doc.format(weight="low", required="optional"),
-                    commute_warehouse_doc.format(weight="high", required="optional"),
-                ),
-                parameters_path="Path to parameters spreadsheet",
-                qs606ew_path="Path to the England & Wales Census Occupation data CSV",
-                qs606sc_path="Path to the Scottish Census Occupation data CSV",
-                sc_w_dwellings_path="Path to the Scottish and Welsh dwellings data CSV",
-                e_dwellings_path="Path to the English dwellings data XLSX",
-                ndr_floorspace_path="Path to the NDR Business Floorspace CSV.",
-                lsoa_lookup_path="Path to the LSOA to model zone correspondence CSV",
-                msoa_lookup_path="Path to the MSOA to model zone correspondence CSV",
-                lad_lookup_path="Path to the Local Authority District to "
-                "model zone correspondence CSV",
-                model_study_area="Path to CSV containing lookup for zones in model study area",
-                cost_matrix_path="Path to CSV containing cost matrix, should "
-                "be square matrix with zone numbers as column names and indices",
-                calibration_matrix_path="Path to CSV containing calibration matrix, "
-                "should be square matrix with zone numbers as column names and indices",
-                trip_distributions_path="Path to Excel Workbook containing all the "
-                "trip cost distributions",
-                output_folder="Path to folder to save outputs to",
-                normits_pa_folder="Path to the full PA Normits matrices, should contain all non house bound and house bound matrices",
-                normits_to_msoa_lookup="Normits to MSOA lookup, this is NoHAM to MSOA lookup as the results are taken after normits results are converted back to NoHAM",
-                normits_to_personal_factor="This is the factor that the personal data should have applied to just include van data 4% is a starting point",
-                personal_purposes="Personal purpose types defined by Normits",
-            )
-
-    LGVInputPaths.write_example(path, **example_data)
-    LOG.info("Written example config: %s", path)
-
-
 def household_projections(
     occupied_paths: Path,
     zone_lookup: Path,
@@ -378,34 +298,31 @@ def filtered_employment(
     paths: EmploymentPaths,
     aggregation: dict[str, tuple[int]],
 ) -> pd.DataFrame:
-    """Read and filter the ONS BRES data CSV.
+    """Read and aggregated the TfN employment land-use DVector.
 
-    The ONS BRES data should be a CSV containing metadata in the top
-    9 rows then row 10 should contain the column names (see
-    `BRES_HEADER` for names and expected data types).
+    The DVector should contain the 'sic_1_digit' segmentation, any other segmentation will be
+    aggregated.
 
     Parameters
     ----------
-    path : Path
-        Path to the CSV containing BRES data.
-    zone_lookup : Path or pd.DataFrame
-        Path to zone correspondence CSV or zone lookup dataframe.
+    path : EmploymentPaths
+        Contains DVector containing the employment data and the zone correspondence
+        between the DVector zoning and the model zoning system.
     aggregation : dict[str, tuple[str]]
         Dictionary containing names of any industry columns
         to aggregate together, the keys should be the name
         of the new column to create and the tuple should
-        contain the column letters to aggregate together e.g.
-        {"agg 1": ("I", "J", "K"), "agg 2": ("M", "N")}.
+        contain the 'sic_1_digit' IDs to aggregate together
+        (ints corresponding to the letter segmentation).
 
     Returns
     -------
     pd.DataFrame
-        BRES data with industry columns aggregated and converted
+        TfN Land-Use data with 'sic_1_digit' IDs aggregated and converted
         to the model zone system, contains 'Zone' column with zone
         numbers and then one column per item in `aggregation` (key
         is the column name).
     """
-
     emp = caf.base.DVector.load(paths.path)
 
     emp = emp.translate_zoning(
@@ -430,30 +347,9 @@ def filtered_employment(
     return filtered_employment_data
 
 
-def letters_range(start: str = "A", end: str = "Z") -> str:
-    """Iterates through all uppercase letters from `start` to `end`, inclusive.
-
-    Parameters
-    ----------
-    start : str, optional
-        Letter to start the iteration from (inclusive), by default "A".
-    end : str, optional
-        Letter to end the iteration at (inclusive), by default "Z".
-
-    Yields
-    -------
-    Iterator[str]
-        Single uppercase ascii letter.
-    """
-    letters = string.ascii_uppercase
-    s = letters.find(start.upper().strip())
-    e = letters.find(end.upper().strip())
-    for l in letters[s : e + 1]:
-        yield l
-
-
 def load_warehouse_floorspace(
-    path: Path, zone_lookup: Path, infill_method: InfillMethod | None = None
+    path: Path,
+    zone_lookup: Path,
 ) -> pd.DataFrame:
     """Load warehouse floorspace data and convert to model zone system.
 
@@ -588,6 +484,7 @@ def read_time_factors(path: Path) -> dict[str, dict[str, float]]:
     rename = {v[0]: k for k, v in TIME_PERIOD_COLUMNS.items()}
     df.rename(columns=rename, inplace=True)
     return df.to_dict(orient="index")
+
 
 @dataclasses.dataclass
 class GMInputs:

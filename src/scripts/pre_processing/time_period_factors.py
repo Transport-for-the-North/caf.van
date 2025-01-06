@@ -35,32 +35,33 @@ TIME_LOOKUP = {
 }
 
 
-TIME_HOUR_LOOKUP = {"AM":3, "IP":6, "PM":3, "OP":12}
+TIME_HOUR_LOOKUP = {"AM": 3, "IP": 6, "PM": 3, "OP": 12}
 WEEKS_MONTH_LOOKUP = {
-    "january": 4 + 3/7,
-    "febuary": 4 + 0.25/7,
-    "march": 4 + 3/7,
-    "april": 4 + 2/7,
-    "may": 4 + 3/7,
-    "june": 4 + 2/7,
-    "july": 4 + 3/7,
-    "august": 4 + 3/7,
-    "september": 4 + 2/7,
-    "october": 4 + 3/7,
-    "november": 4 + 2/7,
-    "december": 4 + 3/7,
+    "january": 4 + 3 / 7,
+    "febuary": 4 + 0.25 / 7,
+    "march": 4 + 3 / 7,
+    "april": 4 + 2 / 7,
+    "may": 4 + 3 / 7,
+    "june": 4 + 2 / 7,
+    "july": 4 + 3 / 7,
+    "august": 4 + 3 / 7,
+    "september": 4 + 2 / 7,
+    "october": 4 + 3 / 7,
+    "november": 4 + 2 / 7,
+    "december": 4 + 3 / 7,
 }
 
 WEEKDAYS = ["tuesday", "wednesday", "thursday"]
 
+
 class TimePeriodInputs(ctk.BaseConfig):
     van_stats_path: str
     day_distribution_path: str
-    month_distribution_path: str 
+    month_distribution_path: str
     month: str
-    day: str 
+    day: str
     year: int
-    out_path:str
+    out_path: str
 
     def parse(self) -> TimePeriodParams:
         van_stats = pd.read_excel(
@@ -82,7 +83,9 @@ class TimePeriodInputs(ctk.BaseConfig):
         )
         van_stats = van_stats.fillna(method="ffill")
 
-        van_stats = van_stats[van_stats["frequency"]=="Frequent Travel (at least 4 days per week)"]
+        van_stats = van_stats[
+            van_stats["frequency"] == "Frequent Travel (at least 4 days per week)"
+        ]
         van_stats = van_stats[["road_type", "service", "delivery", "private_domestic"]]
 
         day_distribution = pd.read_excel(
@@ -105,15 +108,16 @@ class TimePeriodInputs(ctk.BaseConfig):
             ],
         )
 
-        day_distribution = day_distribution[day_distribution["year"]==self.year]
-        day_distribution = day_distribution[day_distribution["vehicle_type"]=="Light Commercial Vehicles"]
+        day_distribution = day_distribution[day_distribution["year"] == self.year]
+        day_distribution = day_distribution[
+            day_distribution["vehicle_type"] == "Light Commercial Vehicles"
+        ]
 
         day_distribution["time"] = day_distribution["time"].replace(TIME_LOOKUP)
 
-        day_distribution["average_day"] = day_distribution[WEEKDAYS].mean(axis = 1)
+        day_distribution["average_day"] = day_distribution[WEEKDAYS].mean(axis=1)
 
         day_distribution = day_distribution.groupby("time")["average_day"].sum()
-
 
         month_distribution = pd.read_excel(
             self.month_distribution_path,
@@ -128,11 +132,20 @@ class TimePeriodInputs(ctk.BaseConfig):
             month_distribution["month"].str.lower() == self.month.lower()
         ]
 
-        filtered_month_distribution = filtered_month_distribution[filtered_month_distribution["year"]==self.year]
-        filtered_month_distribution = filtered_month_distribution[filtered_month_distribution["road_type"]=="All roads"]
-        month_index =filtered_month_distribution["van_index"].squeeze()
+        filtered_month_distribution = filtered_month_distribution[
+            filtered_month_distribution["year"] == self.year
+        ]
+        filtered_month_distribution = filtered_month_distribution[
+            filtered_month_distribution["road_type"] == "All roads"
+        ]
+        month_index = filtered_month_distribution["van_index"].squeeze()
 
-        return TimePeriodParams(van_stats, day_distribution.to_dict(), month_index, WEEKS_MONTH_LOOKUP[self.month.lower()])
+        return TimePeriodParams(
+            van_stats,
+            day_distribution.to_dict(),
+            month_index,
+            WEEKS_MONTH_LOOKUP[self.month.lower()],
+        )
 
 
 @dataclasses.dataclass
@@ -142,14 +155,26 @@ class TimePeriodParams:
     month_distribution: float
     weeks_in_month: float
 
-def calculate_time_period_factors(day_time_profiles: dict ,month_distribution:float, weeks_in_month)->pd.DataFrame:
+
+def calculate_time_period_factors(
+    day_time_profiles: dict, month_distribution: float, weeks_in_month
+) -> pd.DataFrame:
     profiles = {}
     for tp, day_factor in day_time_profiles.items():
-        profiles[tp] = (month_distribution/(12*100)) * (1/weeks_in_month)* (day_factor/(100*7*24))*(1/TIME_HOUR_LOOKUP[tp])
+        profiles[tp] = (
+            (month_distribution / (12 * 100))
+            * (1 / weeks_in_month)
+            * (day_factor / (100 * 7 * 24))
+            * (1 / TIME_HOUR_LOOKUP[tp])
+        )
     return pd.Series(profiles).to_frame("profile")
 
 
 time_period_inputs = TimePeriodInputs.load_yaml(r"src\scripts\time_period_factors.yaml")
 time_profile_inputs = time_period_inputs.parse()
-time_profile = calculate_time_period_factors(time_profile_inputs.day_time_profiles, time_profile_inputs.month_distribution, time_profile_inputs.weeks_in_month)
+time_profile = calculate_time_period_factors(
+    time_profile_inputs.day_time_profiles,
+    time_profile_inputs.month_distribution,
+    time_profile_inputs.weeks_in_month,
+)
 time_profile.to_csv(time_period_inputs.out_path)

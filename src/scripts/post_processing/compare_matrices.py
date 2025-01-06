@@ -40,9 +40,7 @@ def create_comparisons_path(
     return comparisions
 
 
-def compare_matrices(
-    comparision_paths: dict[str, pathlib.Path]
-) -> dict[str, pd.DataFrame]:
+def compare_matrices(comparision_paths: dict[str, pathlib.Path]) -> dict[str, pd.DataFrame]:
     comparisons = {}
     for name, path in comparision_paths.items():
         comparisons[name] = pd.read_excel(path, sheet_name="Matrix", index_col=0)
@@ -73,9 +71,7 @@ def compare_tlds(
 
         for dist_name, sheet in all_sheets.items():
 
-            if dist_name.startswith(
-                "Achieved Distribution"
-            ):
+            if dist_name.startswith("Achieved Distribution"):
 
                 if "from" in sheet.columns:
                     comparisons[f"{dist_name[-1]}_{run_name}"] = (
@@ -87,16 +83,11 @@ def compare_tlds(
                             trips_col="normalised",
                         )
                     )
-                    
 
                 else:
-                    label= re.search(r'\d{1,2}$', dist_name).group()
-                    comparisons[f"{label}_{run_name}"] = (
-                            ctk.cost_utils.CostDistribution(sheet)
-                    )
-            elif dist_name.startswith(
-                "Target Distribution"
-            ):
+                    label = re.search(r"\d{1,2}$", dist_name).group()
+                    comparisons[f"{label}_{run_name}"] = ctk.cost_utils.CostDistribution(sheet)
+            elif dist_name.startswith("Target Distribution"):
 
                 if "from" in sheet.columns:
                     comparisons[f"target_{dist_name[-1]}_{run_name}"] = (
@@ -108,21 +99,17 @@ def compare_tlds(
                             trips_col="normalised",
                         )
                     )
-                    
 
                 else:
 
                     comparisons[f"target_{dist_name[-1]}_{run_name}"] = (
-                            ctk.cost_utils.CostDistribution(sheet)
+                        ctk.cost_utils.CostDistribution(sheet)
                     )
 
-                    
     _plot_tlds(comparisons, output_path)
 
 
-def compare_matrix_summaries(
-    comparision_paths: dict[str, pathlib.Path]
-) -> pd.DataFrame:
+def compare_matrix_summaries(comparision_paths: dict[str, pathlib.Path]) -> pd.DataFrame:
 
     comparisons = None
     for name, path in comparision_paths.items():
@@ -135,9 +122,7 @@ def compare_matrix_summaries(
     return comparisons
 
 
-def create_trip_end_comparisions(
-    dirs: dict[str, str], out_dir: pathlib.Path
-) -> pd.DataFrame:
+def create_trip_end_comparisions(dirs: dict[str, str], out_dir: pathlib.Path) -> pd.DataFrame:
     comparisons = create_comparisons_path(dirs, "_trip_ends")
     with pd.ExcelWriter(out_dir / "tripend_comparison.xlsx") as steve:
         for name, comp in comparisons.items():
@@ -222,27 +207,15 @@ def compare_trip_ends(comp: dict[str, pathlib.Path]) -> pd.DataFrame:
     for combo in itertools.combinations(keys, 2):
         df1, df2 = comparisons[combo[0]], comparisons[combo[1]]
         try:
-            results[f"{combo[0]}_productions"] = matrix_describe(
-                df1["Productions"], 0.1
-            )
-            results[f"{combo[1]}_productions"] = matrix_describe(
-                df2["Productions"], 0.1
-            )
-            results[f"{combo[0]}_attractions"] = matrix_describe(
-                df1["Attractions"], 0.1
-            )
-            results[f"{combo[1]}_attractions"] = matrix_describe(
-                df2["Attractions"], 0.1
-            )
+            results[f"{combo[0]}_productions"] = matrix_describe(df1["Productions"], 0.1)
+            results[f"{combo[1]}_productions"] = matrix_describe(df2["Productions"], 0.1)
+            results[f"{combo[0]}_attractions"] = matrix_describe(df1["Attractions"], 0.1)
+            results[f"{combo[1]}_attractions"] = matrix_describe(df2["Attractions"], 0.1)
         except KeyError:
             results[f"{combo[0]}_origins"] = matrix_describe(df1["Origins"], 0.1)
             results[f"{combo[1]}_origins"] = matrix_describe(df2["Origins"], 0.1)
-            results[f"{combo[0]}_destinations"] = matrix_describe(
-                df1["Destinations"], 0.1
-            )
-            results[f"{combo[1]}_destinations"] = matrix_describe(
-                df2["Destinations"], 0.1
-            )
+            results[f"{combo[0]}_destinations"] = matrix_describe(df1["Destinations"], 0.1)
+            results[f"{combo[1]}_destinations"] = matrix_describe(df2["Destinations"], 0.1)
 
     return pd.DataFrame(results)
 
@@ -294,9 +267,7 @@ def intra_mean(cost_matrix_path: str, sector_path: str):
     return pd.DataFrame(alan)
 
 
-def _plot_tlds(
-    tlds: dict[str, ctk.cost_utils.CostDistribution], output_path: pathlib.Path
-):
+def _plot_tlds(tlds: dict[str, ctk.cost_utils.CostDistribution], output_path: pathlib.Path):
     tld_data = []
     for name, tld in tlds.items():
         data = pd.DataFrame(
@@ -305,9 +276,7 @@ def _plot_tlds(
                 "Distance (km)": tld.avg_vals,
                 "Trip Proportion": tld.band_share_vals,
                 "Trips": tld.trip_vals,
-                "Bin Range (km)": [
-                    f"{i} - {j}" for i, j in zip(tld.min_vals, tld.max_vals)
-                ],
+                "Bin Range (km)": [f"{i} - {j}" for i, j in zip(tld.min_vals, tld.max_vals)],
             }
         )
         tld_data.append(data)
@@ -350,11 +319,11 @@ def _plot_tlds(
 create_trip_end_comparisions(
     {
         "VOA_tld": r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\development_outputs\2023_NorMITS_VOA_GOR_calibrate\trip ends\*.csv",
-        #"NorMITs_no_voa": r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\development_outputs\2023_NorMITs_no_VOA\trip ends\*.csv",
+        # "NorMITs_no_voa": r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\development_outputs\2023_NorMITs_no_VOA\trip ends\*.csv",
         "NorMITs_v2": r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\development_outputs\2023_NorMITs_LUR_v2_1\trip ends\*.csv",
-        #"NorMITs_LUR": r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\development_outputs\2023_NorMITs-full_LUR\trip ends\*.csv",
-        #"NorMITs_census": r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\development_outputs\2023_NorMITS\trip ends\*.csv",
-        #"NTEM": r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\development_outputs\2023_NTEM\trip ends\*.csv",
+        # "NorMITs_LUR": r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\development_outputs\2023_NorMITs-full_LUR\trip ends\*.csv",
+        # "NorMITs_census": r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\development_outputs\2023_NorMITS\trip ends\*.csv",
+        # "NTEM": r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\development_outputs\2023_NTEM\trip ends\*.csv",
     },
     pathlib.Path(
         r"C:\Users\KieranFishwick\OneDrive - Transport for the North\Documents\caf-van_rebase\comparisons\VOA_TLD"
@@ -363,11 +332,11 @@ create_trip_end_comparisions(
 create_matrix_comparisons(
     {
         "VOA_tld": r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\development_outputs\2023_NorMITS_VOA_GOR_calibrate\annual trip matrices\*-GM_log.xlsx",
-        #"NorMITs_no_voa": r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\development_outputs\2023_NorMITs_no_VOA\annual trip matrices\*-GM_log.xlsx",
+        # "NorMITs_no_voa": r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\development_outputs\2023_NorMITs_no_VOA\annual trip matrices\*-GM_log.xlsx",
         "NorMITs_v2": r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\development_outputs\2023_NorMITs_LUR_v2_1\annual trip matrices\*-GM_log.xlsx",
-        #"NorMITs_LUR": r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\development_outputs\2023_NorMITs-full_LUR\annual trip matrices\*-GM_log.xlsx",
-        #"NorMITs_census": r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\development_outputs\2023_NorMITS\annual trip matrices\*-GM_log.xlsx",
-        #"NTEM": r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\development_outputs\2023_NTEM\annual trip matrices\*-GM_log.xlsx",
+        # "NorMITs_LUR": r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\development_outputs\2023_NorMITs-full_LUR\annual trip matrices\*-GM_log.xlsx",
+        # "NorMITs_census": r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\development_outputs\2023_NorMITS\annual trip matrices\*-GM_log.xlsx",
+        # "NTEM": r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\development_outputs\2023_NTEM\annual trip matrices\*-GM_log.xlsx",
     },
     pathlib.Path(
         r"C:\Users\KieranFishwick\OneDrive - Transport for the North\Documents\caf-van_rebase\comparisons\VOA_TLD"
