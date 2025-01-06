@@ -12,9 +12,8 @@ import logging
 import pprint
 import warnings
 from dataclasses import dataclass, field
-from datetime import datetime
 from pathlib import Path
-from typing import Callable, Literal
+from typing import Callable, Literal, Optional
 
 # Third Party
 from caf.distribute import gravity_model, cost_functions
@@ -55,6 +54,7 @@ TRIP_DISTRIBUTION_SHEETS = {
     "commuting_skilled_trades": "Commuting",
 }
 """Name of sheet in trip distributions file for each segment."""
+
 PA_MATRICES = [
     "service",
     "delivery_parcel_stem",
@@ -62,25 +62,30 @@ PA_MATRICES = [
     "commuting_skilled_trades",
 ]
 """List of matrices which are in PA format and will be converted to OD."""
-NTEM_PURPOSES = {"hb": list(range(1, 9)), "nhb": [12, 13, 14, 15, 16, 18]}
-PERSONAL_TIME_PERIODS = [1, 2, 3, 4]
 
+NTEM_PURPOSES = {"hb": list(range(1, 9)), "nhb": [12, 13, 14, 15, 16, 18]}
+"""NTEM purpose to hb/nhb correspondence."""
+
+PERSONAL_TIME_PERIODS = [1, 2, 3, 4]
+"""Time periods to aggregate NHB together for."""
 
 TRIP_DISTRIBUTION_COLS = dict.fromkeys(
     ("start", "end", "average", "observed proportions"), float
 )
 """Names and dtypes of the columns expected in the trip distributions input."""
+
 FUNCTION_LABELS = {
     "log_normal": r"Log Normal: $\sigma={:.1e}$, $\mu={:.1e}$",
     "tanner": r"Tanner: $\alpha={:.1e}$, $\beta={:.1e}$",
 }
+"""Labels for the cost functions in the gravity model."""
 
-
-"""Time periods to aggregate NHB together for."""
-
+"""Definitions """
 PA_DIFFERENCE_TOL = 1e-3
+"""Tolerance for difference in productions and attractions."""
 
 DUMMY_CAT = 1
+"""Label to use when no category is given for the zones/tlds for the gravity model."""
 
 
 ##### CLASSES #####
@@ -275,7 +280,6 @@ def calculate_trip_ends(
     output_folder: Path,
     lgv_growth: float,
     year: int,
-    message_hook: Callable = print,
 ) -> LGVTripEnds:
     """Calculates the LGV trip ends for all segments.
 
@@ -289,8 +293,6 @@ def calculate_trip_ends(
         Model year LGV growth factor.
     year : int
         Model year.
-    message_hook : Callable, optional
-        Function for writing messages, by default print
 
     Returns
     -------
@@ -347,54 +349,54 @@ def calculate_trip_ends(
     for key in commute_trips:
         commute_trips[key].to_csv(output_folder / Path(f"commute_{key}_trip_ends.csv"))
 
-    if regions is not None:
-        LOG.info("Balancing Trip Ends")
-        service_te = balance_trip_ends(
-            service.trip_ends, regions, "Productions", "Attractions", "Service"
-        )
-        delivery_parcel_stem_te = balance_trip_ends(
-            delivery.parcel_stem_trip_ends,
-            regions,
-            "Productions",
-            "Attractions",
-            "Delivery Parcel Stem",
-        )
-        delivery_parcel_bush_te = balance_trip_ends(
-            delivery.parcel_bush_trip_ends,
-            regions,
-            "Origins",
-            "Destinations",
-            "Parcel Bush Trip Ends",
-        )
-        delivery_grocery_bush_te = balance_trip_ends(
-            delivery.grocery_bush_trip_ends,
-            regions,
-            "Origins",
-            "Destinations",
-            "Grocery Bush Trip Ends",
-        )
-        commute_drivers = balance_trip_ends(
-            commute_trips["Drivers"],
-            regions,
-            "Productions",
-            "Attractions",
-            "Commuting Drivers",
-        )
-        commute_skilled_trades = balance_trip_ends(
-            commute_trips["Skilled trades"],
-            regions,
-            "Productions",
-            "Attractions",
-            "Skilled Trades",
-        )
+    # if balancing regions aren't given,
+    # we create a lookup from all zones to 1 area to balance to trip end totals
+    if regions is None:
+        regions = model_zones.to_frame("zone_id")
+        regions["area"] = DUMMY_CAT
 
-    else:
-        service_te = service_te
-        delivery_parcel_stem_te = delivery_parcel_stem_te
-        delivery_parcel_bush_te = delivery_parcel_bush_te
-        delivery_grocery_bush_te = delivery_grocery_bush_te
-        commute_drivers = commute_drivers
-        commute_skilled_trades = commute_skilled_trades
+    # To avoid MyPy whinging
+    assert isinstance(regions, pd.DataFrame)
+
+    LOG.info("Balancing Trip Ends")
+    service_te = balance_trip_ends(
+        service.trip_ends, regions, "Productions", "Attractions", "Service"
+    )
+    delivery_parcel_stem_te = balance_trip_ends(
+        delivery.parcel_stem_trip_ends,
+        regions,
+        "Productions",
+        "Attractions",
+        "Delivery Parcel Stem",
+    )
+    delivery_parcel_bush_te = balance_trip_ends(
+        delivery.parcel_bush_trip_ends,
+        regions,
+        "Origins",
+        "Destinations",
+        "Parcel Bush Trip Ends",
+    )
+    delivery_grocery_bush_te = balance_trip_ends(
+        delivery.grocery_bush_trip_ends,
+        regions,
+        "Origins",
+        "Destinations",
+        "Grocery Bush Trip Ends",
+    )
+    commute_drivers = balance_trip_ends(
+        commute_trips["Drivers"],
+        regions,
+        "Productions",
+        "Attractions",
+        "Commuting Drivers",
+    )
+    commute_skilled_trades = balance_trip_ends(
+        commute_trips["Skilled trades"],
+        regions,
+        "Productions",
+        "Attractions",
+        "Skilled Trades",
+    )
 
     service_te.to_csv(output_folder / "service_trip_ends.csv")
     delivery_parcel_stem_te.to_csv(output_folder / "delivery_parcel_stem_trip_ends.csv")
@@ -466,10 +468,20 @@ def balance_trip_ends(
 
 
 class VanGravityModelResults:
+    """Contains the results and information for a gravity model run or calibration.
+    """    
     distribution: pd.DataFrame
+    """ Distributed trip matrix.
+    """    
     summary: pd.DataFrame
+    """ High level summary of the calibration/run.
+    """    
     zones: np.ndarray
+    """ Zones IDs within the matrix.
+    """    
     info: dict[str | int, gravity_model.GravityModelResults]
+    """ Detailed information for the calibration/run.
+    """    
 
     def __init__(
         self,
@@ -499,50 +511,45 @@ def _gravity_model(
 ) -> VanGravityModelResults:
     """Internal function used in `run_gravity_model` for running the GM with calibration."""
 
-    # check PA/OD are balanced - if not balance and add warning with difference
-
     tld_path = gm_data.trip_length_distribution_path
 
-    # we have to do this because caf distribute does not look at index values, just order
-    trip_ends = trip_ends.sort_index()  #
-    # define zones to order everthing on
+    # we have to do this because caf distribute does not look at index values, just order.
+    trip_ends = trip_ends.sort_index()
 
+    # define zones to order everthing on from the ordered trip end index.
     if trip_ends.index.has_duplicates:
         raise KeyError("Trip ends have duplicated zones labels. Please fix this")
 
     zones = trip_ends.index.to_numpy()
+    cost_matrix_validated = cost_matrix.loc[zones, zones].to_numpy()
 
     LOG.info("Running Gravity Model: %s, with calibration %s", name, calibrate)
 
-    # nonzero returns a tuple with array of indices
-    cost_matrix_validated = cost_matrix.loc[zones, zones].to_numpy()
-
-    # different segments require different cost function and starting params - we determine extract these below
-
     tld = pd.read_csv(tld_path)
 
-    # read in cat zone lookup if it exists
+    # Use cat zone lookup if it exists.
     if gm_data.cat_zone_correspondance_path is not None:
         cat_zone_correspondence = pd.read_csv(gm_data.cat_zone_correspondance_path)
     else:
-        # create a lookup for the whole matrix if cat zone hasnt been given
+        # If not, create a correspondence for all zones to one area i.e. run a single TLD gravity model.
         cat_zone_correspondence = pd.DataFrame({"zone_id": zones})
         cat_zone_correspondence["area"] = DUMMY_CAT
         tld["area"] = DUMMY_CAT
 
+
+    # Define the cost function and parameters
     if gm_data.cost_function == "log_normal":
         cost_function = cost_functions.BuiltInCostFunction.LOG_NORMAL.get_cost_function()
     elif gm_data.cost_function == "tanner":
         cost_function = cost_functions.BuiltInCostFunction.TANNER.get_cost_function()
     else:
-        raise NotImplemented(
+        raise NotImplementedError(
             f"cost function {gm_data.cost_function} is not implemented, please use either log_normal "
             "(mu, sigma) or tanner (alpha, beta)"
         )
 
     func_params = {}
     if isinstance(gm_data.cost_function_params, dict):
-        # process params when they are a dict
         for cat, params in gm_data.cost_function_params.items():
             func_params[cat] = extract_cost_func_params(params, gm_data.cost_function)
     else:
@@ -552,9 +559,6 @@ def _gravity_model(
                 gm_data.cost_function_params, gm_data.cost_function
             )
 
-    cost_distributions = []
-
-    # iterate through different TLD categories
     cost_distributions = gravity_model.MultiCostDistribution.from_pandas(
         pd.Series(zones),
         tld,
@@ -588,7 +592,9 @@ def _gravity_model(
         gravity_model_results = calib_gm.calibrate(
             cost_distributions,
             csv_logging_path,  # TODO figure out which key word args with default values needed to be changed
-            caf.distribute.gravity_model.multi_area.GMCalibParams(furness_jac=gm_data.furness_jacobian),
+            caf.distribute.gravity_model.multi_area.GMCalibParams(
+                furness_jac=gm_data.furness_jacobian
+            ),
             verbose=2,
         )
 
@@ -610,9 +616,28 @@ def _gravity_model(
 def extract_cost_func_params(
     cost_funct_params: tuple[float, ...], cost_func_name: Literal["log_normal", "tanner"]
 ) -> dict[str, float]:
+    """Extracts the cost function parameters from a tuple.
+
+    Parameters
+    ----------
+    cost_funct_params : tuple[float, ...]
+        Ordered parameters for the cost function.
+    cost_func_name : Literal["log_normal", "tanner"]
+        Name of the cost function.
+
+    Returns
+    -------
+    dict[str, float]
+        Unpacked cost function parameters.
+
+    Raises
+    ------
+    ValueError
+        If the cost function name is not recognised.
+    """    
     if cost_func_name == "log_normal":
 
-        func_params = {  # TODO how do we set input Params
+        func_params = {
             "mu": cost_funct_params[0],
             "sigma": cost_funct_params[1],
         }
@@ -631,7 +656,6 @@ def run_gravity_model(
     input_paths: LGVInputPaths,
     trip_ends: LGVTripEnds,
     output_folder: Path,
-    message_hook: Callable = print,
 ) -> dict[str, pd.DataFrame]:
     """Run the gravity model calibration for each segment.
 
@@ -643,8 +667,6 @@ def run_gravity_model(
         Trip ends for each segment.
     output_folder : Path
         Path to folder to save outputs.
-    message_hook : Callable, optional
-        Function for writing messages, by default print
 
     Returns
     -------
@@ -666,10 +688,10 @@ def run_gravity_model(
         pass
 
     for name, te in trip_ends.asdict().items():
+        
         if name == "zones":
             continue
-        # TODO put this back to normal once dev is done
-        # try:
+
         gm_params = input_paths.gm_parameters[name]
         calibrate = gm_params.calibrate
         calib_gm = _gravity_model(
@@ -681,16 +703,12 @@ def run_gravity_model(
             output_folder / f"gravity_model_{name}_calibration_log.csv",
         )
 
-        # TODO handle dictionary outputs for run method
-        # except Exception as e:
-        #    LOG.info("\t%s: %s", e.__class__.__name__, e)
-        #    continue
-
         # Check if segment outputs a PA matrix which needs to be converted
         if name in PA_MATRICES:
             # Save PA matrix to CSV and convert to OD dataframe
+
             LOG.info("\tConverting PA to OD")
-            # TODO KF: I am pretty sure this index and column labelling aligns, but I/you need to check
+
             pa_matrix = pd.DataFrame(calib_gm.distribution, index=te.index, columns=te.index)
             pa_matrix.to_csv(output_folder / (name + "-trip_matrix-PA.csv"))
 
@@ -717,7 +735,7 @@ def run_gravity_model(
         matrices[name].to_csv(path_or_buf=output_folder / (name + "-trip_matrix-OD.csv"))
 
         with pd.ExcelWriter(output_folder / (name + "-GM_log.xlsx")) as writer:
-            # TODO write out metadata
+            # TODO(kf) write out metadata
 
             summary = MatrixReport(
                 matrices[name],
@@ -1083,8 +1101,9 @@ def _check_gm_inputs(
         raise ValueError(f"{zero_costs} zeros in cost matrix")
     return data
 
+
 def calculate_vehicle_kms(
-    matrix: pd.DataFrame, distances: pd.DataFrame, internals: set[int] = None
+    matrix: pd.DataFrame, distances: pd.DataFrame, internals: Optional[set[int]] = None
 ) -> pd.DataFrame:
     """Summarise number of trips and vehicle kilometres by internal/external.
 
@@ -1133,6 +1152,7 @@ def calculate_vehicle_kms(
             df.loc[:, (c, "Percentage")] = df[(c, "Value")] / df.loc["All Trips", (c, "Value")]
         df.sort_index(axis=1, level=0, sort_remaining=False, inplace=True)
     return df
+
 
 def _check_matrix(matrix: np.ndarray):
     """Check given `matrix` is square."""
