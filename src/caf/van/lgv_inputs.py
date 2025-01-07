@@ -135,7 +135,7 @@ class EmploymentPaths:
     """Path to the zone correspondence CSV."""
 
 
-@dataclasses.data
+@dataclasses.dataclass
 class ZoneTranslationDefinition:
     """Contains the path and column names of the zone translation."""
 
@@ -164,23 +164,23 @@ class LGVInputPaths(caf.toolkit.BaseConfig):
     """Path to the LGV parameters Excel workbook."""
     qs606ew_path: types.FilePath
     """Path to the 2011 England & Wales Census Occupation data CSV."""
-    qs606sc_path: types.FilePat
+    qs606sc_path: types.FilePath
     """Path to the 2011 Scottish Census Occupation data CSV."""
     constructions_path: types.FilePath
     """Path to GB construction data csv."""
     lsoa_lookup_path: types.FilePath
-    """Path to the LSOA to NoHAM zone correspondence CSV."""
+    """Path to the LSOA to model zone correspondence CSV."""
     msoa_lookup_path: types.FilePath
-    """Path to the MSOA to NoHAM zone correspondence CSV."""
+    """Path to the MSOA to model zone correspondence CSV."""
     lad_lookup_path: types.FilePath
-    """Path to the Local Authority District to NoHAM zone correspondence
+    """Path to the Local Authority District to model zone correspondence
     CSV"""
     tripend_balancing_regions_path: types.FilePath
-    """Path to csv containing trip end balancing regions"""
+    """Path to csv containing trip end balancing regions to zone correspondence"""
     model_study_area: types.FilePath  # TODO(KF) This isnt used - get rid
     """Path to CSV containing lookup for zones in model study area."""
     summary_zone_translation: ZoneTranslationDefinition
-    """Path to MSOA to CA sector correspondance CSV"""
+    """Path to model zones to summary zones correspondance CSV"""
     cost_matrix_path: types.FilePath
     """Path to CSV containing cost matrix, should be square matrix with
     zone numbers as column names and indices."""
@@ -191,8 +191,8 @@ class LGVInputPaths(caf.toolkit.BaseConfig):
     normits_pa_folder: types.DirectoryPath  # keep as is
     """Path to the full PA Normits matrices, should contain all non home
     based and home based matrices"""
-    normits_to_msoa_lookup: types.FilePath  # keep as is
-    """Normits to MSOA(NTEM) lookup, this is NoHAM to NTEM lookup as the
+    normits_to_msoa_lookup: types.FilePath  #?????
+    """Normits to MSOA(NTEM) lookup, this is NorMITs to model zone lookup as the
     results are taken after normits results are converted back to NoHAM"""
     normits_to_personal_factor: float  # keep as is
     """This is the factor that the personal data should have applied to
@@ -249,17 +249,20 @@ def household_projections(
     zone_lookup: Path,
     unoccupied_paths: Optional[Path] = None,
 ) -> pd.DataFrame:
-    """Reads the household projections CSV and converts to model zone system.
+    """Reads and aggregates the household DVectors and converts to model zone system.
 
-    CSV should contain two columns with headers as defined in
-    `HH_PROJECTIONS_HEADER`.
+    No specific segmentation is required for the DVectors since the data is aggregated 
+    to households per zone.
 
     Parameters
     ----------
-    path : Path
-        Path to the household projections CSV.
+    occupied_paths : Path
+        Path to Occupied Dwellings DVector.
     zone_lookup : Path
         Path to the zone correspondence CSV.
+    unoccupied_paths : Optional[Path], optional
+        Path to Occupied Dwellings DVector. If None then only the occupied dwellings 
+        are used to calculate households. None by default.
 
     Returns
     -------
