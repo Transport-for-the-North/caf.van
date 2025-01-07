@@ -88,25 +88,25 @@ class MatrixReport:
     def write_to_excel(
         self, writer: pd.ExcelWriter, label: Optional[str] = None, output_matrix: bool = False
     ) -> None:
-        """_summary_
+        """Writes the report to an Excel file
 
         Parameters
         ----------
         writer : pd.ExcelWriter
-            _description_
+            Excel writer to write the report with.
         label : Optional[str], optional
-            _description_, by default None
+            Added to the sheet names to define the matrix, by default None.
         output_matrix : bool, optional
-            _description_, by default False
+            Whether to output a sectorised matrix sheet to the Excel file, by default False.
 
         Raises
         ------
         ValueError
-            _description_
+            If the `label` is over 30 characters long.
         """
 
         if label is not None:
-            sheet_prefix = f"{label}_"
+            sheet_prefix: str = f"{label}_"
         else:
             sheet_prefix = ""
 
@@ -125,14 +125,17 @@ class MatrixReport:
 
     @property
     def trip_ends(self) -> pd.DataFrame:
+        """The row and column sums of the matrix."""
         return pd.DataFrame({"row_sums": self.row_sum, "col_sums": self.column_sum})
 
     @property
     def row_sum(self) -> pd.DataFrame:
+        """The row sums of the matrix."""
         return self.matrix.sum(axis=0)
 
     @property
     def column_sum(self) -> pd.DataFrame:
+        """The column sums of the matrix."""
         return self.matrix.sum(axis=1)
 
     @classmethod
@@ -144,6 +147,26 @@ class MatrixReport:
         translation_to_col: Optional[str] = None,
         translation_factors_col: Optional[str] = None,
     ) -> MatrixReport:
+        """Create an instance of MatrixReport from file paths.
+
+        Parameters
+        ----------
+        path : Path
+            Path to the matrix csv.
+        translation_path : Optional[Path], optional
+            Path to correspondence between matrix zoning and summary zoning, by default None
+        translation_from_col : Optional[str], optional
+            The column in the translation matrix with zoning to translate from, by default None.
+        translation_to_col : Optional[str], optional
+            The column in the translation matrix with zoning to translate to, by default None.
+        translation_factors_col : Optional[str], optional
+            The column in the translation matrix to use as factors, by default None.
+
+        Returns
+        -------
+        MatrixReport
+            Instance of MatrixReport created from the file paths.
+        """
         matrix = pd.read_csv(path, index_col=0)
 
         if translation_path is not None:
@@ -161,6 +184,21 @@ class MatrixReport:
 
 
 def matrix_describe(matrix: pd.DataFrame, almost_zero: Optional[float] = None) -> pd.Series:
+    """Creates a high level summary of a matrix.
+
+    Parameters
+    ----------
+    matrix : pd.DataFrame
+        Matrix to be summarised.
+    almost_zero : Optional[float], optional
+        Below this value cells will be defined as almost zero.
+        If None almost zero will be calculated as = 1 / (# of cells in the matrix), by default None
+
+    Returns
+    -------
+    pd.Series
+        Matrix summary statistics.
+    """
     if almost_zero is None:
         almost_zero = 1 / matrix.size
 
