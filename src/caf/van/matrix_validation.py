@@ -1,5 +1,5 @@
 """ 
-Contains functions that perform checks and provides high level statistics. 
+Contains functions that perform checks and provide high level statistics. 
 """
 
 from __future__ import annotations
@@ -12,6 +12,27 @@ import caf.toolkit as ctk
 
 
 class MatrixReport:
+    """Creates a high level summary of a matrix and its trip ends.
+
+    Parameters
+    ----------
+    matrix : pd.DataFrame
+         The matrix to be summarised.
+    translation : Optional[pd.DataFrame], optional
+        A translation matrix to be applied to the matrix,.
+        If None no translations is applied, by default None.
+    translation_from_col : Optional[str], optional
+        The column in the translation matrix to translate from, by default None.
+    translation_to_col : Optional[str], optional
+        The column in the translation matrix to translate to, by default None.
+    translation_factors_col : Optional[str], optional
+        The column in the translation matrix to use as factors, by default None.
+
+    Functions
+    ---------
+    `from_file` : Create a MatrixReport from a file.
+    `write_to_excel` : Write the report to an Excel file.
+    """
 
     def __init__(
         self,
@@ -67,11 +88,27 @@ class MatrixReport:
     def write_to_excel(
         self, writer: pd.ExcelWriter, label: Optional[str] = None, output_matrix: bool = False
     ) -> None:
+        """_summary_
+
+        Parameters
+        ----------
+        writer : pd.ExcelWriter
+            _description_
+        label : Optional[str], optional
+            _description_, by default None
+        output_matrix : bool, optional
+            _description_, by default False
+
+        Raises
+        ------
+        ValueError
+            _description_
+        """
 
         if label is not None:
-            sheet_prefix: str = f"{label}_"
+            sheet_prefix = f"{label}_"
         else:
-            sheet_prefix: str = ""
+            sheet_prefix = ""
 
         if len(sheet_prefix) >= 31:
             raise ValueError(

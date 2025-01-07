@@ -86,12 +86,12 @@ class DeliveryTripEnds:
         - Path to the CSV containing the warehouse floorspace data.
         - Path to the LSOA zone correspondence file to convert
           data to model zone system.
-    bres_paths : DataPaths
-        - Path to the CSV containing the BRES data.
+    employment_paths : EmploymentPaths
+        - Path to the DVector containing the employment data.
         - Path to the zone correspondence CSV for converting the
-          BRES data to the model zone system.
-    household_paths : DataPaths
-        - Path to the CSV containing the household projections data.
+          employment data to the model zone system.
+    household_paths : DwellingPaths
+        - Path to the DVectors(s) containing the Occupied and (optionally) Unoccupied dwelling data.
         - Path to the zone correspondence file to convert household
           data to the model zone system.
     parameters_path : Path

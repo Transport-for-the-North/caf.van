@@ -296,7 +296,7 @@ class CommuteTripEnds:
         self.attractor_factors["Residential"] = households[["factor"]]
 
     def _calc_employment_factors(self):
-        """Calculates employment attractor factors from BRES data"""
+        """Calculates employment attractor factors from employment data"""
         if not self.zone_lookups:
             self._read_zone_lookups()
         employment = lgv_inputs.filtered_employment(
@@ -507,83 +507,6 @@ class CommuteTripEnds:
 
 
 ##### FUNCTIONS #####
-def read_ndr_floorspace(
-    path: pathlib.Path,
-    model_year: int,
-    rename_columns: dict[str, str] = BUSINESS_FLOORSPACE_RENAME,
-) -> tuple[pd.DataFrame, list[str]]:
-    # TODO Write docstring
-    zone_col = "AREA_CODE"
-    columns = BUSINESS_FLOORSPACE_HEADER.copy()
-
-    data_columns = {}
-    for column_start in [
-        f"Floorspace_{model_year-1}-{str(model_year)[2:]}_",
-        f"Floorspace_{model_year}-{str(model_year + 1)[2:]}_",
-    ]:
-        for category in BUSINESS_CATEGORIES:
-            data_columns[column_start + category] = float
-    columns.update(data_columns)
-
-    ndr = utilities.read_csv(path, columns=columns).rename(columns=rename_columns)
-
-    if zone_col in rename_columns:
-        zone_col = rename_columns[zone_col]
-
-    # Remove rows that are not LAD
-    conditional = ndr[zone_col].str.startswith(BUSINESS_FLOORSPACE_REMOVE_ROWS[0])
-    for row in BUSINESS_FLOORSPACE_REMOVE_ROWS[1:]:
-        conditional = conditional | ndr[zone_col].str.startswith(row)
-    ndr = ndr[~conditional]
-
-    return ndr, list(data_columns.keys())
-
-
-def read_sc_w_dwellings(path: pathlib.Path, model_year: int) -> tuple[pd.DataFrame, list[str]]:
-    # TODO Write docstring
-    data_columns = [str(model_year - i) for i in (0, 1)]
-    sc_w_header = {"zone": str, **dict.fromkeys(data_columns, int)}
-    sc_w_dwellings = utilities.read_csv(path, columns=sc_w_header)
-    return sc_w_dwellings, data_columns
-
-
-def read_english_dwellings(
-    path: pathlib.Path,
-    model_year: int,
-    rename_columns: dict[str, str] = E_DWELLINGS_NEW_COLS,
-    drop_lad_name: bool = True,
-) -> tuple[pd.DataFrame, list[str]]:
-    sheet = f"{model_year}-{model_year - 2000 + 1}"
-    dwellings = (
-        utilities.read_excel(
-            path,
-            columns=E_DWELLINGS_HEADER,
-            skiprows=3,
-            sheet_name=sheet,
-        )
-        .dropna(axis=1, how="all")
-        .dropna(axis=0, how="any")
-        .rename(columns=rename_columns)
-    )
-
-    if drop_lad_name:
-        dwellings.drop(axis=1, labels=["Lower and Single Tier Authority Data"], inplace=True)
-
-    data_columns = ["Demolitions", "Net Additions"]
-    for col in data_columns:
-        try:
-            dwellings.loc[:, col] = dwellings[col].astype(float)
-        except ValueError as err:
-            match = re.match(r"could not convert \w+ to float", str(err), re.IGNORECASE)
-            if match:
-                raise errors.NonNumericDataError(
-                    name=f"{path.stem} column", non_numeric=str(col)
-                )
-            raise
-
-    return dwellings, data_columns
-
-
 def read_qs606(
     ew_path: pathlib.Path, sc_path: pathlib.Path, rename: bool = True
 ) -> dict[str, pd.DataFrame]:

@@ -191,7 +191,7 @@ class LGVInputPaths(caf.toolkit.BaseConfig):
     normits_pa_folder: types.DirectoryPath  # keep as is
     """Path to the full PA Normits matrices, should contain all non home
     based and home based matrices"""
-    normits_to_msoa_lookup: types.FilePath  #?????
+    normits_to_msoa_lookup: types.FilePath  # ?????
     """Normits to MSOA(NTEM) lookup, this is NorMITs to model zone lookup as the
     results are taken after normits results are converted back to NoHAM"""
     normits_to_personal_factor: float  # keep as is
@@ -251,7 +251,7 @@ def household_projections(
 ) -> pd.DataFrame:
     """Reads and aggregates the household DVectors and converts to model zone system.
 
-    No specific segmentation is required for the DVectors since the data is aggregated 
+    No specific segmentation is required for the DVectors since the data is aggregated
     to households per zone.
 
     Parameters
@@ -261,7 +261,7 @@ def household_projections(
     zone_lookup : Path
         Path to the zone correspondence CSV.
     unoccupied_paths : Optional[Path], optional
-        Path to Occupied Dwellings DVector. If None then only the occupied dwellings 
+        Path to Occupied Dwellings DVector. If None then only the occupied dwellings
         are used to calculate households. None by default.
 
     Returns
@@ -491,18 +491,38 @@ def read_time_factors(path: Path) -> dict[str, dict[str, float]]:
 
 @dataclasses.dataclass
 class GMInputs:
+    """Defines the input paths and parameters for the gravity model."""
+
     trip_length_distribution_path: types.FilePath
+    """Path to the Trip Length Distribution CSV."""
     cost_function: Literal["log_normal", "tanner"]
+    """The cost function to use for the gravity model."""
     cost_function_params: tuple[float, ...] | dict[str | int, tuple[float, ...]]
+    """Starting (calibration)/run params for the cost function."""
     calibrate: bool
+    """Whether to calibrate the cost function paramas (True) or run with given params (False)."""
     cat_zone_correspondance_path: Optional[types.FilePath] = None
+    """Correspondence between the categories in the TLD and the model zones."""
     furness_jacobian: bool = True
+    """Whether to Furness the Jacobian matrix in the gravity model. Find your nearest demand modelling expert for more information."""
 
     @field_validator("cost_function_params", mode="before")
     @classmethod
     def parse_parameters(
-        cls, params: dict[str, str] | str
+        cls, params: dict[int | str, str] | str
     ) -> dict[str | int, tuple[float, ...]] | tuple[float, ...]:
+        """Parse the cost cost function params into a tuple of floats from string|dict[str, str].
+
+        Parameters
+        ----------
+        params : dict[str, str] | str
+            The cost function parameters to unpack.
+
+        Returns
+        -------
+        dict[str | int, tuple[float, ...]] | tuple[float, ...]
+            unpacked cost function parameters.
+        """
         # keys will be read in as strings even if numeric.
         # try converting them to numeric if possible
 
@@ -521,7 +541,7 @@ class GMInputs:
             else:
                 key_checked_params = params
 
-            processed_params = {}
+            processed_params: dict[str | int, tuple[float, ...]] = {}
             for key, val in key_checked_params.items():
                 split_vals = []
                 for v in val.split(","):

@@ -19,6 +19,21 @@ def create_plot(
     data_id_col: str,
     geom_id_col: str,
 ) -> None:
+    """Create a geospatial plot of the data.
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        Data to be plotted.
+    geometry : gpd.GeoDataFrame
+        Geometry to be used to plot the data.
+    path : pathlib.Path
+        Output path for the plot.
+    data_id_col : str
+        Column name for the IDs of the zone in data.
+    geom_id_col : str
+        Column name for the ID of the zone in geometry.
+    """
 
     data_cols = data.select_dtypes(include=[np.number]).columns.to_list()
 
@@ -45,12 +60,25 @@ def create_plot(
             pdf.savefig()
 
 
-def summarise_tlds(
+def summarise_trip_ends(
     data_dir: pathlib.Path,
     geometry_path: pathlib.Path,
     translation_path: pathlib.Path,
     output_path: pathlib.Path,
 ) -> None:
+    """Summarise trip ends by LAD.
+
+    Parameters
+    ----------
+    data_dir : pathlib.Path
+        Data directory containing trip ends.
+    geometry_path : pathlib.Path
+        Path to the geometry file.
+    translation_path : pathlib.Path
+        Path to the translation file.
+    output_path : pathlib.Path
+        Output path for the plots.
+    """
 
     trip_end_paths = glob.glob(str(data_dir / "*.csv"))
 
@@ -78,7 +106,7 @@ def summarise_tlds(
         )
 
 
-summarise_tlds(
+summarise_trip_ends(
     pathlib.Path(
         r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\development_outputs\CAF.Van Model Outputs - 2024-10-02 20.51.43\trip ends"
     ),
