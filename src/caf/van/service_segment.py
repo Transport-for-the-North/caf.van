@@ -25,7 +25,7 @@ class ServiceTripEnds:
     household_paths : LFT.data_utils.DataPaths
         Paths to the CSVs containing the household projections data and
         the relevant zone correspondence.
-    bres_paths : LFT.data_utils.DataPaths
+    bres_paths : EmploymentPaths
         Paths to the CSVs containing the BRES data and the relevant
         zone correpondence.
     service_trips : Path
@@ -54,7 +54,7 @@ class ServiceTripEnds:
 
     def __init__(
         self,
-        household_paths: utilities.DataPaths,
+        household_paths: lgv_inputs.DwellingPaths,
         employment_paths: lgv_inputs.EmploymentPaths,
         service_trips: Path,
         scale_factor: float,
