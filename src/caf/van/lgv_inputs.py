@@ -18,8 +18,6 @@ from pathlib import Path
 from typing import Any, Callable, Optional, Union
 
 # Third Party
-
-
 import caf.toolkit
 import numpy as np
 import pandas as pd
