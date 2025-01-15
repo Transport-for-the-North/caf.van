@@ -392,15 +392,12 @@ def _gravity_model(
     csv_logging_path: Path,
 ) -> VanGravityModelResults:
     """Internal function used in `run_gravity_model` for running the GM with calibration."""
-trip_ends = trip_ends.rename(columns={
-    **dict.fromkeys(("Productions", "Origins"), "row_targets"),
-    **dict.fromkeys(("Attractions", "Destinations"), "col_targets"),
-})
+    trip_ends = trip_ends.rename(columns={
+        **dict.fromkeys(("Productions", "Origins"), "row_targets"),
+        **dict.fromkeys(("Attractions", "Destinations"), "col_targets"),
+    })
     # check PA/OD are balanced - if not balance and add warning with difference
-    if name in PA_MATRICES:
-        trip_ends = balance_trip_ends(trip_ends, "Attractions", "Productions")
-    else:
-        trip_ends = balance_trip_ends(trip_ends, "Origins", "Destinations")
+    trip_ends = balance_trip_ends(trip_ends, "Origins", "Destinations")
 
     tld_path = input_paths.trip_distributions_path[name]
 
@@ -477,7 +474,9 @@ trip_ends = trip_ends.rename(columns={
     if calibrate:
         gravity_model_results = calib_gm.calibrate(
             cost_distributions,
-            csv_logging_path,  # TODO figure out which key word args with default values needed to be changed
+            csv_logging_path,
+            gravity_model.GMCalibParams()
+                # TODO figure out which key word args with default values needed to be changed
             verbose=2,
         )
 
@@ -517,7 +516,7 @@ def balance_trip_ends(trip_ends: pd.DataFrame, target_col: str, test_col: str) -
     -----
     UserWarning
         If the trip ends don't match and are factored.
-
+    """
     # determine difference in column totals
     trip_end_difference = trip_ends[target_col].sum() - trip_ends[test_col].sum()
     # avoid changing input out the function scope
@@ -551,7 +550,6 @@ def run_gravity_model(
     input_paths: LGVInputPaths,
     trip_ends: LGVTripEnds,
     output_folder: Path,
-    message_hook: Callable = print,
 ) -> dict[str, pd.DataFrame]:
     """Run the gravity model calibration for each segment.
 
@@ -580,27 +578,26 @@ def run_gravity_model(
         if name == "zones":
             continue
         # TODO put this back to normal once dev is done
-        # try:
-        calibrate = gm_params.loc[name, "calibrate"]
-        calib_gm = _gravity_model(
-            te,
-            name,
-            input_paths,
-            gm_params,
-            calibrate,
-            output_folder / f"gravity_model_{name}_calibration_log.csv",
-        )
+        try:
+            calibrate = gm_params.loc[name, "calibrate"]
+            calib_gm = _gravity_model(
+                te,
+                name,
+                input_paths,
+                gm_params,
+                calibrate,
+                output_folder / f"gravity_model_{name}_calibration_log.csv",
+            )
 
         # TODO handle dictionary outputs for run method
-        # except Exception as e:
-        #    LOG.info("\t%s: %s", e.__class__.__name__, e)
-        #    continue
+        except Exception as e:
+            LOG.info("\t%s: %s", e.__class__.__name__, e)
+            continue
 
         # Check if segment outputs a PA matrix which needs to be converted
         if name in PA_MATRICES:
             # Save PA matrix to CSV and convert to OD dataframe
             LOG.info("\tConverting PA to OD")
-            # TODO KF: I am pretty sure this index and column labelling aligns, but I/you need to check
             pa_matrix = pd.DataFrame(calib_gm.distribution, index=te.index, columns=te.index)
             pa_matrix.to_csv(output_folder / (name + "-trip_matrix-PA.csv"))
 

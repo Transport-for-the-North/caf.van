@@ -103,13 +103,27 @@ class MatrixReport:
     def write_to_excel(
         self, writer: pd.ExcelWriter, label: Optional[str] = None, output_matrix: bool = False
     ) -> None:
+        """Write matrix report to multiple sheets in an Excel file.
 
+        Writes 2 (or 3) sheets to the file with names "`label`_Summary",
+        "`label`_Trip_Ends" and "`label`_Matrix" (if `output_matrix` is True).
+
+        Parameters
+        ----------
+        writer : pd.ExcelWriter
+            Excel file to write reports to.
+        label : str, optional
+            Prefix for sheet names, will have "_" and the report name appended.
+        output_matrix : bool, default False
+            If True outputs the matrix to an Excel sheet, False is recommended
+            for larger matrices as writing large data to Excel may be slow.
+        """
         if label is not None:
             sheet_prefix: str = f"{label}_"
         else:
-            sheet_prefix: str = ""
+            sheet_prefix= ""
 
-        if len(sheet_prefix) >= 31:
+        if len(sheet_prefix) >= 22:
             raise ValueError(
                 "label cannot be over 30 characters as the sheets names will"
                 " be truncated and will not be unique"
@@ -124,6 +138,7 @@ class MatrixReport:
 
     @property
     def trip_ends(self) -> pd.DataFrame:
+        """Matrix trip ends, with columns "row_sums" and "col_sums"."""
         return pd.DataFrame({"row_sums": self.row_sum, "col_sums": self.column_sum})
 
     @property
@@ -143,13 +158,13 @@ class MatrixReport:
         translation_to_col: Optional[str] = None,
         translation_factors_col: Optional[str] = None,
     ) -> MatrixReport:
-    """Produce matrix report by loading matrix from CSV file.
+        """Produce matrix report by loading matrix from CSV file.
 
-    See Also
-    --------
-    MatrixReport: for information on expected format of matrix and
-        other parameters.
-    """
+        See Also
+        --------
+        MatrixReport: for information on expected format of matrix and
+            other parameters.
+        """
         matrix = pd.read_csv(path, index_col=0)
 
         if translation_path is not None:
