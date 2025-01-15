@@ -340,10 +340,30 @@ def calculate_trip_ends(
 
 
 class VanGravityModelResults:
+    """Results from a run of the gravity model.
+
+    Parameters
+    ----------
+    distribution
+        Matrix containing the final distribution of trips,
+        will have same number of columns and rows equal to
+        the number of `zones`.
+    zones
+        List of all the zones contained within the matrix,
+        the order is the same as in the matrix.
+    info
+        Gravity model results for each area.
+    """
+
     distribution: pd.DataFrame
+    """Matrix containing final distribution of trips, with columns
+    and index equal to `zones`."""
     summary: pd.DataFrame
+    """Summary of gravity model results for each area."""
     zones: np.ndarray
+    """List of all the zones in the `distribution`."""
     info: dict[str | int, gravity_model.GravityModelResults]
+    """Gravity model results for each area."""
 
     def __init__(
         self,
@@ -372,7 +392,10 @@ def _gravity_model(
     csv_logging_path: Path,
 ) -> VanGravityModelResults:
     """Internal function used in `run_gravity_model` for running the GM with calibration."""
-
+trip_ends = trip_ends.rename(columns={
+    **dict.fromkeys(("Productions", "Origins"), "row_targets"),
+    **dict.fromkeys(("Attractions", "Destinations"), "col_targets"),
+})
     # check PA/OD are balanced - if not balance and add warning with difference
     if name in PA_MATRICES:
         trip_ends = balance_trip_ends(trip_ends, "Attractions", "Productions")
@@ -382,7 +405,7 @@ def _gravity_model(
     tld_path = input_paths.trip_distributions_path[name]
 
     # we have to do this because caf distribute does not look at index values, just order
-    trip_ends = trip_ends.sort_index()  #
+    trip_ends = trip_ends.sort_index()
     # define zones to order everthing on
 
     if trip_ends.index.has_duplicates:
@@ -427,13 +450,13 @@ def _gravity_model(
         tld,
         cat_zone_correspondence,
         func_params,
-        "area",
-        "from",
-        "to",
-        "av_distance",
-        "normalised",
-        "area",
-        "zone_id",
+        tld_cat_col="area",
+        tld_min_col="from",
+        tld_max_col="to",
+        tld_avg_col="av_distance",
+        tld_trips_col="normalised",
+        lookup_cat_col="area",
+        lookup_zone_col="zone_id",
     )
 
     if name in PA_MATRICES:
@@ -474,6 +497,26 @@ def _gravity_model(
 
 
 def balance_trip_ends(trip_ends: pd.DataFrame, target_col: str, test_col: str) -> pd.DataFrame:
+    """Check trip end totals match and factor if needed.
+
+    Parameters
+    ----------
+    trip_ends : pd.DataFrame
+        Trip end data containing columns `target_col` and `test_col`.
+    target_col : str
+        Column which has the accurate trip end total.
+    test_col : str
+        Column which will be factored, if needed.
+
+    Returns
+    -------
+    pd.DataFrame
+        Copy of `trip_ends` after any factoring.
+
+    Warns
+    -----
+    UserWarning
+        If the trip ends don't match and are factored.
 
     # determine difference in column totals
     trip_end_difference = trip_ends[target_col].sum() - trip_ends[test_col].sum()
@@ -484,7 +527,7 @@ def balance_trip_ends(trip_ends: pd.DataFrame, target_col: str, test_col: str) -
         # calculate and apply factor to balance test col to target col
         factor = balanced_trip_ends[target_col].sum() / balanced_trip_ends[test_col].sum()
 
-        LOG.warning(
+        warnings.warn(
             f"{target_col} and {test_col} are imbalanced (difference"
             f" = {trip_end_difference}) Factoring {test_col} to"
             f" {target_col} (factor = {factor})"
@@ -494,7 +537,11 @@ def balance_trip_ends(trip_ends: pd.DataFrame, target_col: str, test_col: str) -
 
     else:
         LOG.debug(
-            f"Trip ends look fine \ntarget total {trip_ends[target_col].sum()}, \ntest total {trip_ends[test_col].sum()} \ndifference {trip_end_difference}"
+            "Trip ends look fine\ntarget total %s,"
+            "\ntest total %s\ndifference %s",
+            trip_ends[target_col].sum(),
+            trip_ends[test_col].sum(),
+            trip_end_difference,
         )
 
     return balanced_trip_ends
@@ -568,7 +615,6 @@ def run_gravity_model(
                 index=calib_gm.zones,
                 columns=calib_gm.zones,
             )
-            # Calculate trip distributions for OD
         else:
             matrices[name] = pd.DataFrame(
                 calib_gm.distribution,
@@ -589,7 +635,7 @@ def run_gravity_model(
                 "CA_id",
                 "NTEM_to_CA",
             )
-            LOG.info(f"writing {name} summary to excel")
+            LOG.info("writing %s summary to excel", name)
             summary.write_to_excel(writer, output_matrix=True)
 
             for cat, gm_cat_results in calib_gm.info.items():

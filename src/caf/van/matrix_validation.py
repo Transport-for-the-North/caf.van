@@ -14,6 +14,40 @@ import pandas as pd
 
 
 class MatrixReport:
+    """Produce report of statistics for a given `matrix`.
+
+    Parameters
+    ----------
+    matrix : pd.DataFrame
+        2D matrix with columns and index containing zones.
+    translation : pd.DataFrame, optional
+        Factors for translating matrix from current zone system
+        to a new one for reporting, if not given then the matrix
+        zone system remains unchanged.
+        If this is given then all column name parameters must
+        also be given.
+    translation_from_col : str, optional
+        Column name in `translation` containing current matrix zones.
+    translation_to_col : str, optional
+        Column name in `translation` containing output matrix zones.
+    translation_factors_col : str, optional
+        Column name in `translation` containing translation factors.
+
+    Raises
+    ------
+    ValueError
+        If `translation` is given without the column names, or visa versa.
+
+    See Also
+    --------
+    matrix_describe: for producing descriptive statistics of a matrix.
+    """
+
+    describe: pd.DataFrame
+    """Dictionary containing statistics for the matrix. If `translation`
+    is enabled this will contain "Original_Matrix" and "Translated_Matrix"
+    columns, otherwise it will contain a single column named "Matrix".
+    """
 
     def __init__(
         self,
@@ -109,10 +143,20 @@ class MatrixReport:
         translation_to_col: Optional[str] = None,
         translation_factors_col: Optional[str] = None,
     ) -> MatrixReport:
+    """Produce matrix report by loading matrix from CSV file.
+
+    See Also
+    --------
+    MatrixReport: for information on expected format of matrix and
+        other parameters.
+    """
         matrix = pd.read_csv(path, index_col=0)
 
         if translation_path is not None:
-            translation = pd.read_csv(translation_path)
+            translation = pd.read_csv(
+                translation_path,
+                usecols=[translation_from_col, translation_to_col, translation_factors_col],
+            )
         else:
             translation = None
 
@@ -125,7 +169,24 @@ class MatrixReport:
         )
 
 
-def matrix_describe(matrix: pd.DataFrame, almost_zero: Optional[int] = None) -> pd.Series:
+def matrix_describe(matrix: pd.DataFrame, almost_zero: Optional[float] = None) -> pd.Series:
+    """Provide descriptive statistics of `matrix`.
+
+    Parameters
+    ----------
+    matrix : pd.DataFrame
+        2D matrix of values with zones as the columns and index.
+    almost_zero : float, optional
+        Any values less than this are counted as almost zero in the output.
+        If not given it is calculated at `1 / matrix.size`.
+
+    Returns
+    -------
+    pd.Series
+        Matrix statistics containing: percentiles (5%, 25%, 50%, 75% and 95%), 
+        mean, std, min, max, sum (total), zeros (count), almost zeros (count)
+        and NaNs (count).
+    """
     if almost_zero is None:
         almost_zero = 1 / matrix.size
     info = matrix.stack().describe(percentiles=[0.05, 0.25, 0.5, 0.75, 0.95])
