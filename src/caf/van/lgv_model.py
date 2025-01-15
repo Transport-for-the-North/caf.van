@@ -475,7 +475,7 @@ def _gravity_model(
         gravity_model_results = calib_gm.calibrate(
             cost_distributions,
             csv_logging_path,
-            gravity_model.GMCalibParams()
+            gravity_model.GMCalibParams(),
                 # TODO figure out which key word args with default values needed to be changed
             verbose=2,
         )
