@@ -19,7 +19,11 @@ import pydantic
 from pydantic import dataclasses
 
 # Local Imports
-from caf.van.errors import MissingColumnsError, MissingParameterError, MissingWorksheetError
+from caf.van.errors import (
+    MissingColumnsError,
+    MissingParameterError,
+    MissingWorksheetError,
+)
 
 
 class Parameters:

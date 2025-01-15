@@ -12,18 +12,13 @@ import logging
 import pprint
 import warnings
 from dataclasses import dataclass, field
-from datetime import datetime
 from pathlib import Path
 from typing import Callable
 
 # Third Party
-from caf.distribute import gravity_model, cost_functions
-
-from caf.toolkit import cost_utils
 import numpy as np
 import pandas as pd
-import caf.distribute
-
+from caf.distribute import cost_functions, gravity_model
 
 # Local Imports
 from caf.van.commute_segment import CommuteTripEnds
@@ -37,11 +32,10 @@ from caf.van.lgv_inputs import (
     read_study_area,
     read_time_factors,
 )
+from caf.van.matrix_validation import MatrixReport
 from caf.van.rezone import Rezone
 from caf.van.service_segment import ServiceTripEnds
 from caf.van.utilities import DataPaths, read_csv, read_excel
-from caf.van.matrix_validation import MatrixReport
-
 
 ##### CONSTANTS #####
 LOG = logging.getLogger(__name__)
@@ -63,18 +57,6 @@ PA_MATRICES = [
 """List of matrices which are in PA format and will be converted to OD."""
 NTEM_PURPOSES = {"hb": list(range(1, 9)), "nhb": [12, 13, 14, 15, 16, 18]}
 PERSONAL_TIME_PERIODS = [1, 2, 3, 4]
-
-
-TRIP_DISTRIBUTION_COLS = dict.fromkeys(
-    ("start", "end", "average", "observed proportions"), float
-)
-"""Names and dtypes of the columns expected in the trip distributions input."""
-FUNCTION_LABELS = {
-    "log_normal": r"Log Normal: $\sigma={:.1e}$, $\mu={:.1e}$",
-    "tanner": r"Tanner: $\alpha={:.1e}$, $\beta={:.1e}$",
-}
-
-
 """Time periods to aggregate NHB together for."""
 
 PA_DIFFERENCE_TOL = 1e-3
@@ -547,7 +529,6 @@ def run_gravity_model(
     matrices: dict[str, pd.DataFrame] = {}
     output_folder.mkdir(exist_ok=True)
 
-
     for name, te in trip_ends.asdict().items():
         if name == "zones":
             continue
@@ -575,7 +556,7 @@ def run_gravity_model(
             # TODO KF: I am pretty sure this index and column labelling aligns, but I/you need to check
             pa_matrix = pd.DataFrame(calib_gm.distribution, index=te.index, columns=te.index)
             pa_matrix.to_csv(output_folder / (name + "-trip_matrix-PA.csv"))
-            
+
             matrix = annual_pa_to_od(
                 calib_gm.distribution.to_numpy(),
                 te.loc[calib_gm.zones, "Attractions"].values,
@@ -602,7 +583,11 @@ def run_gravity_model(
             # TODO write out metadata
 
             summary = MatrixReport(
-                matrices[name], pd.read_csv(input_paths.ca_lookup_path), "NTEM_id", "CA_id", "NTEM_to_CA"
+                matrices[name],
+                pd.read_csv(input_paths.ca_lookup_path),
+                "NTEM_id",
+                "CA_id",
+                "NTEM_to_CA",
             )
             LOG.info(f"writing {name} summary to excel")
             summary.write_to_excel(writer, output_matrix=True)
@@ -834,7 +819,6 @@ def produce_annual_matrices(
         trip_ends,
         output_folder,
     )
-        
 
     try:
         LOG.info("Calculating personal segment matrices from NorMITs car demand")
@@ -861,6 +845,7 @@ def produce_annual_matrices(
         )
 
     return LGVMatrices(**matrices, personal=personal_matrix)
+
 
 def main(input_paths: LGVInputPaths):
     """Runs the LGV model.
