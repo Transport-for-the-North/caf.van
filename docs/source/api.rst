@@ -1,10 +1,12 @@
-.. _api-docs:
-
 Module API Documentation
 ========================
 
 This section shows the detailed documentation for caf.van, last
-updated on |today|. For more in-depth user guide and tutorial see :ref:`user-guide`.
+updated on |today|.
+
+.. note::
+   - For more in-depth user guide and tutorial see :ref:`user guide`
+   - For code examples see :ref:`examples`
 
 .. autosummary::
     :toctree: _autosummary/
