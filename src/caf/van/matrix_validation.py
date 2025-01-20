@@ -121,7 +121,7 @@ class MatrixReport:
         if label is not None:
             sheet_prefix: str = f"{label}_"
         else:
-            sheet_prefix= ""
+            sheet_prefix = ""
 
         if len(sheet_prefix) >= 22:
             raise ValueError(
@@ -198,7 +198,7 @@ def matrix_describe(matrix: pd.DataFrame, almost_zero: Optional[float] = None) -
     Returns
     -------
     pd.Series
-        Matrix statistics containing: percentiles (5%, 25%, 50%, 75% and 95%), 
+        Matrix statistics containing: percentiles (5%, 25%, 50%, 75% and 95%),
         mean, std, min, max, sum (total), zeros (count), almost zeros (count)
         and NaNs (count).
     """

@@ -392,10 +392,12 @@ def _gravity_model(
     csv_logging_path: Path,
 ) -> VanGravityModelResults:
     """Internal function used in `run_gravity_model` for running the GM with calibration."""
-    trip_ends = trip_ends.rename(columns={
-        **dict.fromkeys(("Productions", "Origins"), "row_targets"),
-        **dict.fromkeys(("Attractions", "Destinations"), "col_targets"),
-    })
+    trip_ends = trip_ends.rename(
+        columns={
+            **dict.fromkeys(("Productions", "Origins"), "row_targets"),
+            **dict.fromkeys(("Attractions", "Destinations"), "col_targets"),
+        }
+    )
     # check PA/OD are balanced - if not balance and add warning with difference
     trip_ends = balance_trip_ends(trip_ends, "Origins", "Destinations")
 
@@ -476,7 +478,7 @@ def _gravity_model(
             cost_distributions,
             csv_logging_path,
             gravity_model.GMCalibParams(),
-                # TODO figure out which key word args with default values needed to be changed
+            # TODO figure out which key word args with default values needed to be changed
             verbose=2,
         )
 
@@ -536,8 +538,7 @@ def balance_trip_ends(trip_ends: pd.DataFrame, target_col: str, test_col: str) -
 
     else:
         LOG.debug(
-            "Trip ends look fine\ntarget total %s,"
-            "\ntest total %s\ndifference %s",
+            "Trip ends look fine\ntarget total %s," "\ntest total %s\ndifference %s",
             trip_ends[target_col].sum(),
             trip_ends[test_col].sum(),
             trip_end_difference,
