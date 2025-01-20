@@ -417,27 +417,38 @@ def _gravity_model(
     # nonzero returns a tuple with array of indices
     cost_matrix_validated = cost_matrix.loc[zones, zones].to_numpy()
 
-    # different segments require different cost function and starting params - we determine extract these below
-    if gm_params.loc[name, "function"] == "log_normal":
-
-        cost_function = cost_functions.BuiltInCostFunction.LOG_NORMAL.get_cost_function()
-        func_params = {  # TODO how do we set input Params
-            "mu": gm_params.loc[name, "param1"],
-            "sigma": gm_params.loc[name, "param2"],
-        }
-    elif gm_params.loc[name, "function"] == "tanner":
-        cost_function = cost_functions.BuiltInCostFunction.TANNER.get_cost_function()
-        func_params = {
-            "alpha": gm_params.loc[name, "param1"],
-            "beta": gm_params.loc[name, "param2"],
-        }
-    else:
-        raise ValueError(f"Cost Function {gm_params.loc[name, 'function']} not found")
+   
 
     cost_distributions = []
 
     # read in things we need for distribution
     cat_zone_correspondence = pd.read_csv(input_paths.cat_zone_correspondence_path)
+
+
+     # different segments require different cost function and starting params - we determine extract these below
+
+    func_params:dict[str|int, dict[str, float]] = {}
+
+    if gm_params.loc[name, "function"] == "log_normal":
+
+        cost_function = cost_functions.BuiltInCostFunction.LOG_NORMAL.get_cost_function()
+        for key in cat_zone_correspondence["area"].unique():
+            func_params[key] = {  # TODO how do we set input Params
+                "mu": gm_params.loc[name, "param1"],
+                "sigma": gm_params.loc[name, "param2"],
+            }
+    elif gm_params.loc[name, "function"] == "tanner":
+        cost_function = cost_functions.BuiltInCostFunction.TANNER.get_cost_function()
+        for key in cat_zone_correspondence["area"].unique():
+            func_params[key] = {
+                "alpha": gm_params.loc[name, "param1"],
+                "beta": gm_params.loc[name, "param2"],
+            }
+    else:
+        raise ValueError(f"Cost Function {gm_params.loc[name, 'function']} not found")
+
+
+
     tld = pd.read_csv(tld_path)
     # interate through different TLD categories
     cost_distributions = gravity_model.MultiCostDistribution.from_pandas(
@@ -445,13 +456,13 @@ def _gravity_model(
         tld,
         cat_zone_correspondence,
         func_params,
-        "area",
-        "from",
-        "to",
-        "av_distance",
-        "normalised",
-        "area",
-        "zone_id",
+        tld_cat_col="area",
+        tld_min_col="from",
+        tld_max_col="to",
+        tld_avg_col="av_distance",
+        tld_trips_col="normalised",
+        lookup_cat_col="area",
+        lookup_zone_col="zone_id",
     )
 
     if name in PA_MATRICES:
