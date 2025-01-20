@@ -421,17 +421,14 @@ def _gravity_model(
     # nonzero returns a tuple with array of indices
     cost_matrix_validated = cost_matrix.loc[zones, zones].to_numpy()
 
-   
-
     cost_distributions = []
 
     # read in things we need for distribution
     cat_zone_correspondence = pd.read_csv(input_paths.cat_zone_correspondence_path)
 
+    # different segments require different cost function and starting params - we determine extract these below
 
-     # different segments require different cost function and starting params - we determine extract these below
-
-    func_params:dict[str|int, dict[str, float]] = {}
+    func_params: dict[str | int, dict[str, float]] = {}
 
     if gm_params.loc[name, "function"] == "log_normal":
 
@@ -450,8 +447,6 @@ def _gravity_model(
             }
     else:
         raise ValueError(f"Cost Function {gm_params.loc[name, 'function']} not found")
-
-
 
     tld = pd.read_csv(tld_path)
     # interate through different TLD categories
