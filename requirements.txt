@@ -1,7 +1,7 @@
-caf.distribute @ git+https://github.com/Transport-for-the-North/caf.distribute@type-hint-fix
-caf.toolkit>=0.7.4#update this when updated 
+caf.distribute>=0.5.1
+caf.toolkit>=0.8.1
 Jinja2>=2.11
-matplotlib=3.9.*
+matplotlib>=3.9.4
 numpy>=1.26.4
 openpyxl>=3.1.5
 pandas>=1.4.4

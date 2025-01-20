@@ -18,8 +18,6 @@ from pathlib import Path
 from typing import Any, Callable, Optional, Union
 
 # Third Party
-
-
 import caf.toolkit
 import numpy as np
 import pandas as pd
@@ -156,7 +154,7 @@ class LGVInputPaths(caf.toolkit.BaseConfig):
     model_study_area: types.FilePath  # change this to a TLD zone lookup
     """Path to CSV containing lookup for zones in model study area."""
     ca_lookup_path: types.FilePath
-    """Oath to MSOA to CA sector correspondance CSV"""
+    """Path to MSOA to CA sector correspondance CSV"""
     cost_matrix_path: types.FilePath  # keep as is TODO?
     """Path to CSV containing cost matrix, should be square matrix with
     zone numbers as column names and indices."""
@@ -166,7 +164,7 @@ class LGVInputPaths(caf.toolkit.BaseConfig):
     trip_distributions_path: dict[str, types.FilePath]  # TODO Change for MultiTLD
     """Path to Excel Workbook containing all the trip cost distributions."""
     cat_zone_correspondence_path: types.FilePath
-
+    """Path to the TLD category to model zone correspondence CSV."""
     output_folder: types.DirectoryPath  # keep as is
     """Path to folder to save outputs to."""
     normits_pa_folder: types.DirectoryPath  # keep as is
