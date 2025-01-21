@@ -254,7 +254,6 @@ def calculate_trip_ends(
     output_folder: Path,
     lgv_growth: float,
     year: int,
-    message_hook: Callable = print,
 ) -> LGVTripEnds:
     """Calculates the LGV trip ends for all segments.
 
@@ -421,8 +420,6 @@ def _gravity_model(
     # nonzero returns a tuple with array of indices
     cost_matrix_validated = cost_matrix.loc[zones, zones].to_numpy()
 
-    cost_distributions = []
-
     # read in things we need for distribution
     cat_zone_correspondence = pd.read_csv(input_paths.cat_zone_correspondence_path)
 
@@ -450,7 +447,7 @@ def _gravity_model(
 
     tld = pd.read_csv(tld_path)
     # interate through different TLD categories
-    cost_distributions = gravity_model.MultiCostDistribution.from_pandas(
+    cost_distributions: gravity_model.MultiCostDistribution = gravity_model.MultiCostDistribution.from_pandas(
         pd.Series(zones),
         tld,
         cat_zone_correspondence,

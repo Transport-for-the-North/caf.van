@@ -233,7 +233,6 @@ class InfillMethod(enum.Enum):
     ZERO = "zero"
 
     @classmethod
-    @property
     def method_lookup(cls) -> dict[InfillMethod, InfillFunction]:
         """Lookup for the infill functions."""
         return {
@@ -246,7 +245,7 @@ class InfillMethod(enum.Enum):
 
     def method(self) -> InfillFunction:
         """Function to calculate infilling value."""
-        return self.method_lookup[self]
+        return self.method_lookup()[self]
 
 
 ##### FUNCTIONS #####
