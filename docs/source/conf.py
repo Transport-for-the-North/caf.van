@@ -3,6 +3,7 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+# Built-Ins
 import os
 import pathlib
 import re
@@ -19,6 +20,7 @@ project = "caf.van"
 copyright = "2024, Transport for the North"
 author = "Transport for the North"
 
+# Local Imports
 import caf.van
 
 version = str(caf.van.__version__)

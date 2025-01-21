@@ -29,7 +29,7 @@ def main():
         details = ToolDetails(__package__, caf.van.__version__)
         log_file = input_paths.model_output_folder / "van.log"
 
-        with LogHelper(__package__, details, log_file=log_file):
+        with LogHelper("caf", details, log_file=log_file):
             lgv_model.main(input_paths)
 
     else:

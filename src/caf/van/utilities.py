@@ -19,7 +19,11 @@ import pydantic
 from pydantic import dataclasses
 
 # Local Imports
-from caf.van.errors import MissingColumnsError, MissingParameterError, MissingWorksheetError
+from caf.van.errors import (
+    MissingColumnsError,
+    MissingParameterError,
+    MissingWorksheetError,
+)
 
 
 class Parameters:
@@ -373,7 +377,9 @@ def read_csv(path: Path, name: str = None, columns: Dict = None, **kwargs) -> pd
     return df
 
 
-def read_excel(path: Path, name: str = None, columns: Dict = None, **kwargs) -> pd.DataFrame:
+def read_excel(
+    path: Path, name: str | None = None, columns: Dict | None = None, **kwargs
+) -> pd.DataFrame:
     """Wrapper function for `pandas.read_excel` to perform additional checks.
 
     Reads file and provides more detailed error messages about missing

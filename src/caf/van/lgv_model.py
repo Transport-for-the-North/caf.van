@@ -12,13 +12,13 @@ import logging
 import pprint
 import warnings
 from dataclasses import dataclass, field
-from datetime import datetime
 from pathlib import Path
 from typing import Callable
 
 # Third Party
 import numpy as np
 import pandas as pd
+from caf.distribute import cost_functions, gravity_model
 
 # Local Imports
 from caf.van.commute_segment import CommuteTripEnds
@@ -32,9 +32,10 @@ from caf.van.lgv_inputs import (
     read_study_area,
     read_time_factors,
 )
+from caf.van.matrix_validation import MatrixReport
 from caf.van.rezone import Rezone
 from caf.van.service_segment import ServiceTripEnds
-from caf.van.utilities import DataPaths
+from caf.van.utilities import DataPaths, read_csv, read_excel
 
 ##### CONSTANTS #####
 LOG = logging.getLogger(__name__)
@@ -57,6 +58,8 @@ PA_MATRICES = [
 NTEM_PURPOSES = {"hb": list(range(1, 9)), "nhb": [12, 13, 14, 15, 16, 18]}
 PERSONAL_TIME_PERIODS = [1, 2, 3, 4]
 """Time periods to aggregate NHB together for."""
+
+PA_DIFFERENCE_TOL = 1e-3
 
 
 ##### CLASSES #####
@@ -106,7 +109,7 @@ class LGVTripEnds:
             "commuting_drivers",
             "commuting_skilled_trades",
         )
-        index = pd.Int64Index([])
+        index = pd.Index([], dtype=int)
         for nm in dataframes:
             index = index.union(getattr(self, nm).index)
         self.zones = index.values
@@ -251,7 +254,6 @@ def calculate_trip_ends(
     output_folder: Path,
     lgv_growth: float,
     year: int,
-    message_hook: Callable = print,
 ) -> LGVTripEnds:
     """Calculates the LGV trip ends for all segments.
 
@@ -336,38 +338,224 @@ def calculate_trip_ends(
     )
 
 
-def _calibrate_gm(
+class VanGravityModelResults:
+    """Results from a run of the gravity model.
+
+    Parameters
+    ----------
+    distribution
+        Matrix containing the final distribution of trips,
+        will have same number of columns and rows equal to
+        the number of `zones`.
+    zones
+        List of all the zones contained within the matrix,
+        the order is the same as in the matrix.
+    info
+        Gravity model results for each area.
+    """
+
+    distribution: pd.DataFrame
+    """Matrix containing final distribution of trips, with columns
+    and index equal to `zones`."""
+    summary: pd.DataFrame
+    """Summary of gravity model results for each area."""
+    zones: np.ndarray
+    """List of all the zones in the `distribution`."""
+    info: dict[str | int, gravity_model.GravityModelResults]
+    """Gravity model results for each area."""
+
+    def __init__(
+        self,
+        distribution: np.ndarray,
+        zones: np.ndarray,
+        info: dict[str | int, gravity_model.GravityModelResults],
+    ):
+
+        self.distribution = pd.DataFrame(distribution, index=zones, columns=zones)
+        self.zones = zones
+        self.info = info
+
+        summary_build = {}
+        for key, results in info.items():
+            summary_build[key] = results.summary
+
+        self.summary = pd.DataFrame(summary_build)
+
+
+def _gravity_model(
     trip_ends: pd.DataFrame,
     name: str,
     input_paths: LGVInputPaths,
     gm_params: pd.DataFrame,
-    internals: set,
-) -> CalibrateGravityModel:
+    calibrate: bool,
+    csv_logging_path: Path,
+) -> VanGravityModelResults:
     """Internal function used in `run_gravity_model` for running the GM with calibration."""
-    calibrate = gm_params.loc[name, "calibrate"]
+    trip_ends = trip_ends.rename(
+        columns={
+            **dict.fromkeys(("Productions", "Origins"), "row_targets"),
+            **dict.fromkeys(("Attractions", "Destinations"), "col_targets"),
+        }
+    )
+    # check PA/OD are balanced - if not balance and add warning with difference
+    trip_ends = balance_trip_ends(trip_ends, "Origins", "Destinations")
+
+    tld_path = input_paths.trip_distributions_path[name]
+
+    # we have to do this because caf distribute does not look at index values, just order
+    trip_ends = trip_ends.sort_index()
+    # define zones to order everthing on
+
+    if trip_ends.index.has_duplicates:
+        raise KeyError("Trip ends have duplicated zones labels. Please fix this")
+
+    zones = trip_ends.index.to_numpy()
+
     LOG.info("Running Gravity Model: %s, with calibration %s", name, calibrate)
-    calib_gm = CalibrateGravityModel(
-        trip_ends,
-        input_paths.cost_matrix_path,
-        (input_paths.trip_distributions_path, TRIP_DISTRIBUTION_SHEETS[name]),
-        input_paths.calibration_matrix_path,
-        internal_zones=internals,
+
+    cost_matrix = pd.read_csv(
+        input_paths.cost_matrix_path, index_col=0
+    )  # TODO this should have validation
+
+    # nonzero returns a tuple with array of indices
+    cost_matrix_validated = cost_matrix.loc[zones, zones].to_numpy()
+
+    # read in things we need for distribution
+    cat_zone_correspondence = pd.read_csv(input_paths.cat_zone_correspondence_path)
+
+    # different segments require different cost function and starting params - we determine extract these below
+
+    func_params: dict[str | int, dict[str, float]] = {}
+
+    if gm_params.loc[name, "function"] == "log_normal":
+
+        cost_function = cost_functions.BuiltInCostFunction.LOG_NORMAL.get_cost_function()
+        for key in cat_zone_correspondence["area"].unique():
+            func_params[key] = {  # TODO how do we set input Params
+                "mu": gm_params.loc[name, "param1"],
+                "sigma": gm_params.loc[name, "param2"],
+            }
+    elif gm_params.loc[name, "function"] == "tanner":
+        cost_function = cost_functions.BuiltInCostFunction.TANNER.get_cost_function()
+        for key in cat_zone_correspondence["area"].unique():
+            func_params[key] = {
+                "alpha": gm_params.loc[name, "param1"],
+                "beta": gm_params.loc[name, "param2"],
+            }
+    else:
+        raise ValueError(f"Cost Function {gm_params.loc[name, 'function']} not found")
+
+    tld = pd.read_csv(tld_path)
+    # interate through different TLD categories
+    cost_distributions: gravity_model.MultiCostDistribution = (
+        gravity_model.MultiCostDistribution.from_pandas(
+            pd.Series(zones),
+            tld,
+            cat_zone_correspondence,
+            func_params,
+            tld_cat_col="area",
+            tld_min_col="from",
+            tld_max_col="to",
+            tld_avg_col="av_distance",
+            tld_trips_col="normalised",
+            lookup_cat_col="area",
+            lookup_zone_col="zone_id",
+        )
     )
-    calib_gm.calibrate_gravity_model(
-        function=gm_params.loc[name, "function"],
-        init_params=tuple(gm_params.loc[name, ["param1", "param2"]]),
-        calibrate=calibrate,
-        constraint=gm_params.loc[name, "furness_type"],
-    )
+
+    if name in PA_MATRICES:
+        calib_gm = gravity_model.MultiAreaGravityModelCalibrator(
+            trip_ends["Productions"].to_numpy(),
+            trip_ends["Attractions"].to_numpy(),
+            cost_matrix_validated,
+            cost_function,
+        )
+    else:
+        calib_gm = gravity_model.MultiAreaGravityModelCalibrator(
+            trip_ends["Origins"].to_numpy(),
+            trip_ends["Destinations"].to_numpy(),
+            cost_matrix_validated,
+            cost_function,
+        )
+
+    if calibrate:
+        gravity_model_results = calib_gm.calibrate(
+            cost_distributions,
+            csv_logging_path,
+            gravity_model.GMCalibParams(),
+            # TODO figure out which key word args with default values needed to be changed
+            verbose=2,
+        )
+
+        results = VanGravityModelResults(
+            calib_gm.achieved_distribution, zones, gravity_model_results
+        )
+
+    else:
+
+        gravity_model_results = calib_gm.run(cost_distributions, csv_logging_path)
+
+        results = VanGravityModelResults(
+            calib_gm.achieved_distribution, zones, gravity_model_results
+        )
     LOG.info("\tFinished, now writing outputs")
-    return calib_gm
+    return results
+
+
+def balance_trip_ends(trip_ends: pd.DataFrame, target_col: str, test_col: str) -> pd.DataFrame:
+    """Check trip end totals match and factor if needed.
+
+    Parameters
+    ----------
+    trip_ends : pd.DataFrame
+        Trip end data containing columns `target_col` and `test_col`.
+    target_col : str
+        Column which has the accurate trip end total.
+    test_col : str
+        Column which will be factored, if needed.
+
+    Returns
+    -------
+    pd.DataFrame
+        Copy of `trip_ends` after any factoring.
+
+    Warns
+    -----
+    UserWarning
+        If the trip ends don't match and are factored.
+    """
+    # determine difference in column totals
+    trip_end_difference = trip_ends[target_col].sum() - trip_ends[test_col].sum()
+    # avoid changing input out the function scope
+    balanced_trip_ends = trip_ends.copy()
+
+    if np.abs(trip_end_difference) > PA_DIFFERENCE_TOL:
+        # calculate and apply factor to balance test col to target col
+        factor = balanced_trip_ends[target_col].sum() / balanced_trip_ends[test_col].sum()
+
+        warnings.warn(
+            f"{target_col} and {test_col} are imbalanced (difference"
+            f" = {trip_end_difference}) Factoring {test_col} to"
+            f" {target_col} (factor = {factor})"
+        )
+
+        balanced_trip_ends[test_col] *= factor
+
+    else:
+        LOG.debug(
+            "Trip ends look fine\ntarget total %s," "\ntest total %s\ndifference %s",
+            trip_ends[target_col].sum(),
+            trip_ends[test_col].sum(),
+            trip_end_difference,
+        )
+
+    return balanced_trip_ends
 
 
 def run_gravity_model(
     input_paths: LGVInputPaths,
     trip_ends: LGVTripEnds,
     output_folder: Path,
-    message_hook: Callable = print,
 ) -> dict[str, pd.DataFrame]:
     """Run the gravity model calibration for each segment.
 
@@ -389,57 +577,93 @@ def run_gravity_model(
     """
     internals = read_study_area(input_paths.model_study_area)
     gm_params = read_gm_params(input_paths.parameters_path)
-    matrices = {}
+    matrices: dict[str, pd.DataFrame] = {}
+    output_folder.mkdir(exist_ok=True)
+
     for name, te in trip_ends.asdict().items():
         if name == "zones":
             continue
+        # TODO put this back to normal once dev is done
         try:
-            calib_gm = _calibrate_gm(te, name, input_paths, gm_params, internals)
+            calibrate = gm_params.loc[name, "calibrate"]
+            calib_gm = _gravity_model(
+                te,
+                name,
+                input_paths,
+                gm_params,
+                calibrate,
+                output_folder / f"gravity_model_{name}_calibration_log.csv",
+            )
+
+        # TODO handle dictionary outputs for run method
         except Exception as e:
             LOG.info("\t%s: %s", e.__class__.__name__, e)
             continue
 
-        output_folder.mkdir(exist_ok=True)
         # Check if segment outputs a PA matrix which needs to be converted
         if name in PA_MATRICES:
             # Save PA matrix to CSV and convert to OD dataframe
             LOG.info("\tConverting PA to OD")
-            calib_gm.trip_matrix.to_csv(output_folder / (name + "-trip_matrix-PA.csv"))
-            matrices[name] = annual_pa_to_od(
-                calib_gm.trip_matrix.values,
-                calib_gm.trip_ends.attractions.values,
-                calib_gm.trip_ends.productions.values,
+            pa_matrix = pd.DataFrame(calib_gm.distribution, index=te.index, columns=te.index)
+            pa_matrix.to_csv(output_folder / (name + "-trip_matrix-PA.csv"))
+
+            matrix = annual_pa_to_od(
+                calib_gm.distribution.to_numpy(),
+                te.loc[calib_gm.zones, "Attractions"].values,
+                te.loc[calib_gm.zones, "Productions"].values,
             )
+
             matrices[name] = pd.DataFrame(
-                matrices[name],
-                index=calib_gm.trip_matrix.index,
-                columns=calib_gm.trip_matrix.columns,
-            )
-            # Calculate trip distributions for OD
-            col = "OD whole matrix proportions"
-            calib_gm.trip_distribution[col] = calib_gm._normalised_distribution(
-                matrices[name], internal_area=False
+                matrix,
+                index=calib_gm.zones,
+                columns=calib_gm.zones,
             )
         else:
-            matrices[name] = calib_gm.trip_matrix
+            matrices[name] = pd.DataFrame(
+                calib_gm.distribution,
+                index=calib_gm.zones,
+                columns=calib_gm.zones,
+            )
 
         # Save the annual matrix, TLD graph and Excel summary file
-        calib_gm.plot_distribution(output_folder / (name + "-distribution.pdf"))
-        matrices[name].to_csv(output_folder / (name + "-trip_matrix-OD.csv"))
+        matrices[name].to_csv(path_or_buf=output_folder / (name + "-trip_matrix-OD.csv"))
+
         with pd.ExcelWriter(output_folder / (name + "-GM_log.xlsx")) as writer:
-            df = pd.DataFrame.from_dict(calib_gm.results.asdict(), orient="index")
-            df.to_excel(writer, sheet_name="Calibration Results", header=False)
-            df = pd.DataFrame.from_dict(calib_gm.furness_results.asdict(), orient="index")
-            df.to_excel(writer, sheet_name="Furnessing Results", header=False)
-            calib_gm.trip_distribution.to_excel(
-                writer, sheet_name="Trip Distribution", index=False
+            # TODO write out metadata
+
+            summary = MatrixReport(
+                matrices[name],
+                pd.read_csv(input_paths.ca_lookup_path),
+                "NTEM_id",
+                "CA_id",
+                "NTEM_to_CA",
             )
+            LOG.info("writing %s summary to excel", name)
+            summary.write_to_excel(writer, output_matrix=True)
+
+            for cat, gm_cat_results in calib_gm.info.items():
+                if calibrate:
+                    gm_cat_results.plot_distributions().savefig(
+                        output_folder / (name + f"-distribution_{cat}.pdf")
+                    )
+                    gm_cat_results.cost_distribution.df.to_excel(
+                        writer, sheet_name=f"Achieved Distribution {cat}", index=False
+                    )
+
+                    gm_cat_results.target_cost_distribution.df.to_excel(
+                        writer, sheet_name=f"Target Distribution {cat}", index=False
+                    )
+
+            calib_gm.summary.to_excel(writer, sheet_name="Gravity Model Info")
+
+            # TODO We have already read this in inside _calibrate_gm: figure out if this stores in memory nicely
+            cost_matrix = pd.read_csv(input_paths.cost_matrix_path, index_col=0)
+
             if name in PA_MATRICES:
-                vehicle_kms = calculate_vehicle_kms(
-                    calib_gm.trip_matrix, calib_gm.costs, internals
-                )
+                vehicle_kms = calculate_vehicle_kms(pa_matrix, cost_matrix, internals)
                 vehicle_kms.to_excel(writer, sheet_name="Vehicle Kilometres (PA)")
-            vehicle_kms = calculate_vehicle_kms(matrices[name], calib_gm.costs, internals)
+
+            vehicle_kms = calculate_vehicle_kms(matrices[name], cost_matrix, internals)
             vehicle_kms.to_excel(writer, sheet_name="Vehicle Kilometres")
         LOG.info("\tFinished writing")
 
