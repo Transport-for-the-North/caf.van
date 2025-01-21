@@ -447,18 +447,20 @@ def _gravity_model(
 
     tld = pd.read_csv(tld_path)
     # interate through different TLD categories
-    cost_distributions: gravity_model.MultiCostDistribution = gravity_model.MultiCostDistribution.from_pandas(
-        pd.Series(zones),
-        tld,
-        cat_zone_correspondence,
-        func_params,
-        tld_cat_col="area",
-        tld_min_col="from",
-        tld_max_col="to",
-        tld_avg_col="av_distance",
-        tld_trips_col="normalised",
-        lookup_cat_col="area",
-        lookup_zone_col="zone_id",
+    cost_distributions: gravity_model.MultiCostDistribution = (
+        gravity_model.MultiCostDistribution.from_pandas(
+            pd.Series(zones),
+            tld,
+            cat_zone_correspondence,
+            func_params,
+            tld_cat_col="area",
+            tld_min_col="from",
+            tld_max_col="to",
+            tld_avg_col="av_distance",
+            tld_trips_col="normalised",
+            lookup_cat_col="area",
+            lookup_zone_col="zone_id",
+        )
     )
 
     if name in PA_MATRICES:
