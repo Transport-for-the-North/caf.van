@@ -4,34 +4,49 @@ Contains functions that perform checks and provide high level statistics.
 
 from __future__ import annotations
 
-from typing import Optional
+# Built-Ins
 from pathlib import Path
+from typing import Optional
 
-import pandas as pd
+# Third Party
 import caf.toolkit as ctk
+import pandas as pd
 
 
 class MatrixReport:
-    """Creates a high level summary of a matrix and its trip ends.
+    """Produce report of statistics for a given `matrix`.
 
     Parameters
     ----------
     matrix : pd.DataFrame
-         The matrix to be summarised.
-    translation : Optional[pd.DataFrame], optional
-        A translation matrix to be applied to the matrix,.
-        If None no translations is applied, by default None.
-    translation_from_col : Optional[str], optional
-        The column in the translation matrix to translate from, by default None.
-    translation_to_col : Optional[str], optional
-        The column in the translation matrix to translate to, by default None.
-    translation_factors_col : Optional[str], optional
-        The column in the translation matrix to use as factors, by default None.
+        2D matrix with columns and index containing zones.
+    translation : pd.DataFrame, optional
+        Factors for translating matrix from current zone system
+        to a new one for reporting, if not given then the matrix
+        zone system remains unchanged.
+        If this is given then all column name parameters must
+        also be given.
+    translation_from_col : str, optional
+        Column name in `translation` containing current matrix zones.
+    translation_to_col : str, optional
+        Column name in `translation` containing output matrix zones.
+    translation_factors_col : str, optional
+        Column name in `translation` containing translation factors.
 
-    Functions
-    ---------
-    `from_file` : Create a MatrixReport from a file.
-    `write_to_excel` : Write the report to an Excel file.
+    Raises
+    ------
+    ValueError
+        If `translation` is given without the column names, or visa versa.
+
+    See Also
+    --------
+    matrix_describe: for producing descriptive statistics of a matrix.
+    """
+
+    describe: pd.DataFrame
+    """Dictionary containing statistics for the matrix. If `translation`
+    is enabled this will contain "Original_Matrix" and "Translated_Matrix"
+    columns, otherwise it will contain a single column named "Matrix".
     """
 
     def __init__(
@@ -82,35 +97,34 @@ class MatrixReport:
         else:
             translated_describe_label = "Matrix"
 
+
         self.matrix = matrix
         self.describe[translated_describe_label] = matrix_describe(matrix)
 
     def write_to_excel(
         self, writer: pd.ExcelWriter, label: Optional[str] = None, output_matrix: bool = False
     ) -> None:
-        """Writes the report to an Excel file
+        """Write matrix report to multiple sheets in an Excel file.
+
+        Writes 2 (or 3) sheets to the file with names "`label`_Summary",
+        "`label`_Trip_Ends" and "`label`_Matrix" (if `output_matrix` is True).
 
         Parameters
         ----------
         writer : pd.ExcelWriter
-            Excel writer to write the report with.
-        label : Optional[str], optional
-            Added to the sheet names to define the matrix, by default None.
-        output_matrix : bool, optional
-            Whether to output a sectorised matrix sheet to the Excel file, by default False.
-
-        Raises
-        ------
-        ValueError
-            If the `label` is over 30 characters long.
+            Excel file to write reports to.
+        label : str, optional
+            Prefix for sheet names, will have "_" and the report name appended.
+        output_matrix : bool, default False
+            If True outputs the matrix to an Excel sheet, False is recommended
+            for larger matrices as writing large data to Excel may be slow.
         """
-
         if label is not None:
             sheet_prefix: str = f"{label}_"
         else:
             sheet_prefix = ""
 
-        if len(sheet_prefix) >= 31:
+        if len(sheet_prefix) >= 22:
             raise ValueError(
                 "label cannot be over 30 characters as the sheets names will"
                 " be truncated and will not be unique"
@@ -125,13 +139,14 @@ class MatrixReport:
 
     @property
     def trip_ends(self) -> pd.DataFrame:
-        """The row and column sums of the matrix."""
+        """Matrix trip ends, with columns "row_sums" and "col_sums"."""
         return pd.DataFrame({"row_sums": self.row_sum, "col_sums": self.column_sum})
 
     @property
     def row_sum(self) -> pd.DataFrame:
         """The row sums of the matrix."""
         return self.matrix.sum(axis=0)
+
 
     @property
     def column_sum(self) -> pd.DataFrame:
@@ -170,7 +185,10 @@ class MatrixReport:
         matrix = pd.read_csv(path, index_col=0)
 
         if translation_path is not None:
-            translation = pd.read_csv(translation_path)
+            translation = pd.read_csv(
+                translation_path,
+                usecols=[translation_from_col, translation_to_col, translation_factors_col],
+            )
         else:
             translation = None
 
@@ -184,20 +202,22 @@ class MatrixReport:
 
 
 def matrix_describe(matrix: pd.DataFrame, almost_zero: Optional[float] = None) -> pd.Series:
-    """Creates a high level summary of a matrix.
+    """Provide descriptive statistics of `matrix`.
 
     Parameters
     ----------
     matrix : pd.DataFrame
-        Matrix to be summarised.
-    almost_zero : Optional[float], optional
-        Below this value cells will be defined as almost zero.
-        If None almost zero will be calculated as = 1 / (# of cells in the matrix), by default None
+        2D matrix of values with zones as the columns and index.
+    almost_zero : float, optional
+        Any values less than this are counted as almost zero in the output.
+        If not given it is calculated at `1 / matrix.size`.
 
     Returns
     -------
     pd.Series
-        Matrix summary statistics.
+        Matrix statistics containing: percentiles (5%, 25%, 50%, 75% and 95%),
+        mean, std, min, max, sum (total), zeros (count), almost zeros (count)
+        and NaNs (count).
     """
     if almost_zero is None:
         almost_zero = 1 / matrix.size

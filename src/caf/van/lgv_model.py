@@ -22,8 +22,7 @@ import caf.distribute.gravity_model
 import caf.distribute.gravity_model.multi_area
 import numpy as np
 import pandas as pd
-import caf.distribute
-
+from caf.distribute import cost_functions, gravity_model
 
 # Local Imports
 from caf.van.commute_segment import CommuteTripEnds
@@ -37,11 +36,10 @@ from caf.van.lgv_inputs import (
     read_study_area,
     read_time_factors,
 )
+from caf.van.matrix_validation import MatrixReport
 from caf.van.rezone import Rezone
 from caf.van.service_segment import ServiceTripEnds
 from caf.van.utilities import DataPaths, read_csv, read_excel
-from caf.van.matrix_validation import MatrixReport
-
 
 ##### CONSTANTS #####
 LOG = logging.getLogger(__name__)
@@ -468,20 +466,30 @@ def balance_trip_ends(
 
 
 class VanGravityModelResults:
-    """Contains the results and information for a gravity model run or calibration."""
+    """Results from a run of the gravity model.
+
+    Parameters
+    ----------
+    distribution
+        Matrix containing the final distribution of trips,
+        will have same number of columns and rows equal to
+        the number of `zones`.
+    zones
+        List of all the zones contained within the matrix,
+        the order is the same as in the matrix.
+    info
+        Gravity model results for each area.
+    """
 
     distribution: pd.DataFrame
-    """ Distributed trip matrix.
-    """
+    """Matrix containing final distribution of trips, with columns
+    and index equal to `zones`."""
     summary: pd.DataFrame
-    """ High level summary of the calibration/run.
-    """
+    """Summary of gravity model results for each area."""
     zones: np.ndarray
-    """ Zones IDs within the matrix.
-    """
+    """List of all the zones in the `distribution`."""
     info: dict[str | int, gravity_model.GravityModelResults]
-    """ Detailed information for the calibration/run.
-    """
+    """Gravity model results for each area."""
 
     def __init__(
         self,
@@ -510,6 +518,14 @@ def _gravity_model(
     csv_logging_path: Path,
 ) -> VanGravityModelResults:
     """Internal function used in `run_gravity_model` for running the GM with calibration."""
+    trip_ends = trip_ends.rename(
+        columns={
+            **dict.fromkeys(("Productions", "Origins"), "row_targets"),
+            **dict.fromkeys(("Attractions", "Destinations"), "col_targets"),
+        }
+    )
+    # check PA/OD are balanced - if not balance and add warning with difference
+    trip_ends = balance_trip_ends(trip_ends, "row_targets", "col_targets")
 
     tld_path = gm_data.trip_length_distribution_path
 
@@ -572,20 +588,14 @@ def _gravity_model(
         lookup_zone_col="zone_id",
     )
 
-    if name in PA_MATRICES:
-        calib_gm = gravity_model.MultiAreaGravityModelCalibrator(
-            trip_ends["Productions"].to_numpy(),
-            trip_ends["Attractions"].to_numpy(),
-            cost_matrix_validated,
-            cost_function,
-        )
-    else:
-        calib_gm = gravity_model.MultiAreaGravityModelCalibrator(
-            trip_ends["Origins"].to_numpy(),
-            trip_ends["Destinations"].to_numpy(),
-            cost_matrix_validated,
-            cost_function,
-        )
+
+    
+    calib_gm = gravity_model.MultiAreaGravityModelCalibrator(
+        trip_ends["row_targets"].to_numpy(),
+        trip_ends["col_targets"].to_numpy(),
+        cost_matrix_validated,
+        cost_function,
+    )
 
     if calibrate:
         gravity_model_results = calib_gm.calibrate(
@@ -701,6 +711,22 @@ def run_gravity_model(
             calibrate,
             output_folder / f"gravity_model_{name}_calibration_log.csv",
         )
+        # TODO put this back to normal once dev is done
+        try:
+            calibrate = gm_params.loc[name, "calibrate"]
+            calib_gm = _gravity_model(
+                te,
+                name,
+                input_paths,
+                gm_params,
+                calibrate,
+                output_folder / f"gravity_model_{name}_calibration_log.csv",
+            )
+
+        # TODO handle dictionary outputs for run method
+        except Exception as e:
+            LOG.info("\t%s: %s", e.__class__.__name__, e)
+            continue
 
         # Check if segment outputs a PA matrix which needs to be converted
         if name in PA_MATRICES:
@@ -722,7 +748,6 @@ def run_gravity_model(
                 index=calib_gm.zones,
                 columns=calib_gm.zones,
             )
-            # Calculate trip distributions for OD
         else:
             matrices[name] = pd.DataFrame(
                 calib_gm.distribution,
@@ -743,7 +768,7 @@ def run_gravity_model(
                 f"{input_paths.summary_zone_translation.to_zoning}_id",
                 f"{input_paths.summary_zone_translation.from_zoning}_to_{input_paths.summary_zone_translation.to_zoning}",
             )
-            LOG.info(f"writing {name} summary to excel")
+            LOG.info("writing %s summary to excel", name)
             summary.write_to_excel(writer, output_matrix=True)
 
             for cat, gm_cat_results in calib_gm.info.items():
