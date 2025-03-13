@@ -200,10 +200,10 @@ class LGVMatrices:
     commuting_skilled_trades: pd.DataFrame
     """Commuting skilled trades (SOCs 51, 52, 53) trips matrix,
     with zone numbers for columns and indices."""
-    personal: pd.DataFrame
+    personal: pd.DataFrame| None = None
     """Contains personal trip matrix outputs from normits,
     with zone numbers for columns and indices"""
-    combined: pd.DataFrame = field(init=False)
+    combined:pd.DataFrame = field(init=False)
     """Trips matrix for all combined segments, with zone numbers
     for columns and indices."""
     zones: np.ndarray = field(init=False)
@@ -221,8 +221,9 @@ class LGVMatrices:
             "delivery_grocery",
             "commuting_drivers",
             "commuting_skilled_trades",
-            "personal",
         )
+        if self.personal is not None:
+            dataframes += ("personal",)
         index = pd.Index([], dtype=int)
         for nm in dataframes:
             index = index.union(getattr(self, nm).index)
@@ -243,6 +244,8 @@ class LGVMatrices:
             + self.commuting_skilled_trades
             + self.personal
         )
+        if self.personal is not None:
+            self.combined += self.personal
 
     def asdict(self) -> dict[str, pd.DataFrame]:
         """Return copies of class attributes as a dictionary."""
@@ -305,7 +308,7 @@ def calculate_trip_ends(
     """
     output_folder.mkdir(exist_ok=True)
 
-    model_zones: pd.Series = pd.read_csv(input_paths.model_study_area, usecols=["zone"])[
+    model_zones: pd.Series = pd.read_csv(input_paths.model_zones, usecols=["zone"])[
         "zone"
     ]
     model_zones.name = "Zone"
@@ -682,7 +685,6 @@ def run_gravity_model(
     dict[str, pd.DataFrame]
         Trip matrices for each segment.
     """
-    internals = read_study_area(input_paths.model_study_area)
     matrices: dict[str, pd.DataFrame] = {}
     output_folder.mkdir(exist_ok=True)
 
@@ -787,10 +789,10 @@ def run_gravity_model(
             calib_gm.summary.to_excel(writer, sheet_name="Gravity Model Info")
 
             if name in PA_MATRICES:
-                vehicle_kms = calculate_vehicle_kms(pa_matrix, cost_matrix, internals)
+                vehicle_kms = calculate_vehicle_kms(pa_matrix, cost_matrix)
                 vehicle_kms.to_excel(writer, sheet_name="Vehicle Kilometres (PA)")
 
-            vehicle_kms = calculate_vehicle_kms(matrices[name], cost_matrix, internals)
+            vehicle_kms = calculate_vehicle_kms(matrices[name], cost_matrix)
             vehicle_kms.to_excel(writer, sheet_name="Vehicle Kilometres")
         LOG.info("\tFinished writing")
 
@@ -997,25 +999,24 @@ def produce_annual_matrices(
     )
 
     try:
-        LOG.info("Calculating personal segment matrices from NorMITs car demand")
-        personal_matrix = produce_personal_matrix(
-            input_paths.normits_pa_folder,
-            input_paths.personal_purposes,
-            year=year,
-            normits_to_msoa_lookup=input_paths.normits_to_msoa_lookup,
-            factor=input_paths.normits_to_personal_factor,
-            output_folder=output_folder,
-        )
-        LOG.info("Finished personal segment matrices")
+        if input_paths.normits_pa_folder is None:
+            personal_matrix = None
+        else:
+            LOG.info("Calculating personal segment matrices from NorMITs car demand")
+            personal_matrix = produce_personal_matrix(
+                input_paths.normits_pa_folder,
+                input_paths.personal_purposes,
+                year=year,
+                normits_to_msoa_lookup=input_paths.normits_to_msoa_lookup,
+                factor=input_paths.normits_to_personal_factor,
+                output_folder=output_folder,
+            )
+            LOG.info("Finished personal segment matrices")
 
     except Exception as exc:
-        personal_matrix = pd.DataFrame(
-            np.ones_like(matrices["service"]),
-            columns=matrices["service"].columns,
-            index=matrices["service"].index,
-        )
+        personal_matrix = None
         warnings.warn(
-            "Failed to produce personal matrix, use dummy matrix of 1s."
+            "Failed to produce personal matrix, this will not be included in the outputs."
             f" {exc.__class__.__name__}: {exc}",
             RuntimeWarning,
         )

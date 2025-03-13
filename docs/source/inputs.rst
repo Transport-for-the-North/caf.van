@@ -17,228 +17,59 @@ be seen with ``python -m LFT.lgv_model -h`` and an example config file
 can be created with the command ``python -m LFT.lgv_model -e``.*
 
 .. code:: yaml
+  
+   zoning: Name of the zoning system to use for the model
+   household_paths: DwellingPaths
+      occupied: Path to the occupied dwellings data DVector
+         No specific segmentation is required as it is aggregated to total households by zone.
+      zc_path: Path to the zone correspondence CSV.
+      unoccupied: Optional - Path to the unoccupied dwellings data DVector. 
+         No specific segmentation is required as it is aggregated to total households by zone."""
 
-   household_paths:
-     name: LGV Households
-     path: CSV of households data
-     zc_path: Zone correspondence CSV
-   bres_path: Path to the BRES data CSV at LSOA level
+   employment_paths: 
+      path: Path to the TfN Land-use DVector. Required segmentation is 'sic_1_digit'.
+      zc_path: Path to the zone correspondence CSV.
+
    warehouse_path: Path for the warehouse floorspace data CSV at LSOA level
    commute_warehouse_paths:
      medium: CSV of LSOA warehouse floorspace for commute segment (medium weighting),
        required
      low: CSV of LSOA warehouse floorspace for commute segment (low weighting), optional
      high: CSV of LSOA warehouse floorspace for commute segment (high weighting), optional
-   parameters_path: Path to parameters spreadsheet
    qs606ew_path: Path to the England & Wales Census Occupation data CSV
    qs606sc_path: Path to the Scottish Census Occupation data CSV
-   sc_w_dwellings_path: Path to the Scottish and Welsh dwellings data CSV
-   e_dwellings_path: Path to the English dwellings data XLSX
-   ndr_floorspace_path: Path to the NDR Business Floorspace CSV.
+   constructions_path: Path to GB construction data csv.
    lsoa_lookup_path: Path to the LSOA to model zone correspondence CSV
-   msoa_lookup_path: Path to the MSOA to model zone correspondence CSV
-   lad_lookup_path: Path to the Local Authority District to model zone correspondence CSV
+   tripend_balancing_regions_path: Path to csv containing trip end balancing regions to zone correspondence
    model_study_area: Path to CSV containing lookup for zones in model study area
    cost_matrix_path: Path to CSV containing cost matrix, should be square matrix with
      zone numbers as column names and indices
-   calibration_matrix_path: Path to CSV containing calibration matrix, should be square
-     matrix with zone numbers as column names and indices
-   trip_distributions_path: Path to Excel Workbook containing all the trip cost distributions
+   summary_zone_translation: Path to model zones to summary zones correspondance CSV
+   gm_parameters: Dictionary of gravity model parameters for each segment.
+      trip_length_distribution_path: Path to the Trip Length Distribution CSV."""
+      cost_function: The cost function to use for the gravity model. Either 'log_normal' or 'tanner'
+      cost_function_params: Starting (calibration)/run params for the cost function.
+      calibrate: Whether to calibrate the cost function paramas (True) or run with given params (False).
+      cat_zone_correspondance_path: Path to CSV with correspondence between the categories in the TLD and the model zones.
+      furness_jacobian: Whether to Furness the Jacobian matrix in the gravity model. Find your nearest demand modelling expert for more information.
    output_folder: Path to folder to save outputs to
 
-Household Projections & Zone Correspondence
+
+Household data
 -------------------------------------------
+UK household data in caf.base DVector format. Singular DVectors are required for each of the data inputs.
+No specific segmentation is required, since the data is aggregated to the number of household per zone.
+Occupied dwellings is required and unoccupied dwellings is optional. 
+If both are given the number of dwellings used is the sum of both datasets, if unoccupied is not given, the occupied data is used as is.
+The zone correspondence path should point to a csv in caf.space format which contains zone correspondence from the DVector's zoning to the model zoning.
 
-UK households projections for the model year at MSOA level, data can be
-extracted from TEMPro. This data should contain the number of households
-per MSOA for the model year. The data extracted from TEMPro contains a
-number of columns only two of which are required for the model, these
-are summarised in the table below, any additional columns are ignored.
-This data should be provided in a comma-separated values (CSV) file.
 
-.. table:: Required columns for the UK household projections data
+Employment Data
+---------------
+UK employment data in caf.base DVector format. A single DVector is required for the data input.
+The DVector must be segmented by 'sic_1_digit', any other segments will be aggregated.
+The zone correspondence path should point to a csv in caf.space format which contains zone correspondence from the DVector's zoning to the model zoning.
 
-   +------------+------+-------------------------------------------------+
-   | Column     | Data | Description                                     |
-   | Name       | Type |                                                 |
-   +============+======+=================================================+
-   | Area       | Text | MSOA area code e.g. E02003616                   |
-   | D          |      |                                                 |
-   | escription |      |                                                 |
-   +------------+------+-------------------------------------------------+
-   | HHs        | Real | The number of households projected to be in     |
-   |            |      | that MSOA zone                                  |
-   +------------+------+-------------------------------------------------+
-   | Jobs       | Real | The number of jobs projected to be in that MSOA |
-   |            |      | zone                                            |
-   +------------+------+-------------------------------------------------+
-
-In addition to the households data the model also requires a zone
-correspondence file which provides the lookup between the MSOA and the
-model zones, the correspondence file requires three columns which are
-summarised in the table below. The zone correspondence file can be
-created using CAF.Space.
-
-.. table:: Required columns for the UK household zone correspondence,
-   column names are ignored the columns just need to be in the correct
-   order.
-
-   ====== ========= ===================================
-   Column Data Type Description
-   ====== ========= ===================================
-   1      Text      MSOA area code e.g. E02003616
-   2      Integer   Corresponding model zone ID
-   3      Real      Splitting factor for correspondence
-   ====== ========= ===================================
-
-BRES Data
----------
-
-The Business Register and Employment Survey (BRES) is available from
-`NOMIS <https://www.nomisweb.co.uk/datasets/newbres6pub>`__ and contains
-the number of employees for different industrial sectors at LSOA
-(Scottish data zone) level, at time of writing the data is provided up
-to 2019. The LGV model requires the data to be extracted for all LSOAs
-(England and Wales) and data zones (Scotland) at the model year, all
-broad industrial groups and all employees should be included in the
-output.
-
-The model expects the file to be saved as a comma-separated values (CSV)
-file with the first eight rows used for meta data and the column names
-on row nine, all required columns are listed in the table below. The
-BRES data is expected to be provided at LSOA level, the LSOA zone
-correspondence file discussed in `Other Zone
-Correspondences <#other-zone-correspondences>`__ will be used to
-translate the BRES data to the model zone system.
-
-.. table:: Required columns for the BRES data, column names must be
-   exactly as listed. Any columns not listed will be ignored.
-
-   +--------------------------------------------------+---+----------------+
-   | Column Name                                      | D | Description    |
-   |                                                  | a |                |
-   |                                                  | t |                |
-   |                                                  | a |                |
-   |                                                  | T |                |
-   |                                                  | y |                |
-   |                                                  | p |                |
-   |                                                  | e |                |
-   +==================================================+===+================+
-   | Area                                             | T | De             |
-   |                                                  | e | scription/name |
-   |                                                  | x | of area type   |
-   |                                                  | t |                |
-   +--------------------------------------------------+---+----------------+
-   | mnemonic                                         | T | Data zone or   |
-   |                                                  | e | LSOA area code |
-   |                                                  | x |                |
-   |                                                  | t |                |
-   +--------------------------------------------------+---+----------------+
-   | A : Agriculture, forestry and fishing            | R | Number of      |
-   |                                                  | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | B : Mining and quarrying                         | R | Number of      |
-   |                                                  | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | C : Manufacturing                                | R | Number of      |
-   |                                                  | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | D : Electricity, gas, steam and air conditioning | R | Number of      |
-   | supply                                           | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | E : Water supply; sewerage, waste management and | R | Number of      |
-   | remediation activities                           | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | F : Construction                                 | R | Number of      |
-   |                                                  | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | G : Wholesale and retail trade; repair of motor  | R | Number of      |
-   | vehicles and motorcycles                         | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | H : Transportation and storage                   | R | Number of      |
-   |                                                  | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | I : Accommodation and food service activities    | R | Number of      |
-   |                                                  | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | J : Information and communication                | R | Number of      |
-   |                                                  | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | K : Financial and insurance activities           | R | Number of      |
-   |                                                  | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | L : Real estate activities                       | R | Number of      |
-   |                                                  | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | M : Professional, scientific and technical       | R | Number of      |
-   | activities                                       | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | N : Administrative and support service           | R | Number of      |
-   | activities                                       | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | O : Public administration and defence;           | R | Number of      |
-   | compulsory social security                       | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | P : Education                                    | R | Number of      |
-   |                                                  | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | Q : Human health and social work activities      | R | Number of      |
-   |                                                  | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | R : Arts, entertainment and recreation           | R | Number of      |
-   |                                                  | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | S : Other service activities                     | R | Number of      |
-   |                                                  | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | T : Activities of households as                  | R | Number of      |
-   | employers;undifferentiated goods-and             | e | employees for  |
-   | services-producing activities of households for  | a | this industry  |
-   | own use                                          | l | type           |
-   +--------------------------------------------------+---+----------------+
-   | U : Activities of extraterritorial organisations | R | Number of      |
-   | and bodies                                       | e | employees for  |
-   |                                                  | a | this industry  |
-   |                                                  | l | type           |
-   +--------------------------------------------------+---+----------------+
 
 Warehouse Data
 --------------
@@ -512,54 +343,6 @@ The following methods can be chosen for calculating the infill value:
 -  non_zero_min: minimum non-zero value from existing data
 -  zero: infills zones with zero
 
-Gravity Model Parameters
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-The sheet named “Gravity Model Parameters” should contains parameters
-for the gravity model for each of the six LGV model segments (Service,
-Delivery Parcel Stem, Delivery Parcel Bush, Delivery Grocery, Commuting
-Drivers and Commuting Skilled Trades). The sheet contains six columns,
-listed in the table below, with the headers on the first row.
-
-.. table:: Required columns for the gravity model parameters sheet.
-
-   +--------+---------+--------------------------------------------------+
-   | Column | Data    | Description                                      |
-   | Name   | Type    |                                                  |
-   +========+=========+==================================================+
-   | S      | Text    | The name of the LGV model segment e.g. Service   |
-   | egment |         |                                                  |
-   +--------+---------+--------------------------------------------------+
-   | F      | Text    | The type of furnessing to do, see `Gravity       |
-   | urness | (DOUBLE | Model <#gravity-model>`__ for more details.      |
-   | Cons   | or      | These can be provided in uppercase or lowercase. |
-   | traint | SINGLE) |                                                  |
-   | Type   |         |                                                  |
-   +--------+---------+--------------------------------------------------+
-   | Cost   | Text    | The cost function to use, see `Gravity           |
-   | Fu     | (tanner | Model <#gravity-model>`__ for more details.      |
-   | nction | or log  | These can be provided in uppercase or lowercase. |
-   |        | normal) |                                                  |
-   +--------+---------+--------------------------------------------------+
-   | Cost   | Real    | The first variable for the cost function,        |
-   | Fu     |         | :math:`\alpha` for tanner and :math:`\sigma` for |
-   | nction |         | log normal                                       |
-   | Par    |         |                                                  |
-   | ameter |         |                                                  |
-   | 1      |         |                                                  |
-   +--------+---------+--------------------------------------------------+
-   | Cost   | Real    | The second variable for the cost function,       |
-   | Fu     |         | :math:`\beta` for tanner and :math:`\mu` for log |
-   | nction |         | normal                                           |
-   | Par    |         |                                                  |
-   | ameter |         |                                                  |
-   | 2      |         |                                                  |
-   +--------+---------+--------------------------------------------------+
-   | Run    | Text    | Whether or not to calibrate the gravity model to |
-   | Calib  | (Yes or | the trip distribution, uses cost function        |
-   | ration | No)     | parameters as starting point                     |
-   +--------+---------+--------------------------------------------------+
-
 Time Period Factors
 ~~~~~~~~~~~~~~~~~~~
 
@@ -632,41 +415,118 @@ than, approximately, 1/365.*
    |           | l |                                                      |
    +-----------+---+------------------------------------------------------+
 
-LGV Trip Distributions Spreadsheet
+
+
+Gravity Model Parameters (gm_parameters)
+----------------------------------
+A dictionary should be passed with keys of the names of each of the output matrices i.e.
+('service', 'delivery_parcel_stem', 'delivery_parcel_bush', 'delivery_grocery', 'commuting_drivers', 'commuting_skilled_trades')
+The tool supports both single and multi TLD calibration.
+The following parameters should be defined for each matrix.
+
+Trip Length Distribution (trip_length_distribution_path)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+This should be a CSV containing the trip length distribution(s) to use for calibration.
+The CSV should be in the following format:
+
++--------------+--------+-----------------------------------------------+
+| Column       | Data   | Description                                   |                                      
+| Name         | Type   |                                               |
++==============+========+===============================================+
+| area         | string | This labels which area the TLD belongs to.    |                                 
+|              | or     | Area Ids should correspond to those in the    |
+|              | int    | Category Zone Correspondence.                 |
++--------------+--------+-----------------------------------------------+
+| from         | Real   | The lower bin edge for the TLD.               |
++--------------+--------+-----------------------------------------------+
+| to           | Real   | The upper bin edge for the TLD.               |
++--------------+--------+-----------------------------------------------+
+| av_distance  | Real   | The average distance travelled within that    |
+|              |        | bin and area.                                 |
++--------------+--------+-----------------------------------------------+
+| normalised   | Real   | The proportion of trips that fall within that |
+|              |        | bin and area.                                 |
++--------------+--------+-----------------------------------------------+
+
+if cat_zone_correspondance_path is not given. The csv does not need to contain 
+the area column and the tool will perform a single TLD calibration
+
+Category-Zone correspondence (cat_zone_correspondance_path)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+This CSV should contain zones and the TLD categories they should use.
+If the path is not given a single TLD will be performed.
+
++--------------+--------+-----------------------------------------------+
+| Column       | Data   | Description                                   |                                      
+| Name         | Type   |                                               |
++==============+========+===============================================+
+| area         | string | This labels which category the Zone belongs   |
+|              | or     | to. Ids should correspond to those in the     |
+|              | int    | Trip Length Distribution.                     |
++--------------+--------+-----------------------------------------------+
+| zone_id      | text   | Should contain the IDs of all zones in the    |  
+|              | or     | mode zone system, without duplicates.         | 
+|              | int    |                                               |
++--------------+--------+-----------------------------------------------+
+
+Cost Function (cost_function)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The cost function to use for the gravity model: "log_normal" or "tanner"
+If you don't know which to use, consult TAG or your nearest Demand modelling
+expert.
+
+Cost Function params (cost_function_params)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The starting values for the cost function parameters to use when calibrating or values to use if calibration is off.
+
+A tuple can be passed to start all TLDs with the same parameters
+A dictionary of tuples can also be passed to start each TLD from different paramters, the keys 
+of the dictionary should correspond to the area ids in the category-zone correspondance and trip length distribution files.
+Values in the tuples should be ordered as specified below.
+
+param order
+***********
+Log Normal: mu, sigma
+Tanner: alpha, beta
+
+calibrate
+~~~~~~~~~
+True to calibrate the gravity model, false to run the gravity model.
+
+furness jacobian
+~~~~~~~~~~~~~~~~
+Whether to Furness the Jacobian matrix in the gravity model. Find your nearest demand modelling expert for more information.
+.. note:: setting this to True may cause poor results for matrices that fail to converge, this a known issue for the "bush" matrices ("delivery grocery" and "delivery bush") which contain mostly intrazonal trips by definition. If you find poor results for these matrices, try setting furness jacobian off.
+
+Trip End Balancing regions (tripend_balancing_regions_path)
+----------------------------------------------------------
+
+A CSV that defines the areas for which the trip ends will be balanced within.
+
+This is in the same format as the category zone correspondence path defined above.
+
+Constructions (constructions_path)
 ----------------------------------
 
-The trip distributions spreadsheet should contain a sheets with
-distributions for the different segments. The worksheets should be named
-“Commuting”, “Service”, “Delivery” and “Delivery Bush” and will be used
-for the relevant segment. Each worksheet should have the name of the
-cost distribution and it's units in cell A1, e.g. “Average Length (km)”,
-and the column headers for the distribution table in row two. The
-distribution tables require four columns which are listed in the table
-below.
+This should contains the dwelling and employment floorspace changes in the model zoning.
 
-.. table:: Required columns for the trip distribution tables, column
-   headers should be on row two of each sheet.
-
-   +-----+----+-----------------------------------------------------------+
-   | Col | Da | Description                                               |
-   | umn | ta |                                                           |
-   | N   | Ty |                                                           |
-   | ame | pe |                                                           |
-   +=====+====+===========================================================+
-   | ob  | Re | The number of observed trips in this bin                  |
-   | ser | al |                                                           |
-   | ved |    |                                                           |
-   +-----+----+-----------------------------------------------------------+
-   | st  | Re | The start (inclusive) of the bin in the same units as the |
-   | art | al | `Cost Matrix <#cost-matrix>`__                            |
-   +-----+----+-----------------------------------------------------------+
-   | end | Re | The end (exclusive) of the bin in the same units as the   |
-   |     | al | `Cost Matrix <#cost-matrix>`__                            |
-   +-----+----+-----------------------------------------------------------+
-   | a   | Re | The weighted average of the cost value for this bin, in   |
-   | ver | al | the same units as the `Cost Matrix <#cost-matrix>`__      |
-   | age |    |                                                           |
-   +-----+----+-----------------------------------------------------------+
++--------------+--------+-----------------------------------------------+
+| Column       | Data   | Description                                   |                                      
+| Name         | Type   |                                               |
++==============+========+===============================================+
+| zone         | Text   | The model zoning IDs.                         |
+|              | or     |                                               |
+|              | int    |                                               |
++--------------+--------+-----------------------------------------------+
+| additonal_   | Real   | The number of dwellings constructed in the    | 
+| dwellings    |        | model year within the zone.                   |
++--------------+--------+-----------------------------------------------+
+| demolished_  | Real   | The number of dwellings constructed in the    |
+| dwellings    |        | model year within the zone.                   |
++--------------+--------+-----------------------------------------------+
+| buisness_    | Real   | The floorspace, in m^2, constructed in the    |
+| floorspace   |        | model year, within the zone.                  |
++--------------+--------+-----------------------------------------------+
 
 Census Occupation Data
 ----------------------
@@ -757,159 +617,12 @@ table below.
    |                                       | ger |                        |
    +---------------------------------------+-----+------------------------+
 
-Dwellings Data
---------------
-
-The dwellings data is provided to the tool in two separate files, an
-Excel Workbook containing the English data and a CSV containing the
-Scottish and Welsh data.
-
-The English dwellings data is provided, at Local Authority District
-(LAD), in Table 123 on the `Live tables on housing supply: net
-additional
-dwellings <https://www.gov.uk/government/statistical-data-sets/live-tables-on-net-supply-of-housing>`__
-page of the UK government website. The data is expected to be converted
-to an Excel workbook before providing to the tool but no changes to the
-formatting should be made, the workbook should have sheets labelled with
-the year of the data (e.g. 2018-19) and should contain the model year.
-The worksheet is expected to have the column names on row 4, a list of
-the required columns is given in the table below
-
-.. table:: English dwellings data required columns, names of columns
-   should be exactly as listed any other columns are ignored.
-
-   +--------------------------+-----+------------------------------------+
-   | Column Name              | D   | Description                        |
-   |                          | ata |                                    |
-   |                          | T   |                                    |
-   |                          | ype |                                    |
-   +==========================+=====+====================================+
-   | CurrentONS code          | T   | LAD area code e.g. E06000055       |
-   |                          | ext |                                    |
-   +--------------------------+-----+------------------------------------+
-   | Lower and Single Tier    | T   | Name of the LAD                    |
-   | Authority Data           | ext |                                    |
-   +--------------------------+-----+------------------------------------+
-   | Demolitions              | I   | Number of building demolitions     |
-   |                          | nte | during the year                    |
-   |                          | ger |                                    |
-   +--------------------------+-----+------------------------------------+
-   | Net Additions            | I   | Net number of building additions   |
-   |                          | nte | during the year                    |
-   |                          | ger |                                    |
-   +--------------------------+-----+------------------------------------+
-
-The Scottish and Welsh dwellings data should be input as one CSV
-containing the values for both countries, both datasets can be
-downloaded off the internet separately. The Scottish data is available
-within `National Records of Scotland Household
-Estimates <https://www.nrscotland.gov.uk/statistics-and-data/statistics/statistics-by-theme/households/household-estimates/2019>`__
-dataset, table 2 contains the number of dwellings by council area for
-recent years. The Welsh data is available on the `Dwelling stock
-estimates
-page <https://statswales.gov.wales/Catalogue/Housing/Dwelling-Stock-Estimates/dwellingstockestimates-by-localauthority-tenure>`__
-of the StatsWales website and should be obtained for the model year and
-the model year plus one. The data should be combined and provided to the
-tool as a CSV, the required columns are given in the table below.
-
-.. table:: Scottish and Welsh dwellings data required columns.
-
-   +--------------------+------+------------------------------------------+
-   | Column Name        | Data | Description                              |
-   |                    | Type |                                          |
-   +====================+======+==========================================+
-   | zone               | Text | The LAD area code e.g. W06000013         |
-   +--------------------+------+------------------------------------------+
-   | lad19nm            | Text | The name of the LAD e.g. Bridgend        |
-   +--------------------+------+------------------------------------------+
-   | model year         | Int  | The number of dwellings in each LAD for  |
-   | (e.g. 2018)        | eger | the model year                           |
-   +--------------------+------+------------------------------------------+
-   | model year + 1     | Int  | The number of dwellings in each LAD for  |
-   | (e.g. 2019)        | eger | the next year                            |
-   +--------------------+------+------------------------------------------+
-
-NDR Business Data
------------------
-
-The non-domestic rating business floorspace data is available in the NDR
-Business Floorspace tables Excel spreadsheet on
-`GOV.UK <https://www.gov.uk/government/statistics/non-domestic-rating-stock-of-properties-including-business-floorspace-2019>`__
-for the whole UK. The tables provide the business floorspace by
-administrative area for various years and different sectors, the tool
-requires the data from the various tables to be compiled into a single
-CSV which contains different columns for the different sectors (Retail,
-Office, Industrial and Other) and years. The table below details the
-columns required in the input CSV file.
-
-.. table:: NDR business floorspace CSV required columns.
-
-   +-----------------+----+-----------------------------------------------+
-   | Column Name     | Da | Description                                   |
-   |                 | ta |                                               |
-   |                 | Ty |                                               |
-   |                 | pe |                                               |
-   +=================+====+===============================================+
-   | AREA_CODE       | Te | Area code e.g. E92000001                      |
-   |                 | xt |                                               |
-   +-----------------+----+-----------------------------------------------+
-   | AREA            | Te | Name of area e.g. ENGLAND                     |
-   |                 | xt |                                               |
-   +-----------------+----+-----------------------------------------------+
-   | Floorspace      | I  | Floorspace in :math:`1000m^2` for the retail  |
-   | _2017-18_Retail | nt | sector ending in the model year               |
-   |                 | eg |                                               |
-   |                 | er |                                               |
-   +-----------------+----+-----------------------------------------------+
-   | Floorspace      | I  | Floorspace in :math:`1000m^2` for the retail  |
-   | _2018-19_Retail | nt | sector starting in the model year             |
-   |                 | eg |                                               |
-   |                 | er |                                               |
-   +-----------------+----+-----------------------------------------------+
-   | Floorspace      | I  | Floorspace in :math:`1000m^2` for the office  |
-   | _2017-18_Office | nt | sector ending in the model year               |
-   |                 | eg |                                               |
-   |                 | er |                                               |
-   +-----------------+----+-----------------------------------------------+
-   | Floorspace      | I  | Floorspace in :math:`1000m^2` for the office  |
-   | _2018-19_Office | nt | sector starting in the model year             |
-   |                 | eg |                                               |
-   |                 | er |                                               |
-   +-----------------+----+-----------------------------------------------+
-   | Floorspace_201  | I  | Floorspace in :math:`1000m^2` for the         |
-   | 7-18_Industrial | nt | industrial sector ending in the model year    |
-   |                 | eg |                                               |
-   |                 | er |                                               |
-   +-----------------+----+-----------------------------------------------+
-   | Floorspace_201  | I  | Floorspace in :math:`1000m^2` for the         |
-   | 8-19_Industrial | nt | industrial sector starting in the model year  |
-   |                 | eg |                                               |
-   |                 | er |                                               |
-   +-----------------+----+-----------------------------------------------+
-   | Floorspac       | I  | Floorspace in :math:`1000m^2` for the other   |
-   | e_2017-18_Other | nt | sectors ending in the model year              |
-   |                 | eg |                                               |
-   |                 | er |                                               |
-   +-----------------+----+-----------------------------------------------+
-   | Floorspac       | I  | Floorspace in :math:`1000m^2` for the other   |
-   | e_2018-19_Other | nt | sectors starting in the model year            |
-   |                 | eg |                                               |
-   |                 | er |                                               |
-   +-----------------+----+-----------------------------------------------+
-
-**Note:** The column names should include the actual model year (and the
-years before and after) instead of 2018.
-
-Other Zone Correspondences
+LSOA Zone Correspondences
 --------------------------
 
-Three other more generic zone correspondence CSVs are required for
-converting LSOAs, MSOAs and LADs to the model zone system. These
-correspondence files are used for converting the `Census Occupation
-Data <#census-occupation-data>`__, `Dwellings Data <#dwellings-data>`__
-and `NDR Business Data <#ndr-business-data>`__. All zone correspondence
-CSV files have the same format with column names on the first row and
-three required columns, listed in the table below.
+Zone correspondence CSVs are required for converting Warehouse 
+and Occupation data to the model zone system. Formatted required:
+column names on the first row and three required columns, listed in the table below.
 
 .. table:: Required columns for the zone correspondence CSVs, column
    names are ignored the columns just need to be in the correct order.
@@ -922,13 +635,15 @@ three required columns, listed in the table below.
    3      Real      Splitting factor for correspondence
    ====== ========= ===================================
 
-Study Area Lookup
------------------
+Zoning
+------
+this should be the name of the model zoning system, which should match that in the 
+zone correspondence file
 
-The study area lookup should be a file containing a list of all the
-model zones with a second column to flag whether or not they're inside
-the model study area. A list of the required columns is given in the
-table below.
+Model zones
+-----------
+
+The model zones file should contain a *complete list of the zone IDs*.
 
 .. table:: Required columns for the study area lookup CSV, column names
    must be exactly as listed any other columns are ignored.
@@ -939,11 +654,6 @@ table below.
    +========+=============+===============================================+
    | zone   | Integer     | The model zone number                         |
    +--------+-------------+-----------------------------------------------+
-   | in     | Integer (1  | If the zone is inside (1) or outside (0) the  |
-   | ternal | or 0)       | study area                                    |
-   +--------+-------------+-----------------------------------------------+
-
-**Note:** This should be a complete list of all zones.
 
 Cost Matrix
 -----------

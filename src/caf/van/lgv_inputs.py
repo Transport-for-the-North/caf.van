@@ -152,6 +152,8 @@ class LGVInputPaths(caf.toolkit.BaseConfig):
 
     zoning: str
     """Name of the zoning system to use for the model."""
+    model_zones: types.FilePath
+    """Path to CSV containing lookup for zones in model study area."""
     household_paths: DwellingPaths
     """Paths for the households data and zone correspondence."""
     employment_paths: EmploymentPaths
@@ -170,15 +172,8 @@ class LGVInputPaths(caf.toolkit.BaseConfig):
     """Path to GB construction data csv."""
     lsoa_lookup_path: types.FilePath
     """Path to the LSOA to model zone correspondence CSV."""
-    msoa_lookup_path: types.FilePath
-    """Path to the MSOA to model zone correspondence CSV."""
-    lad_lookup_path: types.FilePath
-    """Path to the Local Authority District to model zone correspondence
-    CSV"""
     tripend_balancing_regions_path: types.FilePath
     """Path to csv containing trip end balancing regions to zone correspondence"""
-    model_study_area: types.FilePath  # TODO(KF) This isnt used - get rid
-    """Path to CSV containing lookup for zones in model study area."""
     summary_zone_translation: ZoneTranslationDefinition
     """Path to model zones to summary zones correspondance CSV"""
     cost_matrix_path: types.FilePath
@@ -188,13 +183,13 @@ class LGVInputPaths(caf.toolkit.BaseConfig):
     """Dictionary of gravity model parameters for each segment."""
     output_folder: types.DirectoryPath
     """Path to folder to save outputs to."""
-    normits_pa_folder: types.DirectoryPath  # keep as is
+    normits_pa_folder: Optional[types.DirectoryPath]=None  # keep as is
     """Path to the full PA Normits matrices, should contain all non home
     based and home based matrices"""
-    normits_to_msoa_lookup: types.FilePath  # ?????
+    normits_to_msoa_lookup: Optional[types.DirectoryPath]=None  
     """Normits to MSOA(NTEM) lookup, this is NorMITs to model zone lookup as the
     results are taken after normits results are converted back to NoHAM"""
-    normits_to_personal_factor: float  # keep as is
+    normits_to_personal_factor: Optional[float] = None  # keep as is
     """This is the factor that the personal data should have applied to
     just include van data 4% is a starting point"""
     personal_purposes: list[int] = fields.Field(
