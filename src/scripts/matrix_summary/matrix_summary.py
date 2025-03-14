@@ -1,18 +1,22 @@
 from __future__ import annotations
 
+# Built-Ins
+import argparse
+import pathlib
+from typing import Optional
+
+# Third Party
+import caf.toolkit as ctk
+import pandas as pd
+from caf.toolkit import translation as ctktranslation
+
 # finalise QA
 # create summary scipt
 # OP matrix
 # Documentation
 # caf.van tidy up & docs
 
-from typing import Optional
-import pathlib
-import argparse
 
-import pandas as pd
-import caf.toolkit as ctk
-from caf.toolkit import translation as ctktranslation
 
 
 class MatrixReportInput(ctk.BaseConfig):

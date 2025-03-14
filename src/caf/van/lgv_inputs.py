@@ -12,21 +12,19 @@ from __future__ import annotations
 import datetime as dt
 import enum
 import logging
-from multiprocessing import Value
 import re
 import string
+from multiprocessing import Value
 from pathlib import Path
-from typing import Any, Callable, Optional, Literal
+from typing import Any, Callable, Literal, Optional
 
 # Third Party
-
-
 import caf.base
 import caf.toolkit
 import numpy as np
 import pandas as pd
-from pydantic import dataclasses, fields, model_validator, field_validator, types
 from caf.base import DVector, ZoningSystem
+from pydantic import dataclasses, field_validator, fields, model_validator, types
 
 # Local Imports
 from caf.van import errors, utilities
@@ -183,10 +181,10 @@ class LGVInputPaths(caf.toolkit.BaseConfig):
     """Dictionary of gravity model parameters for each segment."""
     output_folder: types.DirectoryPath
     """Path to folder to save outputs to."""
-    normits_pa_folder: Optional[types.DirectoryPath]=None  # keep as is
+    normits_pa_folder: Optional[types.DirectoryPath] = None  # keep as is
     """Path to the full PA Normits matrices, should contain all non home
     based and home based matrices"""
-    normits_to_msoa_lookup: Optional[types.DirectoryPath]=None  
+    normits_to_msoa_lookup: Optional[types.DirectoryPath] = None
     """Normits to MSOA(NTEM) lookup, this is NorMITs to model zone lookup as the
     results are taken after normits results are converted back to NoHAM"""
     normits_to_personal_factor: Optional[float] = None  # keep as is

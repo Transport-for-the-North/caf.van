@@ -16,8 +16,6 @@ from pathlib import Path
 from typing import Literal, Optional
 
 # Third Party
-from caf.distribute import gravity_model, cost_functions
-
 import caf.distribute.gravity_model
 import caf.distribute.gravity_model.multi_area
 import numpy as np
@@ -27,8 +25,6 @@ from caf.distribute import cost_functions, gravity_model
 # Local Imports
 from caf.van.commute_segment import CommuteTripEnds
 from caf.van.delivery_segment import DeliveryTripEnds
-
-
 from caf.van.lgv_inputs import (
     GMInputs,
     LGVInputPaths,
@@ -200,10 +196,10 @@ class LGVMatrices:
     commuting_skilled_trades: pd.DataFrame
     """Commuting skilled trades (SOCs 51, 52, 53) trips matrix,
     with zone numbers for columns and indices."""
-    personal: pd.DataFrame| None = None
+    personal: pd.DataFrame | None = None
     """Contains personal trip matrix outputs from normits,
     with zone numbers for columns and indices"""
-    combined:pd.DataFrame = field(init=False)
+    combined: pd.DataFrame = field(init=False)
     """Trips matrix for all combined segments, with zone numbers
     for columns and indices."""
     zones: np.ndarray = field(init=False)
@@ -308,9 +304,7 @@ def calculate_trip_ends(
     """
     output_folder.mkdir(exist_ok=True)
 
-    model_zones: pd.Series = pd.read_csv(input_paths.model_zones, usecols=["zone"])[
-        "zone"
-    ]
+    model_zones: pd.Series = pd.read_csv(input_paths.model_zones, usecols=["zone"])["zone"]
     model_zones.name = "Zone"
 
     if input_paths.tripend_balancing_regions_path is not None:
@@ -590,8 +584,6 @@ def _gravity_model(
         lookup_zone_col="zone_id",
     )
 
-
-    
     calib_gm = gravity_model.MultiAreaGravityModelCalibrator(
         trip_ends["row_targets"].to_numpy(),
         trip_ends["col_targets"].to_numpy(),

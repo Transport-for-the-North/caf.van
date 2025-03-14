@@ -97,7 +97,6 @@ class MatrixReport:
         else:
             translated_describe_label = "Matrix"
 
-
         self.matrix = matrix
         self.describe[translated_describe_label] = matrix_describe(matrix)
 
@@ -146,7 +145,6 @@ class MatrixReport:
     def row_sum(self) -> pd.DataFrame:
         """The row sums of the matrix."""
         return self.matrix.sum(axis=0)
-
 
     @property
     def column_sum(self) -> pd.DataFrame:

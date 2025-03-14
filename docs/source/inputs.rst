@@ -19,7 +19,7 @@ can be created with the command ``python -m LFT.lgv_model -e``.*
 .. code:: yaml
   
    zoning: Name of the zoning system to use for the model
-   household_paths: DwellingPaths
+   household_paths: 
       occupied: Path to the occupied dwellings data DVector
          No specific segmentation is required as it is aggregated to total households by zone.
       zc_path: Path to the zone correspondence CSV.
@@ -44,14 +44,18 @@ can be created with the command ``python -m LFT.lgv_model -e``.*
    model_study_area: Path to CSV containing lookup for zones in model study area
    cost_matrix_path: Path to CSV containing cost matrix, should be square matrix with
      zone numbers as column names and indices
-   summary_zone_translation: Path to model zones to summary zones correspondance CSV
-   gm_parameters: Dictionary of gravity model parameters for each segment.
-      trip_length_distribution_path: Path to the Trip Length Distribution CSV."""
-      cost_function: The cost function to use for the gravity model. Either 'log_normal' or 'tanner'
-      cost_function_params: Starting (calibration)/run params for the cost function.
-      calibrate: Whether to calibrate the cost function paramas (True) or run with given params (False).
-      cat_zone_correspondance_path: Path to CSV with correspondence between the categories in the TLD and the model zones.
-      furness_jacobian: Whether to Furness the Jacobian matrix in the gravity model. Find your nearest demand modelling expert for more information.
+   summary_zone_translation: 
+      path: Path to model zones to summary zones correspondance CSV
+      from_zoning: Name of model zoning system in translation file
+      to_zoning: Name of summary zoning system in translation file
+   gm_parameters:
+      segment_name:
+         trip_length_distribution_path: Path to the Trip Length Distribution CSV."""
+         cost_function: The cost function to use for the gravity model. Either 'log_normal' or 'tanner'
+         cost_function_params: Starting (calibration)/run params for the cost function.
+         calibrate: Whether to calibrate the cost function paramas (True) or run with given params (False).
+         cat_zone_correspondance_path: Path to CSV with correspondence between the categories in the TLD and the model zones.
+         furness_jacobian: Whether to Furness the Jacobian matrix in the gravity model. Find your nearest demand modelling expert for more information.
    output_folder: Path to folder to save outputs to
 
 
@@ -624,10 +628,10 @@ Zone Correspondences
 
 Zone correspondence CSVs are required for converting Warehouse 
 and Occupation data from LSOA to the model zone system and annual matrices to a summary zone system.
-The summary zone system can be chosen by the user to suit the specific situation. Both CSVs require the same 
-format column names on the first row and three required columns, listed in the table below.
+The summary zone system can be chosen by the user to suit the specific situation. LSOA to model zones requires
+ column names on the first row and three required columns, listed in the table below.
 
-.. table:: Required columns for the zone correspondence CSVs, column
+.. table:: Required columns for the LSOA zone correspondence CSV, column
    names are ignored the columns just need to be in the correct order.
 
    ====== ========= ===================================
@@ -637,6 +641,12 @@ format column names on the first row and three required columns, listed in the t
    2      Integer   Corresponding model zone ID
    3      Real      Splitting factor for correspondence
    ====== ========= ===================================
+
+The summary zone correspondence should be in caf.space format, containing the following columns:
+   - {from_zoning}_id - the model zone ID
+   - {to_zoning}_id - the summary zone ID
+   - {from_zoning}_{to_zoning} - translation factor, best practice is to use aggragated zones 
+      for the summary, so all of theses should be 1.
 
 Zoning
 ------

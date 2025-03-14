@@ -1,14 +1,17 @@
-import pathlib
-import itertools
+# Built-Ins
 import glob
+import itertools
+import pathlib
 import re
-import pandas as pd
 from typing import Optional
+
+# Third Party
+import caf.toolkit as ctk
 import numpy as np
+import pandas as pd
 from caf.toolkit import translation
 from plotly import express as px
 from plotly import graph_objects as go
-import caf.toolkit as ctk
 
 
 def create_comparisons_path(

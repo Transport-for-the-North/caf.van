@@ -1,14 +1,15 @@
 from __future__ import annotations
 
+# Built-Ins
 import glob
 import pathlib
 
-import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
-import geopandas as gpd
+# Third Party
 import caf.toolkit as ctk
-
+import geopandas as gpd
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 from matplotlib.backends.backend_pdf import PdfPages
 
 

@@ -1,11 +1,12 @@
 """ script to combine, aggregate and rezone dvectors"""
 
-import pathlib
+# Built-Ins
 import glob
+import pathlib
 
-import pandas as pd
-
+# Third Party
 import caf.base
+import pandas as pd
 
 
 def concat_dvecs(dir: pathlib.Path, out: pathlib.Path) -> None:

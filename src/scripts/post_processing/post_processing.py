@@ -1,10 +1,13 @@
+# Built-Ins
 import collections
-from functools import reduce
 import glob
 import os
 import pathlib
-import pandas as pd
+from functools import reduce
+
+# Third Party
 import caf.toolkit as ctk
+import pandas as pd
 
 VOA_MATRIX_DIR = pathlib.Path(
     r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\development_outputs\2023_NorMITs_VOA\time period matrices"
