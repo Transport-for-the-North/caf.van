@@ -521,14 +521,13 @@ def _gravity_model(
     csv_logging_path: Path,
 ) -> VanGravityModelResults:
     """Internal function used in `run_gravity_model` for running the GM with calibration."""
+
     trip_ends = trip_ends.rename(
         columns={
             **dict.fromkeys(("Productions", "Origins"), "row_targets"),
             **dict.fromkeys(("Attractions", "Destinations"), "col_targets"),
         }
     )
-    # check PA/OD are balanced - if not balance and add warning with difference
-    trip_ends = balance_trip_ends(trip_ends, "row_targets", "col_targets")
 
     tld_path = gm_data.trip_length_distribution_path
 

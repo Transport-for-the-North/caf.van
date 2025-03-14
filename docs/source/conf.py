@@ -37,6 +37,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.autosectionlabel",
     "sphinx_gallery.gen_gallery",
+    "sphinx.ext.intersphinx",
 ]
 
 templates_path = ["_templates", "_templates/autosummary"]
@@ -75,6 +76,12 @@ sphinx_gallery_conf = {
     # Regex pattern of filenames to be ran so the output can be included
     "filename_pattern": rf"{re.escape(os.sep)}run_.*\.py",
 }
+
+# -- Options for Linking to external docs (intersphinx) ----------------------
+intersphinx_mapping = {
+    "caf.distribute": ("https://cafdistribute.readthedocs.io/en/stable/", None),
+}
+intersphinx_timeout = 30
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

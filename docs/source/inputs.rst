@@ -418,14 +418,14 @@ than, approximately, 1/365.*
 
 
 Gravity Model Parameters (gm_parameters)
-----------------------------------
+----------------------------------------
 A dictionary should be passed with keys of the names of each of the output matrices i.e.
 ('service', 'delivery_parcel_stem', 'delivery_parcel_bush', 'delivery_grocery', 'commuting_drivers', 'commuting_skilled_trades')
 The tool supports both single and multi TLD calibration.
 The following parameters should be defined for each matrix.
 
 Trip Length Distribution (trip_length_distribution_path)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 This should be a CSV containing the trip length distribution(s) to use for calibration.
 The CSV should be in the following format:
 
@@ -456,6 +456,7 @@ Category-Zone correspondence (cat_zone_correspondance_path)
 This CSV should contain zones and the TLD categories they should use.
 If the path is not given a single TLD will be performed.
 
+.. table:: Format of the category zone correspondence
 +--------------+--------+-----------------------------------------------+
 | Column       | Data   | Description                                   |                                      
 | Name         | Type   |                                               |
@@ -499,7 +500,7 @@ Whether to Furness the Jacobian matrix in the gravity model. Find your nearest d
 .. note:: setting this to True may cause poor results for matrices that fail to converge, this a known issue for the "bush" matrices ("delivery grocery" and "delivery bush") which contain mostly intrazonal trips by definition. If you find poor results for these matrices, try setting furness jacobian off.
 
 Trip End Balancing regions (tripend_balancing_regions_path)
-----------------------------------------------------------
+-----------------------------------------------------------
 
 A CSV that defines the areas for which the trip ends will be balanced within.
 
@@ -510,6 +511,7 @@ Constructions (constructions_path)
 
 This should contains the dwelling and employment floorspace changes in the model zoning.
 
+.. table:: Required columns in the Constructions CSV
 +--------------+--------+-----------------------------------------------+
 | Column       | Data   | Description                                   |                                      
 | Name         | Type   |                                               |
@@ -617,12 +619,13 @@ table below.
    |                                       | ger |                        |
    +---------------------------------------+-----+------------------------+
 
-LSOA Zone Correspondences
---------------------------
+Zone Correspondences
+-------------------------
 
 Zone correspondence CSVs are required for converting Warehouse 
-and Occupation data to the model zone system. Formatted required:
-column names on the first row and three required columns, listed in the table below.
+and Occupation data from LSOA to the model zone system and annual matrices to a summary zone system.
+The summary zone system can be chosen by the user to suit the specific situation. Both CSVs require the same 
+format column names on the first row and three required columns, listed in the table below.
 
 .. table:: Required columns for the zone correspondence CSVs, column
    names are ignored the columns just need to be in the correct order.
