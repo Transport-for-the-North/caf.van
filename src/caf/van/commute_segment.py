@@ -1,6 +1,6 @@
 """
-    Module to calculate the productions and attractions for the LGV
-    commuting segment in the model zone system.
+Module to calculate the productions and attractions for the LGV
+commuting segment in the model zone system.
 """
 
 ##### IMPORTS #####
@@ -189,6 +189,8 @@ class CommuteTripEnds:
 
     def _read_zone_lookups(self):
         for key, value in self.paths.dict().items():
+            if value is None:
+                continue
             key = key.lower()
             if key.endswith("lookup") or key.endswith("lookup_path"):
                 name = re.sub(r"[\s_]+|path", " ", key).strip()
