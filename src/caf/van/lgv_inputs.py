@@ -12,9 +12,6 @@ from __future__ import annotations
 import datetime as dt
 import enum
 import logging
-import re
-import string
-from multiprocessing import Value
 from pathlib import Path
 from typing import Any, Callable, Literal, Optional
 
@@ -29,7 +26,6 @@ from pydantic import dataclasses, field_validator, fields, model_validator, type
 # Local Imports
 from caf.van import errors, utilities
 from caf.van.rezone import Rezone
-from caf.van.utilities import DataPaths
 
 ##### CONSTANTS #####
 LOG = logging.getLogger(__name__)
@@ -556,14 +552,14 @@ class GMInputs:
         try:
             tld_cats = set(pd.read_csv(self.trip_length_distribution_path)["area"].unique())
 
-        except KeyError:
+        except KeyError as e:
             if self.cat_zone_correspondance_path is None:
                 multi_tld = False
             else:
                 raise ValueError(
                     "If cat_zone_correspondance is passed, the area column in"
                     " trip_length_distribution_path, must be defined"
-                )
+                ) from e
 
         if isinstance(self.cost_function_params, tuple):
             # if we have a multi TLD and and using run mode (a.k.a. not self.calibrate)

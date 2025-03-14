@@ -151,10 +151,10 @@ class DeliveryTripEnds:
         dvec_extensions = (".dvec", ".hdf", "h5")
 
         utilities.check_file_path(
-            warehouse_paths.path, f"warehouse data", *plain_text_extensions
+            warehouse_paths.path, "warehouse data", *plain_text_extensions
         )
         utilities.check_file_path(
-            warehouse_paths.zc_path, f"warehouse lookup", *plain_text_extensions
+            warehouse_paths.zc_path, "warehouse lookup", *plain_text_extensions
         )
 
         utilities.check_file_path(employment_paths.path, "employment Data", *dvec_extensions)
@@ -306,7 +306,7 @@ class DeliveryTripEnds:
         params: pd.Series = df.set_index(header[0])[header[1]]
 
         try:
-            params: DeliveryParameters = DeliveryParameters.parse_obj(params.to_dict())
+            params = DeliveryParameters.parse_obj(params.to_dict())
         except pydantic.ValidationError as error:
             raise errors.MissingDataError("Delivery Parameters", str(error)) from error
 

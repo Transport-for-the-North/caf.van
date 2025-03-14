@@ -10,7 +10,7 @@ import logging
 import pathlib
 import re
 from itertools import chain
-from typing import Optional, Union
+from typing import Callable, Optional, Union
 
 # Third Party
 import numpy as np
@@ -114,14 +114,14 @@ class CommuteTripEnds:
         self.paths = input_paths
         self.model_zones = model_zones
 
-        self.params = {}
+        self.params:dict[str, float] = {}
         self.warehouse_parameters: WarehouseParameters | None = None
-        self.zone_lookups = {}
+        self.zone_lookups:dict[str, pd.DataFrame] = {}
         self.commute_trips_main_usage = {}
         self.commute_trips_land_use = {}
         self.trip_productions = None
-        self.attractor_factors = {}
-        self.ATTRACTION_FUNCTIONS = {
+        self.attractor_factors: dict[str, pd.DataFrame] = {}
+        self.ATTRACTION_FUNCTIONS:dict[str, Callable] = {
             "Construction": self._calc_construction_factors,
             "Residential": self._calc_residential_factors,
             "Employment": self._calc_employment_factors,
@@ -129,8 +129,8 @@ class CommuteTripEnds:
             "Drivers": self._estimate_driver_attractions,
         }
         self.trip_attractions = None
-        self.trip_ends = {}
-        self.infill_zones = []
+        self.trip_ends: dict[str, pd.DataFrame] = {}
+        self.infill_zones:list[int|str] = []
 
     @property
     def inputs_summary(self) -> pd.DataFrame:
@@ -149,7 +149,7 @@ class CommuteTripEnds:
             self.paths.parameters_path, sheets=self.COMMUTING_INPUTS_SHEET_HEADERS
         )
 
-        # TODO Create a pydantic dataclass to store / validate the parameters
+        # TODO(MB) Create a pydantic dataclass to store / validate the parameters
         self.params = utilities.to_dict(
             commute_tables["Parameters"], "Parameter", ("Value", float)
         )
@@ -314,7 +314,7 @@ class CommuteTripEnds:
         """Reads in files and estimates trip productions by zone and employment
         segment"""
         qs606uk = self._read_qs606()
-        # TODO review calc to check for 1/3
+        # TODO(MB) review calc to check for 1/3
 
         # Calculate total occupation numbers for Skilled trades and Drivers
         totals = qs606uk.drop(axis=1, labels=["zone", "total"]).sum()
@@ -512,6 +512,7 @@ class CommuteTripEnds:
 def read_qs606(
     ew_path: pathlib.Path, sc_path: pathlib.Path, rename: bool = True
 ) -> dict[str, pd.DataFrame]:
+    """"Read occupation data."""
     def rename_cols(name: str) -> str:
         """Renames the occupation data columns"""
         match = re.match("^(5[1-3])|(82)[1]?", name)

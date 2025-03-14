@@ -1089,7 +1089,7 @@ def lgv_arg_parser() -> argparse.ArgumentParser:
 
 def _check_gm_inputs(
     trip_ends: pd.DataFrame, costs: pd.DataFrame, calibration: pd.DataFrame = None
-) -> tuple[pd.DataFrame]:
+) -> list[pd.DataFrame]:
     """Sorts the indices and checks the input DataFrames for `gravity_model`."""
     # Copy the DataFrames so links to them outside this function aren't edited
     data = [trip_ends.copy(), costs.copy()]

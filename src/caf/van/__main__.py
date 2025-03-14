@@ -15,6 +15,7 @@ from caf.van import lgv_inputs, lgv_model
 
 
 def main():
+    """Main function for the package."""
     # Check if commandline arguments are given
     parser = lgv_model.lgv_arg_parser()
     args = parser.parse_args()
