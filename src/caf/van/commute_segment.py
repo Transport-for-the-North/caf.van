@@ -114,14 +114,14 @@ class CommuteTripEnds:
         self.paths = input_paths
         self.model_zones = model_zones
 
-        self.params:dict[str, float] = {}
+        self.params: dict[str, float] = {}
         self.warehouse_parameters: WarehouseParameters | None = None
-        self.zone_lookups:dict[str, pd.DataFrame] = {}
+        self.zone_lookups: dict[str, pd.DataFrame] = {}
         self.commute_trips_main_usage = {}
         self.commute_trips_land_use = {}
         self.trip_productions = None
         self.attractor_factors: dict[str, pd.DataFrame] = {}
-        self.ATTRACTION_FUNCTIONS:dict[str, Callable] = {
+        self.ATTRACTION_FUNCTIONS: dict[str, Callable] = {
             "Construction": self._calc_construction_factors,
             "Residential": self._calc_residential_factors,
             "Employment": self._calc_employment_factors,
@@ -130,7 +130,7 @@ class CommuteTripEnds:
         }
         self.trip_attractions = None
         self.trip_ends: dict[str, pd.DataFrame] = {}
-        self.infill_zones:list[int|str] = []
+        self.infill_zones: list[int | str] = []
 
     @property
     def inputs_summary(self) -> pd.DataFrame:
@@ -512,7 +512,8 @@ class CommuteTripEnds:
 def read_qs606(
     ew_path: pathlib.Path, sc_path: pathlib.Path, rename: bool = True
 ) -> dict[str, pd.DataFrame]:
-    """"Read occupation data."""
+    """ "Read occupation data."""
+
     def rename_cols(name: str) -> str:
         """Renames the occupation data columns"""
         match = re.match("^(5[1-3])|(82)[1]?", name)

@@ -17,8 +17,6 @@ from caf.toolkit import translation as ctktranslation
 # caf.van tidy up & docs
 
 
-
-
 class MatrixReportInput(ctk.BaseConfig):
     # TODO(kf) make Translation optional
     matrices_path: dict[str, pathlib.Path]
