@@ -16,11 +16,10 @@ from pathlib import Path
 from typing import Literal, Optional
 
 # Third Party
-import caf.distribute.gravity_model
-import caf.distribute.gravity_model.multi_area
 import numpy as np
 import pandas as pd
 from caf.distribute import cost_functions, gravity_model
+from caf.distribute.gravity_model import multi_area
 
 # Local Imports
 from caf.van.commute_segment import CommuteTripEnds
@@ -29,13 +28,12 @@ from caf.van.lgv_inputs import (
     GMInputs,
     LGVInputPaths,
     lgv_parameters,
-    read_study_area,
     read_time_factors,
 )
 from caf.van.matrix_validation import MatrixReport
 from caf.van.rezone import Rezone
 from caf.van.service_segment import ServiceTripEnds
-from caf.van.utilities import DataPaths, read_csv, read_excel
+from caf.van.utilities import DataPaths
 
 ##### CONSTANTS #####
 LOG = logging.getLogger(__name__)
@@ -399,7 +397,7 @@ def calculate_trip_ends(
     delivery_grocery_bush_te.to_csv(output_folder / "delivery_grocery_trip_ends.csv")
     commute_drivers.to_csv(output_folder / "commute_drivers_trip_ends.csv")
     commute_skilled_trades.to_csv(
-        output_folder / Path(f"commute_skilled_trades_trip_ends.csv")
+        output_folder / Path("commute_skilled_trades_trip_ends.csv")
     )
 
     LOG.info("\tDone with trip ends")
@@ -420,6 +418,7 @@ def balance_trip_ends(
     variable_col: str,
     name: str,
 ) -> pd.DataFrame:
+    """Balance variable column to control column within the regions."""    
 
     # Create a copy so we don't change anything out of function scope
     balanced_trip_ends = trip_ends.copy()
@@ -449,7 +448,7 @@ def balance_trip_ends(
             )
             # apply factor
             balanced_trip_ends.loc[zones, variable_col] *= factor
-            LOG.warning(
+            warnings.warn(
                 f"{control_col} and {variable_col} are imbalanced in for"
                 f" {name} region {r} (difference= {trip_end_difference})."
                 f" Factoring {variable_col} to {control_col} (factor = {factor})"
@@ -457,7 +456,7 @@ def balance_trip_ends(
 
         else:
             LOG.info(
-                f"Trip ends for {name}: {r} look fine -- difference: {trip_end_difference}"
+                "Trip ends for %s: %s look fine -- difference: %s", name, r, trip_end_difference
             )
     return balanced_trip_ends
 
@@ -594,8 +593,8 @@ def _gravity_model(
     if calibrate:
         gravity_model_results = calib_gm.calibrate(
             cost_distributions,
-            csv_logging_path,  # TODO figure out which key word args with default values needed to be changed
-            caf.distribute.gravity_model.multi_area.GMCalibParams(
+            csv_logging_path,  
+            multi_area.GMCalibParams(
                 furness_jac=gm_data.furness_jacobian
             ),
             verbose=2,
@@ -704,7 +703,7 @@ def run_gravity_model(
             calibrate,
             output_folder / f"gravity_model_{name}_calibration_log.csv",
         )
-        # TODO put this back to normal once dev is done
+        
         try:
             calibrate = gm_params.loc[name, "calibrate"]
             calib_gm = _gravity_model(
@@ -716,7 +715,7 @@ def run_gravity_model(
                 output_folder / f"gravity_model_{name}_calibration_log.csv",
             )
 
-        # TODO handle dictionary outputs for run method
+        
         except Exception as e:
             LOG.info("\t%s: %s", e.__class__.__name__, e)
             continue
@@ -918,7 +917,7 @@ def produce_personal_matrix(
     )
 
     # calling lookup
-    # TODO Add column names to stop errors coming up
+    # TODO(kf) Add column names to stop errors coming up
     lookup = Rezone.read(normits_to_msoa_lookup, None)
     # rezoning matrix NoHAM to NTEM
     matrix = Rezone.rezoneOD(
@@ -943,7 +942,7 @@ def produce_personal_matrix(
     od_matrix = pd.DataFrame(od_matrix, index=matrix.index, columns=matrix.columns)
     od_matrix.to_csv(output_folder / "personal-trip_matrix-OD.csv")
 
-    # TODO Add more tests at some point
+    # TODO(kf) Add more tests at some point
     # negative and nans check
     negatives = (od_matrix < 0).values
     if np.any(negatives):

@@ -92,20 +92,20 @@ class ServiceTripEnds:
         """Checks the input files exist and are the expected type."""
         plain_txt_extensions = (".csv", ".txt")
         dvec_extensions = (".dvec", ".hdf", ".h5")
-        # for nm, paths in (("BRES", employment_paths),):#TODO validate dwelling paths
+        # for nm, paths in (("BRES", employment_paths),):#TODO(kf) validate dwelling paths
         utilities.check_file_path(employment_paths.path, "employment data", *dvec_extensions)
         utilities.check_file_path(
-            employment_paths.zc_path, f"employment lookup", *plain_txt_extensions
+            employment_paths.zc_path, "employment lookup", *plain_txt_extensions
         )
         utilities.check_file_path(
             household_paths.occupied, "occupied dwelling data", *dvec_extensions
         )
         utilities.check_file_path(
-            household_paths.zc_path, f"dwelling lookup", *plain_txt_extensions
+            household_paths.zc_path, "dwelling lookup", *plain_txt_extensions
         )
         if household_paths.unoccupied is not None:
             utilities.check_file_path(
-                household_paths.unoccupied, f"unoccupied dwelling data", *dvec_extensions
+                household_paths.unoccupied, "unoccupied dwelling data", *dvec_extensions
             )
 
         self._household_paths = household_paths

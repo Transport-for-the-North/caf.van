@@ -1,5 +1,7 @@
+"""Summarise matrix outputs"""
 from __future__ import annotations
 
+#TODO(kf) move to using this functionality in caf.toolkit
 # Built-Ins
 import argparse
 import pathlib
@@ -117,7 +119,7 @@ class MatrixReport:
         if label is not None:
             sheet_prefix: str = f"{label}_"
         else:
-            sheet_prefix: str = ""
+            sheet_prefix = ""
 
         if len(sheet_prefix) >= 31:
             raise ValueError(
