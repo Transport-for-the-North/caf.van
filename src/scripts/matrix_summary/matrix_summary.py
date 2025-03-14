@@ -1,7 +1,8 @@
 """Summarise matrix outputs"""
+
 from __future__ import annotations
 
-#TODO(kf) move to using this functionality in caf.toolkit
+# TODO(kf) move to using this functionality in caf.toolkit
 # Built-Ins
 import argparse
 import pathlib

@@ -396,9 +396,7 @@ def calculate_trip_ends(
     delivery_parcel_bush_te.to_csv(output_folder / "delivery_parcel_bush_trip_ends.csv")
     delivery_grocery_bush_te.to_csv(output_folder / "delivery_grocery_trip_ends.csv")
     commute_drivers.to_csv(output_folder / "commute_drivers_trip_ends.csv")
-    commute_skilled_trades.to_csv(
-        output_folder / Path("commute_skilled_trades_trip_ends.csv")
-    )
+    commute_skilled_trades.to_csv(output_folder / Path("commute_skilled_trades_trip_ends.csv"))
 
     LOG.info("\tDone with trip ends")
     return LGVTripEnds(
@@ -418,7 +416,7 @@ def balance_trip_ends(
     variable_col: str,
     name: str,
 ) -> pd.DataFrame:
-    """Balance variable column to control column within the regions."""    
+    """Balance variable column to control column within the regions."""
 
     # Create a copy so we don't change anything out of function scope
     balanced_trip_ends = trip_ends.copy()
@@ -456,7 +454,10 @@ def balance_trip_ends(
 
         else:
             LOG.info(
-                "Trip ends for %s: %s look fine -- difference: %s", name, r, trip_end_difference
+                "Trip ends for %s: %s look fine -- difference: %s",
+                name,
+                r,
+                trip_end_difference,
             )
     return balanced_trip_ends
 
@@ -593,10 +594,8 @@ def _gravity_model(
     if calibrate:
         gravity_model_results = calib_gm.calibrate(
             cost_distributions,
-            csv_logging_path,  
-            multi_area.GMCalibParams(
-                furness_jac=gm_data.furness_jacobian
-            ),
+            csv_logging_path,
+            multi_area.GMCalibParams(furness_jac=gm_data.furness_jacobian),
             verbose=2,
         )
 
@@ -703,7 +702,7 @@ def run_gravity_model(
             calibrate,
             output_folder / f"gravity_model_{name}_calibration_log.csv",
         )
-        
+
         try:
             calibrate = gm_params.loc[name, "calibrate"]
             calib_gm = _gravity_model(
@@ -715,7 +714,6 @@ def run_gravity_model(
                 output_folder / f"gravity_model_{name}_calibration_log.csv",
             )
 
-        
         except Exception as e:
             LOG.info("\t%s: %s", e.__class__.__name__, e)
             continue
