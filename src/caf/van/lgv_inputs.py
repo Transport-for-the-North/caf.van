@@ -20,8 +20,9 @@ import caf.base
 import caf.toolkit
 import numpy as np
 import pandas as pd
+import pydantic
 from caf.base import DVector, ZoningSystem
-from pydantic import dataclasses, field_validator, fields, model_validator, types
+from pydantic import dataclasses, field_validator, model_validator, types
 
 # Local Imports
 from caf.van import errors, utilities
@@ -186,11 +187,11 @@ class LGVInputPaths(caf.toolkit.BaseConfig):
     normits_to_personal_factor: Optional[float] = None  # keep as is
     """This is the factor that the personal data should have applied to
     just include van data 4% is a starting point"""
-    personal_purposes: list[int] = fields.Field(
+    personal_purposes: list[int] = pydantic.Field(
         default_factory=lambda: list(DEFAULT_PERSONAL_PURPOSES)
     )
     """Personal purpose types defined by Normits"""
-    _model_output_folder: Path | None = fields.PrivateAttr(None)
+    _model_output_folder: Path | None = pydantic.PrivateAttr(None)
 
     @property
     def model_output_folder(self) -> Path:

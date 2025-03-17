@@ -4,6 +4,8 @@ Set of utilities for use in the freight tool
 """
 ##### IMPORTS #####
 
+from __future__ import annotations
+
 # Built-Ins
 import json
 import re

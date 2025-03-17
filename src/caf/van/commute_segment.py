@@ -227,7 +227,7 @@ class CommuteTripEnds:
         return Rezone.rezone_od(
             qs606uk,
             self.zone_lookups["lsoa lookup"],
-            dfCols=(cols[0],),
+            df_cols=(cols[0],),
             rezoneCols=cols[1:],
         )
 

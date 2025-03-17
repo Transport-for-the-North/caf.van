@@ -716,7 +716,7 @@ def run_gravity_model(
                 output_folder / f"gravity_model_{name}_calibration_log.csv",
             )
 
-        except Exception as e:
+        except Exception as e:  # pylint: disable = broad-exception-caught
             LOG.info("\t%s: %s", e.__class__.__name__, e)
             continue
 
@@ -923,7 +923,7 @@ def produce_personal_matrix(
     matrix = Rezone.rezone_od(
         matrix,
         lookup,
-        dfCols=("origin", "destination"),
+        df_cols=("origin", "destination"),
         rezoneCols="values",
     )
 
@@ -1003,7 +1003,7 @@ def produce_annual_matrices(
             )
             LOG.info("Finished personal segment matrices")
 
-    except Exception as exc:
+    except Exception as exc:  # pylint: disable = broad-exception-caught
         personal_matrix = None
         warnings.warn(
             "Failed to produce personal matrix, this will not be included in the outputs."

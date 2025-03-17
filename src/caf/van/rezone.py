@@ -130,7 +130,7 @@ class Rezone:
         return merged[original_cols], missing
 
     @classmethod
-    def rezone_od(cls, df, lookup, dfCols=("origin", "destination"), **kwargs):
+    def rezone_od(cls, df, lookup, df_cols=("origin", "destination"), **kwargs):
         """Rezones the matrix on both the origin and destination columns.
 
         Uses the `rezone` method.
@@ -152,8 +152,8 @@ class Rezone:
             The original dataframe with the columns rezoned.
         """
         # Loop through the dfCols
-        dfCols = list(dfCols)
-        for c in dfCols:
+        df_cols = list(df_cols)
+        for c in df_cols:
             df, missing = cls.rezone(df, lookup, c, **kwargs)
             # Check if there are any missing lookup values
             if len(missing) > 1:
@@ -161,5 +161,5 @@ class Rezone:
                 raise MissingLookupValuesError(missing, c)
 
         # Group the new zones
-        df = df.groupby(dfCols, as_index=False).sum()
+        df = df.groupby(df_cols, as_index=False).sum()
         return df

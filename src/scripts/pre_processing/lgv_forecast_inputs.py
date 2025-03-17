@@ -44,6 +44,8 @@ CSV_COMMENT_CHARACTER = "#"
 
 ##### CLASSES #####
 class ForecastInputsConfig(caf.toolkit.BaseConfig):
+    """Inputs for forecasting data."""
+
     base_model_config: types.FilePath
     base_year: int
     forecast_year: int
@@ -57,6 +59,8 @@ class ForecastInputsConfig(caf.toolkit.BaseConfig):
 
 @dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class NTEMGrowthData:
+    """Ntem growth data."""
+
     lsoa: pd.DataFrame
     msoa: pd.DataFrame
     lad: pd.DataFrame
@@ -90,19 +94,21 @@ class NTEMGrowthData:
 
 
 class _GrowthFactorLinRegress:
-    # TODO Add docstrings to class and methods
     def __init__(self, data: pd.Series) -> None:
         self._data = data
         self._results = stats.linregress(data.index, data.values)
 
     @property
     def name(self) -> str:
+        """Name of data."""
         return self._data.name
 
     def line(self, x: np.ndarray) -> np.ndarray:
+        """Get forecast values."""
         return (self._results.slope * x) + self._results.intercept
 
     def year_value(self, x: int):
+        """Value for a forecast year."""
         if x in self._data.index:
             return self._data.at[x]
         else:
@@ -110,18 +116,22 @@ class _GrowthFactorLinRegress:
 
     @property
     def data(self) -> pd.Series:
+        """Return data."""
         return self._data.copy()
 
     @property
     def slope(self) -> float:
+        """Gradient of the forecast."""
         return self._results.slope
 
     @property
     def intercept(self) -> float:
+        """Y intercept of the forcast data."""
         return self._results.intercept
 
     @property
     def rvalue(self) -> float:
+        """R value of data."""
         return self._results.rvalue
 
 
@@ -151,8 +161,7 @@ def _load_planning_data(base_path: pathlib.Path, forecast_path: pathlib.Path):
     return pd.concat(dataframes, axis=1)
 
 
-def load_oa_lookup(path: pathlib.Path) -> pd.DataFrame:
-    # TODO Docstring
+def _load_oa_lookup(path: pathlib.Path) -> pd.DataFrame:
     columns = ["lsoa11cd", "msoa11cd", "ladcd", "ladnm"]
     LOG.info("Reading OA lookup: %s", path.name)
     lookup = pd.read_csv(path, usecols=columns, dtype=str)
@@ -161,7 +170,6 @@ def load_oa_lookup(path: pathlib.Path) -> pd.DataFrame:
 
 
 def _normalise_names(data: pd.Series) -> pd.Series:
-    # TODO Docstring
     data = data.str.lower().str.strip()
     data = data.str.replace(r"[!\"#$%&'\()*+,-./:;<=>?@\][\\^_`{|}~]", "", regex=True)
     data = data.str.replace(r"\s+", " ", regex=True)
@@ -170,7 +178,6 @@ def _normalise_names(data: pd.Series) -> pd.Series:
 
 
 def _normalise_lad_names(data: pd.Series) -> pd.Series:
-    # TODO Docstring
     data = _normalise_names(data)
 
     lad_renaming = {
@@ -185,7 +192,6 @@ def _normalise_lad_names(data: pd.Series) -> pd.Series:
 def _merge_check(
     data: pd.DataFrame, title: str, merge_data: str, left_name: str, right_name: str
 ) -> None:
-    # TODO Docstring
     source_lookup = {"left_only": left_name, "right_only": right_name, "both": "both"}
 
     total = len(data)
@@ -207,10 +213,9 @@ def _merge_check(
         )
 
 
-def get_planning_growth(
+def _get_planning_growth(
     base_path: pathlib.Path, forecast_path: pathlib.Path, lookup: pd.DataFrame
 ) -> NTEMGrowthData:
-    # TODO Docstring
     planning_data = _load_planning_data(base_path, forecast_path)
 
     lad_growth: pd.DataFrame = planning_data.loc["Authority"]
@@ -342,7 +347,7 @@ def grow_occupation_data(
         output_paths[key] = output_folder / f"QS606{key}_grown_{forecast_year}.csv"
         data = data.drop(columns=[factor_col, "_merge"], errors="ignore")
 
-        comparisons[key] = compare_column_totals(base_data[key], data)
+        comparisons[key] = _compare_column_totals(base_data[key], data)
 
         with open(output_paths[key], "wt", encoding="utf-8", newline="") as file:
             file.write(meta_rows[key])
@@ -392,7 +397,7 @@ def grow_warehouse_data(
         data.loc[:, data_col] = data[data_col] * data[factor_col]
         data = data.drop(columns=[factor_col, "_merge"])
 
-        comparisons[name] = compare_column_totals(base_data, data)
+        comparisons[name] = _compare_column_totals(base_data, data)
 
         output_paths[name] = output_folder / f"{name}_grown_{forecast_year}.csv"
         data.to_csv(output_paths[name], index=False)
@@ -409,7 +414,6 @@ def grow_warehouse_data(
 
 
 def _recursive_apply(data: dict[str, Any], func: Callable) -> dict[str, Any]:
-    # TODO Docstring
     for key, value in data.items():
         if isinstance(value, dict):
             data[key] = _recursive_apply(value, func)
@@ -421,13 +425,12 @@ def _recursive_apply(data: dict[str, Any], func: Callable) -> dict[str, Any]:
     return data
 
 
-def write_forecast_log(
+def _write_forecast_log(
     paths: dict[str, Any],
     output_path: pathlib.Path,
     base_year: int,
     forecast_year: int,
 ) -> None:
-    # TODO Docstring
     yaml = strictyaml.as_document(_recursive_apply(paths, str)).as_yaml()
 
     with open(output_path, "wt", encoding="utf-8") as file:
@@ -443,7 +446,6 @@ def write_forecast_log(
 def _plot_linear_fit(
     fit: _GrowthFactorLinRegress, base_year: int, forecast_year: int, output_path: pathlib.Path
 ) -> None:
-    # TODO Docstring
     fig, ax = plt.subplots(figsize=(10, 10))
     fig.set_tight_layout(True)
     ax.set_ylabel(fit.name)
@@ -513,10 +515,9 @@ def _calculate_growth_factors(
     }
 
 
-def calculate_veh_km_growth_factor(
+def _calculate_veh_km_growth_factor(
     veh_kms_path: pathlib.Path, base_year: int, forecast_year: int, plot_path: pathlib.Path
 ) -> dict[str, float]:
-    # TODO Docstring
     rtf_veh_kms = pd.read_excel(
         veh_kms_path,
         sheet_name="Table 1 - Traffic - Area Type",
@@ -536,7 +537,7 @@ def calculate_veh_km_growth_factor(
     return _calculate_growth_factors(fit, base_year, forecast_year, plot_path)
 
 
-def calculate_fleet_projections_growth_factor(
+def _calculate_fleet_projections_growth_factor(
     projections_path: pathlib.Path, base_year: int, forecast_year: int, plot_path: pathlib.Path
 ) -> dict[str, float]:
     data = pd.read_csv(projections_path, comment=CSV_COMMENT_CHARACTER, index_col=0)
@@ -555,8 +556,7 @@ def calculate_fleet_projections_growth_factor(
     return _calculate_growth_factors(fit, base_year, forecast_year, plot_path)
 
 
-def compare_column_totals(base: pd.DataFrame, forecast: pd.DataFrame) -> pd.DataFrame:
-    # TODO Docstring
+def _compare_column_totals(base: pd.DataFrame, forecast: pd.DataFrame) -> pd.DataFrame:
     base.loc[:, "Rows"] = 1
     forecast.loc[:, "Rows"] = 1
 
@@ -570,7 +570,7 @@ def compare_column_totals(base: pd.DataFrame, forecast: pd.DataFrame) -> pd.Data
 
 
 def main(params: ForecastInputsConfig) -> None:
-    # TODO Docstring
+    """Main func."""
     output_folder = (
         params.output_folder / f"LGV Forecast Inputs {params.forecast_year} "
         f"- {dt.date.today():%Y%m%d}"
@@ -591,8 +591,8 @@ def main(params: ForecastInputsConfig) -> None:
         base_config.save_yaml(out_path)
         LOG.info("Written: %s", out_path.name)
 
-        oa_lookup = load_oa_lookup(params.oa_lookup_path)
-        growth = get_planning_growth(
+        oa_lookup = _load_oa_lookup(params.oa_lookup_path)
+        growth = _get_planning_growth(
             params.base_planning_path, params.forecast_planning_path, oa_lookup
         )
 
@@ -633,14 +633,14 @@ def main(params: ForecastInputsConfig) -> None:
             forecast_paths, lambda x: x.relative_to(output_folder)
         )
 
-        growth_factors = calculate_veh_km_growth_factor(
+        growth_factors = _calculate_veh_km_growth_factor(
             params.forecasted_vehicle_kms,
             params.base_year,
             params.forecast_year,
             output_folder / "LGV_growth_factor_plot.pdf",
         )
         forecast_paths.update({"Vehicle km based growth factors": growth_factors})
-        growth_factors = calculate_fleet_projections_growth_factor(
+        growth_factors = _calculate_fleet_projections_growth_factor(
             params.fleet_growth,
             params.base_year,
             params.forecast_year,
@@ -650,7 +650,7 @@ def main(params: ForecastInputsConfig) -> None:
             {"NoCARB fleet projections based growth factors": growth_factors}
         )
 
-        write_forecast_log(
+        _write_forecast_log(
             forecast_paths,
             output_folder / "grown_data.yml",
             params.base_year,
