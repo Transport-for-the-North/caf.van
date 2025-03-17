@@ -1,4 +1,4 @@
-"""Create Trip End summaries for QA.a"""
+"""Create Trip End summaries for QA."""
 
 from __future__ import annotations
 
