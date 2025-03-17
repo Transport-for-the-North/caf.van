@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-    Module containing functionality for reading and pre-processing
-    the LGV inputs which are used for multiple segments.
+Module containing functionality for reading and pre-processing
+the LGV inputs which are used for multiple segments.
 """
 
 ##### IMPORTS #####

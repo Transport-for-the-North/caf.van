@@ -1,5 +1,5 @@
-""" 
-Contains functions that perform checks and provide high level statistics. 
+"""
+Contains functions that perform checks and provide high level statistics.
 """
 
 from __future__ import annotations

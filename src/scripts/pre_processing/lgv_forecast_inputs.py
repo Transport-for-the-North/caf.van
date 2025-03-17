@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-    Script for growing the LGV model inputs to a forecast year.
+Script for growing the LGV model inputs to a forecast year.
 
-    This is only necessary for inputs which aren't already
-    available for forecast years.
+This is only necessary for inputs which aren't already
+available for forecast years.
 """
 
 ##### IMPORTS #####

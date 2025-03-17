@@ -1,5 +1,4 @@
-"""this is how we calculated the growth factors, feel free to use different data/methods to do your own, or don't 
-"""
+"""this is how we calculated the growth factors, feel free to use different data/methods to do your own, or don't"""
 
 # Built-Ins
 import pathlib
@@ -102,8 +101,6 @@ def generate_construction(
         england_growth["business_floorspace"].sum()
         / england_growth["additional_dwellings"].sum()
     )
-
-    e_dwellings.merge
 
     # Calculate additional construction
     sw_dwellings.loc[:, "additional_dwellings"] = (

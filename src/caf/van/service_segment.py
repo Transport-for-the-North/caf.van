@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-    Module to calculate the productions and attractions for the LGV
-    service segment in the model zone system.
+Module to calculate the productions and attractions for the LGV
+service segment in the model zone system.
 """
 
 ##### IMPORTS #####

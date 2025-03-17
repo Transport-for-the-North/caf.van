@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-    Module for running the LGV model.
+Module for running the LGV model.
 """
 
 ##### IMPORTS #####
@@ -72,7 +72,7 @@ FUNCTION_LABELS = {
 }
 """Labels for the cost functions in the gravity model."""
 
-"""Definitions """
+# --------- Definitions -------------
 PA_DIFFERENCE_TOL = 1e-3
 """Tolerance for difference in productions and attractions."""
 

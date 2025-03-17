@@ -1,4 +1,4 @@
-""" script to combine, aggregate and rezone dvectors"""
+"""script to combine, aggregate and rezone dvectors"""
 
 # Built-Ins
 import glob

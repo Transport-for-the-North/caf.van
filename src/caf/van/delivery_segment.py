@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-    Module to calculate the delivery trips for the LGV model.
+Module to calculate the delivery trips for the LGV model.
 """
 
 ##### IMPORTS #####

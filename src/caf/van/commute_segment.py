@@ -16,7 +16,6 @@ from typing import Callable, Optional, Union
 import numpy as np
 import pandas as pd
 import pydantic
-from pydantic import fields
 
 # Local Imports
 from caf.van import errors, lgv_inputs, utilities
@@ -57,13 +56,13 @@ QS606_HEADER_FOOTER = {"EW": (8, 5), "SC": (7, 5)}
 class WarehouseParameters(pydantic.BaseModel):
     """Parameters for warehouse data used in commute segment."""
 
-    medium: Optional[float] = fields.Field(alias="Weighting - Medium")
-    high: Optional[float] = fields.Field(alias="Weighting - High")
-    low: Optional[float] = fields.Field(alias="Weighting - Low")
-    zone_infill: list[Union[int, str]] = fields.Field(
+    medium: Optional[float] = pydantic.fields.Field(alias="Weighting - Medium")
+    high: Optional[float] = pydantic.fields.Field(alias="Weighting - High")
+    low: Optional[float] = pydantic.fields.Field(alias="Weighting - Low")
+    zone_infill: list[Union[int, str]] = pydantic.fields.Field(
         alias="Model Zone Infill", default_factory=list
     )
-    infill_method: Optional[lgv_inputs.InfillMethod] = fields.Field(
+    infill_method: Optional[lgv_inputs.InfillMethod] = pydantic.fields.Field(
         None, alias="Zone Infill Method"
     )
 
@@ -121,7 +120,7 @@ class CommuteTripEnds:
         self.commute_trips_land_use = {}
         self.trip_productions = None
         self.attractor_factors: dict[str, pd.DataFrame] = {}
-        self.ATTRACTION_FUNCTIONS: dict[str, Callable] = {
+        self.ATTRACTION_FUNCTIONS: dict[str, Callable] = {  # pylint: disable = invalid-name
             "Construction": self._calc_construction_factors,
             "Residential": self._calc_residential_factors,
             "Employment": self._calc_employment_factors,
