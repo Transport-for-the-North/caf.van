@@ -366,7 +366,7 @@ def load_warehouse_floorspace(
 
     lookup = Rezone.read(zone_lookup, None)
 
-    rezoned, _ = Rezone.rezone(floorspace, lookup, lsoa_column, rezoneCols=area_column)
+    rezoned, _ = Rezone.rezone(floorspace, lookup, lsoa_column, rezone_cols=area_column)
     rezoned.rename(columns={lsoa_column: "Zone"}, inplace=True)
     grouped = rezoned.groupby("Zone").sum()
 

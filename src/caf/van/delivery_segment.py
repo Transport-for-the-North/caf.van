@@ -2,8 +2,7 @@
 """
 Module to calculate the delivery trips for the LGV model.
 """
-
-##### IMPORTS #####
+from __future__ import annotations
 
 # Built-Ins
 import logging
@@ -15,9 +14,14 @@ import numpy as np
 import pandas as pd
 import pydantic
 
-
 # Local Imports
 from caf.van import errors, lgv_inputs, utilities
+
+##### IMPORTS #####
+
+
+
+
 
 ##### CONSTANTS #####
 LOG = logging.getLogger(__name__)

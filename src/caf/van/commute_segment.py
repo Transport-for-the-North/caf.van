@@ -3,7 +3,7 @@ Module to calculate the productions and attractions for the LGV
 commuting segment in the model zone system.
 """
 
-##### IMPORTS #####
+from __future__ import annotations
 
 # Built-Ins
 import logging
@@ -20,6 +20,11 @@ import pydantic
 # Local Imports
 from caf.van import errors, lgv_inputs, utilities
 from caf.van.rezone import Rezone
+
+##### IMPORTS #####
+
+
+
 
 ##### CONSTANTS #####
 LOG = logging.getLogger(__name__)
@@ -221,7 +226,7 @@ class CommuteTripEnds:
 
         # Rezone to model zone system
         cols = qs606uk.columns
-        return Rezone.rezoneOD(
+        return Rezone.rezone_od(
             qs606uk,
             self.zone_lookups["lsoa lookup"],
             dfCols=(cols[0],),

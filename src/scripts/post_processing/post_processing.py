@@ -1,3 +1,5 @@
+"""Creates a 'combined' matrix without personal included and translates to a new zone system."""
+
 # Built-Ins
 import collections
 import glob
@@ -33,6 +35,8 @@ def process_matrices(
     translation_path: pathlib.Path,
     output_path: pathlib.Path,
 ) -> None:
+    """Processes matrices into a the output format."""
+
     # path.glob(*)
 
     tp_dir = [x for x in matrix_dir.iterdir() if x.is_dir()]

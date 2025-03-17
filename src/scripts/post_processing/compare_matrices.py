@@ -1,3 +1,7 @@
+"""Create comparisons between different matrices, requires plotly to be installed."""
+
+from __future__ import annotations
+
 # Built-Ins
 import glob
 import itertools
@@ -14,10 +18,11 @@ from plotly import express as px
 from plotly import graph_objects as go
 
 
-def create_comparisons_path(
+def _create_comparisons_path(
     comparisions: dict[str, str],
     suffix: str = "-GM_log",
 ) -> dict[str, dict[str, pathlib.Path]]:
+    """Organise paths into pairs to compare."""
 
     unpacked_files = {}
     for run_name, dir in comparisions.items():
@@ -43,7 +48,8 @@ def create_comparisons_path(
     return comparisions
 
 
-def compare_matrices(comparision_paths: dict[str, pathlib.Path]) -> dict[str, pd.DataFrame]:
+def _compare_matrices(comparision_paths: dict[str, pathlib.Path]) -> dict[str, pd.DataFrame]:
+    """Create a comparison between matrices."""
     comparisons = {}
     for name, path in comparision_paths.items():
         comparisons[name] = pd.read_excel(path, sheet_name="Matrix", index_col=0)
@@ -62,10 +68,11 @@ def compare_matrices(comparision_paths: dict[str, pathlib.Path]) -> dict[str, pd
     return results
 
 
-def compare_tlds(
+def _compare_tlds(
     comparision_paths: dict[str, pathlib.Path],
     output_path: pathlib.Path,
 ) -> None:
+    """Creates a comparisons between matrices TLDs."""
     comparisons = {}
 
     for run_name, path in comparision_paths.items():
@@ -112,8 +119,8 @@ def compare_tlds(
     _plot_tlds(comparisons, output_path)
 
 
-def compare_matrix_summaries(comparision_paths: dict[str, pathlib.Path]) -> pd.DataFrame:
-
+def _compare_matrix_summaries(comparision_paths: dict[str, pathlib.Path]) -> pd.DataFrame:
+    """Compares the matrix summaries."""
     comparisons = None
     for name, path in comparision_paths.items():
         summary = pd.read_excel(path, sheet_name="Summary", index_col=0)
@@ -126,7 +133,8 @@ def compare_matrix_summaries(comparision_paths: dict[str, pathlib.Path]) -> pd.D
 
 
 def create_trip_end_comparisions(dirs: dict[str, str], out_dir: pathlib.Path) -> pd.DataFrame:
-    comparisons = create_comparisons_path(dirs, "_trip_ends")
+    """Compares trip ends."""
+    comparisons = _create_comparisons_path(dirs, "_trip_ends")
     with pd.ExcelWriter(out_dir / "tripend_comparison.xlsx") as steve:
         for name, comp in comparisons.items():
             tripend_comparisons = compare_trip_ends(comp)
@@ -134,9 +142,10 @@ def create_trip_end_comparisions(dirs: dict[str, str], out_dir: pathlib.Path) ->
 
 
 def create_matrix_comparisons(dirs: dict[str, str], out_path: pathlib.Path):
-    comparisons_files = create_comparisons_path(dirs)
+    """Generates and outputs a matrix comparsion."""
+    comparisons_files = _create_comparisons_path(dirs)
     for name, comp in comparisons_files.items():
-        matrix_comparisons = compare_matrices(comp)
+        matrix_comparisons = _compare_matrices(comp)
 
         with pd.ExcelWriter(out_path / f"{name}_comparison.xlsx") as steve:
             for sheet_name, x in matrix_comparisons.items():
@@ -145,17 +154,18 @@ def create_matrix_comparisons(dirs: dict[str, str], out_path: pathlib.Path):
     with pd.ExcelWriter(out_path / "matrix_summary.xlsx") as steve:
 
         for name, comp in comparisons_files.items():
-            matrix_summaries = compare_matrix_summaries(comp)
+            matrix_summaries = _compare_matrix_summaries(comp)
 
             matrix_summaries.to_excel(steve, sheet_name=name)
 
     for name, comp in comparisons_files.items():
-        compare_tlds(comp, out_path / rf"tlds\{name}_tlds.html")
+        _compare_tlds(comp, out_path / rf"tlds\{name}_tlds.html")
 
 
-def create_sector_cost_matrix(
+def _create_sector_cost_matrix(
     cost_matrix: pd.DataFrame, translation_: pd.DataFrame, from_: str, to: str
 ) -> pd.DataFrame:
+    """Creates a sectorised cost matrix."""
     translated = translation.pandas_matrix_zone_translation(
         cost_matrix,
         translation_,
@@ -182,6 +192,7 @@ def create_sector_cost_matrix(
 def matrix_describe(
     matrix: pd.DataFrame | pd.Series, almost_zero: Optional[float] = None
 ) -> pd.Series:
+    """Wrapper around pd.df.describe with more useful bit added."""
     if almost_zero is None:
         almost_zero = 1 / matrix.size
     if isinstance(matrix, pd.DataFrame):
@@ -197,6 +208,7 @@ def matrix_describe(
 
 
 def compare_trip_ends(comp: dict[str, pathlib.Path]) -> pd.DataFrame:
+    """Compares trip ends."""
     comparisons = {}
     for name, path in comp.items():
         comparisons[name] = pd.read_csv(path, index_col=0)
@@ -224,10 +236,11 @@ def compare_trip_ends(comp: dict[str, pathlib.Path]) -> pd.DataFrame:
 
 
 def cost_matrix_comparison():
+    """Compares cost matrices."""
     with pd.ExcelWriter(
         r"C:\Users\KieranFishwick\OneDrive - Transport for the North\Documents\caf-van_rebase\comparisons\cost_matrix_comparison.xlsx"
     ) as bob:
-        normits = create_sector_cost_matrix(
+        normits = _create_sector_cost_matrix(
             pd.read_csv(
                 r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\inputs\Highway Costs\CSVs\HWnet_cost_ave_distance_codes.csv",
                 index_col=0,
@@ -241,7 +254,7 @@ def cost_matrix_comparison():
         print("writing normits")
         normits.to_excel(bob, sheet_name="normits")
         print("calculating ntem")
-        ntem = create_sector_cost_matrix(
+        ntem = _create_sector_cost_matrix(
             pd.read_csv(
                 r"U:\Lot3_LFT\2.LGV Model\LGV Model Inputs\8.Cost Matrix\MSOA_Distance_up_to_tertiary_roads_infilled.csv",
                 index_col=0,
@@ -257,17 +270,18 @@ def cost_matrix_comparison():
 
 
 def intra_mean(cost_matrix_path: str, sector_path: str):
+    """calculates the mean intra value for the cost matrix"""
     cost_matrix = pd.read_csv(cost_matrix_path, index_col=0)
     cost_matrix.columns = [int(c) for c in cost_matrix.columns]
     sectors = pd.read_csv(sector_path)
-    alan = {}
+    out = {}
     for s in sectors["area"].unique():
         steve = sectors.loc[sectors["area"] == s, "zone_id"]
         matrix_subset = cost_matrix.loc[steve, steve]
         bob = np.diag(matrix_subset)
-        alan[s] = {"mean": np.mean(bob), "std": np.std(bob)}
+        out[s] = {"mean": np.mean(bob), "std": np.std(bob)}
 
-    return pd.DataFrame(alan)
+    return pd.DataFrame(out)
 
 
 def _plot_tlds(tlds: dict[str, ctk.cost_utils.CostDistribution], output_path: pathlib.Path):

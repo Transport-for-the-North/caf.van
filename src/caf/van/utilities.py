@@ -154,7 +154,7 @@ class Parameters:
         return
 
     @staticmethod
-    def checkParams(parameters, expected, name):
+    def check_params(parameters, expected, name):
         """
         Checks if parameters contain expected.
 

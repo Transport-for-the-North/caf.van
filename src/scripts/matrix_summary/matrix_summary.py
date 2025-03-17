@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-# TODO(kf) move to using this functionality in caf.toolkit
 # Built-Ins
+# TODO(kf) move to using this functionality in caf.toolkit
 import argparse
 import pathlib
 from typing import Optional

@@ -1,3 +1,5 @@
+"""Create Trip End summaries for QA.a"""
+
 from __future__ import annotations
 
 # Built-Ins

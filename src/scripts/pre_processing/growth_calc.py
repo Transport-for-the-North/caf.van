@@ -55,7 +55,8 @@ def generate_construction(
     e_dwellings_path: dict[str, pathlib.Path],
     ndr_floorspace_path: dict[str, pathlib.Path],
     model_year: int,
-):
+) -> pd.DataFrame:
+    """Generate construction data input for caf.Van."""
     sw_dwellings, _ = read_sc_w_dwellings(sw_dwellings_path["path"], model_year)
     sw_dwellings = translation.pandas_vector_zone_translation(
         sw_dwellings.set_index("zone"),
@@ -124,7 +125,7 @@ def generate_construction(
 
 
 def read_sc_w_dwellings(path: pathlib.Path, model_year: int) -> tuple[pd.DataFrame, list[str]]:
-    # TODO Write docstring
+    """Read in scotland/wales dwellings data."""
     data_columns = [str(model_year - i) for i in (0, 1)]
     sc_w_header = {"zone": str, **dict.fromkeys(data_columns, int)}
     sc_w_dwellings = utilities.read_csv(path, columns=sc_w_header)
@@ -136,7 +137,7 @@ def read_ndr_floorspace(
     model_year: int,
     rename_columns: dict[str, str] = BUSINESS_FLOORSPACE_RENAME,
 ) -> tuple[pd.DataFrame, list[str]]:
-    # TODO Write docstring
+    """Read in NDR floorspace data."""
     zone_col = "AREA_CODE"
     columns = BUSINESS_FLOORSPACE_HEADER.copy()
 
@@ -188,6 +189,7 @@ def read_english_dwellings(
     rename_columns: dict[str, str] = E_DWELLINGS_NEW_COLS,
     drop_lad_name: bool = True,
 ) -> tuple[pd.DataFrame, list[str]]:
+    """Read in england dwelling data."""
     sheet = f"{model_year}-{model_year - 2000 + 1}"
     dwellings = (
         utilities.read_excel(

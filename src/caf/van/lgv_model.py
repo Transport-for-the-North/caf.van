@@ -2,8 +2,7 @@
 """
 Module for running the LGV model.
 """
-
-##### IMPORTS #####
+from __future__ import annotations
 
 # Built-Ins
 import argparse
@@ -34,6 +33,11 @@ from caf.van.matrix_validation import MatrixReport
 from caf.van.rezone import Rezone
 from caf.van.service_segment import ServiceTripEnds
 from caf.van.utilities import DataPaths
+
+##### IMPORTS #####
+
+
+
 
 ##### CONSTANTS #####
 LOG = logging.getLogger(__name__)
@@ -918,7 +922,7 @@ def produce_personal_matrix(
     # TODO(kf) Add column names to stop errors coming up
     lookup = Rezone.read(normits_to_msoa_lookup, None)
     # rezoning matrix NoHAM to NTEM
-    matrix = Rezone.rezoneOD(
+    matrix = Rezone.rezone_od(
         matrix,
         lookup,
         dfCols=("origin", "destination"),

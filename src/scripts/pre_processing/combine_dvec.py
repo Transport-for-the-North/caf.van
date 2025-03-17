@@ -9,15 +9,16 @@ import caf.base
 import pandas as pd
 
 
-def concat_dvecs(dir: pathlib.Path, out: pathlib.Path) -> None:
+def concat_dvecs(dir_: pathlib.Path, out: pathlib.Path) -> None:
+    """Concatinate multiple dvectors into one dvector."""
     lsoa_zoning = caf.base.ZoningSystem.get_zoning("lsoa_2021")
 
-    paths = glob.glob(str(dir))
+    paths = glob.glob(str(dir_))
     dvecs: list[caf.base.DVector] = []
     for path in paths:
 
         print(f"reading {path}")
-        dvecs.append(caf.base.DVector.load(path).aggregate(["accom_h"]))
+        dvecs.append(caf.base.DVector.load(pathlib.Path(path)).aggregate(["accom_h"]))
 
     segmentation = dvecs[0].segmentation
 
@@ -38,9 +39,9 @@ def concat_dvecs(dir: pathlib.Path, out: pathlib.Path) -> None:
 
 
 def zone_dvec(in_path: str, out_path: str) -> None:
-    lsoa_zoning = caf.base.ZoningSystem.get_zoning("lsoa_2021")
+    """Change the Dvector zoning name."""
 
-    dvec = caf.base.DVector.load(in_path)
+    dvec = caf.base.DVector.load(pathlib.Path(in_path))
 
     data = dvec.data
     segmentation = dvec.segmentation
@@ -49,7 +50,7 @@ def zone_dvec(in_path: str, out_path: str) -> None:
         import_data=data,
         segmentation=segmentation,
         zoning_system=caf.base.ZoningSystem.get_zoning("lsoa_2021"),
-    ).save(out_path)
+    ).save(pathlib.Path(out_path))
 
 
 zone_dvec(
