@@ -20,9 +20,6 @@ from caf.van import errors, lgv_inputs, utilities
 ##### IMPORTS #####
 
 
-
-
-
 ##### CONSTANTS #####
 LOG = logging.getLogger(__name__)
 

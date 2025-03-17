@@ -1,3 +1,5 @@
+"""Calculate Time Period Factors."""
+
 from __future__ import annotations
 
 # Built-Ins
@@ -58,6 +60,8 @@ WEEKDAYS = ["tuesday", "wednesday", "thursday"]
 
 
 class TimePeriodInputs(ctk.BaseConfig):
+    """inputs to calculate time period factors."""
+
     van_stats_path: str
     day_distribution_path: str
     month_distribution_path: str
@@ -67,6 +71,7 @@ class TimePeriodInputs(ctk.BaseConfig):
     out_path: str
 
     def parse(self) -> TimePeriodParams:
+        """Parse inputs."""
         van_stats = pd.read_excel(
             self.van_stats_path,
             engine="odf",

@@ -37,8 +37,6 @@ from caf.van.utilities import DataPaths
 ##### IMPORTS #####
 
 
-
-
 ##### CONSTANTS #####
 LOG = logging.getLogger(__name__)
 TRIP_DISTRIBUTION_SHEETS = {

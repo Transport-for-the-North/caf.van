@@ -24,8 +24,6 @@ from caf.van.rezone import Rezone
 ##### IMPORTS #####
 
 
-
-
 ##### CONSTANTS #####
 LOG = logging.getLogger(__name__)
 BUSINESS_FLOORSPACE_HEADER: dict[str, type] = {"AREA_CODE": str}

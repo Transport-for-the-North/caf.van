@@ -18,7 +18,6 @@ import pandas as pd
 import pydantic
 
 # Local Imports
-import caf.van as cvn
 from caf.van import lgv_inputs
 
 ##### CONSTANTS #####
@@ -38,12 +37,14 @@ class _Config(ctk.BaseConfig):
 
 
 class _ZoningSystemRetriever:
+    """Get zoning system."""
 
     def __init__(self, folder: pathlib.Path = cb.zoning.ZONE_CACHE_HOME) -> None:
         self._folder = folder
         self._systems = {}
 
     def get(self, name: str) -> cb.ZoningSystem:
+        """Retrieve zoning system."""
         if name in self._systems:
             return self._systems[name]
 
@@ -53,6 +54,7 @@ class _ZoningSystemRetriever:
 
 
 def find_zoning_systems(folder: pathlib.Path) -> dict[str, pathlib.Path]:
+    """Find zoning systems."""
     LOG.info('Searching for zone systems in "%s"', folder)
     systems = {}
     for path in folder.iterdir():
@@ -74,6 +76,7 @@ def find_zoning_systems(folder: pathlib.Path) -> dict[str, pathlib.Path]:
 
 
 def main() -> None:
+    """Main function for inputs validation."""
     parameters = _Config.load_yaml(_CONFIG_FILE)
 
     log_file = parameters.output_folder / f"{_NAME}.log"
@@ -144,8 +147,8 @@ def _check_all_zone_lookups(
 
         lookup = pd.read_csv(path)
 
-        to_zone_id, to_zone_name = find_id_column(to_zone.name, lookup)
-        from_zone_id, from_zone_name = find_id_column(name, lookup)
+        to_zone_id, to_zone_name = _find_id_column(to_zone.name, lookup)
+        from_zone_id, from_zone_name = _find_id_column(name, lookup)
 
         _check_zone_lookup(lookup, to_zone_id, to_zone, f"{to_zone_name}_to_{from_zone_name}")
         _check_zone_lookup(
@@ -227,7 +230,7 @@ def _check_zones(id_column: str, zoning: cb.ZoningSystem, lookup_zones: np.ndarr
         LOG.info("No additional zones found in %s column in zone correspondence", id_column)
 
 
-def find_id_column(
+def _find_id_column(
     zone_name: str, lookup: pd.DataFrame, retry: bool = True
 ) -> tuple[str, str]:
     id_pattern = re.compile(rf"^\s*({zone_name}.*)_id\s*$", re.I)
@@ -237,7 +240,7 @@ def find_id_column(
     if len(id_column) == 0 and retry:
         # Remove any numbers (year / version) from the end of the name
         zone_name = re.sub(r"[_\d]+$", "", zone_name, flags=re.I)
-        return find_id_column(zone_name, lookup, False)
+        return _find_id_column(zone_name, lookup, False)
 
     if len(id_column) != 1:
         raise KeyError(f"found {len(id_column)} ID columns, expected 1")

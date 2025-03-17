@@ -526,7 +526,8 @@ def grow_occupation_data(
     forecast_year: int,
     output_folder: pathlib.Path,
 ) -> tuple[dict[str, pathlib.Path], dict[str, pd.DataFrame]]:
-    # TODO Docstring
+    """Grow occupation data to forecast year."""
+
     def filter_float(data: dict[str, type]) -> list[str]:
         return [k for k, v in data.items() if v is float]
 
@@ -614,7 +615,7 @@ def grow_warehouse_data(
     forecast_year: int,
     output_folder: pathlib.Path,
 ) -> tuple[dict[str, pathlib.Path], dict[str, pd.DataFrame]]:
-    # TODO Docstring
+    """Grow warehouse data to forecast year."""
     factor_col = growth.jobs_col
     zone_col = "LSOA11CD"
     data_col = "area"
