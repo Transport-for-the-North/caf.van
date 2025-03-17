@@ -14,7 +14,7 @@ from typing import Union
 import numpy as np
 import pandas as pd
 import pydantic
-from pydantic import fields
+
 
 # Local Imports
 from caf.van import errors, lgv_inputs, utilities
@@ -61,14 +61,14 @@ def zone_list(value: str) -> list[int]:
 class DeliveryParameters(pydantic.BaseModel):
     """Parameters for delivery segment to read from input spreadsheet."""
 
-    trips_parcel_stem: float = fields.Field(
+    trips_parcel_stem: float = pydantic.Field(
         alias="Annual Trip Productions - Parcel Stem", ge=0, title="Test"
     )
-    trips_parcel_bush: float = fields.Field(alias="Annual Trips - Parcel Bush", ge=0)
-    trips_grocery: float = fields.Field(alias="Annual Trips - Grocery Bush", ge=0)
-    growth_factor: float = fields.Field(alias="Delivery Growth Factor", ge=0)
-    b2c: float = fields.Field(alias="B2C vs B2B Weighting", ge=0, le=1)
-    depots_infill: list[Union[int, str]] = fields.Field(
+    trips_parcel_bush: float = pydantic.Field(alias="Annual Trips - Parcel Bush", ge=0)
+    trips_grocery: float = pydantic.Field(alias="Annual Trips - Grocery Bush", ge=0)
+    growth_factor: float = pydantic.Field(alias="Delivery Growth Factor", ge=0)
+    b2c: float = pydantic.Field(alias="B2C vs B2B Weighting", ge=0, le=1)
+    depots_infill: list[Union[int, str]] = pydantic.Field(
         alias="Depots Infill Zones", default_factory=list, Set=True
     )
 

@@ -6,8 +6,6 @@ Set of utilities for use in the freight tool
 
 # Built-Ins
 import json
-import logging
-import os
 import re
 from itertools import islice
 from pathlib import Path

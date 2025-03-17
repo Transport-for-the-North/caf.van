@@ -56,13 +56,13 @@ QS606_HEADER_FOOTER = {"EW": (8, 5), "SC": (7, 5)}
 class WarehouseParameters(pydantic.BaseModel):
     """Parameters for warehouse data used in commute segment."""
 
-    medium: Optional[float] = pydantic.fields.Field(alias="Weighting - Medium")
-    high: Optional[float] = pydantic.fields.Field(alias="Weighting - High")
-    low: Optional[float] = pydantic.fields.Field(alias="Weighting - Low")
-    zone_infill: list[Union[int, str]] = pydantic.fields.Field(
+    medium: Optional[float] = pydantic.Field(alias="Weighting - Medium")
+    high: Optional[float] = pydantic.Field(alias="Weighting - High")
+    low: Optional[float] = pydantic.Field(alias="Weighting - Low")
+    zone_infill: list[Union[int, str]] = pydantic.Field(
         alias="Model Zone Infill", default_factory=list
     )
-    infill_method: Optional[lgv_inputs.InfillMethod] = pydantic.fields.Field(
+    infill_method: Optional[lgv_inputs.InfillMethod] = pydantic.Field(
         None, alias="Zone Infill Method"
     )
 

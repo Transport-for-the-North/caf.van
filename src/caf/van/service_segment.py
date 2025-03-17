@@ -119,10 +119,11 @@ class ServiceTripEnds:
         """pd.DataFrame : Summary table of class input parameters."""
         return pd.DataFrame.from_dict(
             {
-                "Household Data Path": str(self._household_paths.path),
-                "Household Zone Correspondence Path": str(self._household_paths.zc_path),
-                "BRES Data Path": str(self._bres_paths.path),
-                "BRES Zone Correpondence Path": str(self._bres_paths.zc_path),
+                "Occupied Dwellings Path": str(self._household_paths.occupied),
+                "Unoccupied Dwellings Path": str(self._household_paths.unoccupied),
+                "Employment Path": str(self._employment_paths.path),
+                "Dwelling Zone Correspondence Path": str(self._household_paths.zc_path),
+                "Employment Zone Correspondence Path": str(self._employment_paths.zc_path),
                 "Annual Service Trips Path": str(self._trips_path),
                 "Scale Factor": self._scale_factor,
             },
