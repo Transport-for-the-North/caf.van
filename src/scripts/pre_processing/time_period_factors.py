@@ -158,6 +158,8 @@ class TimePeriodInputs(ctk.BaseConfig):
 
 @dataclasses.dataclass
 class TimePeriodParams:
+    """Params to calculate time period factors."""
+
     van_road_distribution: pd.DataFrame
     day_time_profiles: dict[str, float]
     month_distribution: float
@@ -167,6 +169,7 @@ class TimePeriodParams:
 def calculate_time_period_factors(
     day_time_profiles: dict, month_distribution: float, weeks_in_month
 ) -> pd.DataFrame:
+    """Calculate TP factors."""
     profiles = {}
     for tp, day_factor in day_time_profiles.items():
         profiles[tp] = (
