@@ -168,9 +168,8 @@ the table below lists the columns.
    | Column | Data     | Description                                      |
    | Name   | Type     |                                                  |
    +========+==========+==================================================+
-   | Main   | C        | Usage code for each of the types listed above    |
-   | usage  | haracter |                                                  |
-   |        | (1)      |                                                  |
+   | Main   | Character| Usage code for each of the types listed above    |
+   | usage  | (1)      |                                                  |
    +--------+----------+--------------------------------------------------+
    | Trips  | Real     | The annual number of commuting LGV trips for     |
    |        |          | that usage type                                  |
@@ -240,48 +239,39 @@ headers “Parameter” and “Value” on the first row.
 .. table:: Required parameters for the delivery segment sheet,
    parameters should be named exactly as written.
 
-   +-----------+-----+---------------------------------------------------+
-   | Parameter | D   | Description                                       |
-   |           | ata |                                                   |
-   |           | T   |                                                   |
-   |           | ype |                                                   |
-   +===========+=====+===================================================+
-   | Annual    | I   | The total annual trip productions for the         |
-   | Trip      | nte | delivery parcel stem segment from the DfT van     |
-   | Pr        | ger | survey, for the **base year**.                    |
-   | oductions |     |                                                   |
-   | - Parcel  |     |                                                   |
-   | Stem      |     |                                                   |
-   +-----------+-----+---------------------------------------------------+
-   | Annual    | I   | The total annual trips for the delivery parcel    |
-   | Trips -   | nte | bush segment from the DfT van survey, for the     |
-   | Parcel    | ger | **base year**.                                    |
-   | Bush      |     |                                                   |
-   +-----------+-----+---------------------------------------------------+
-   | Annual    | I   | The total annual trips for the delivery grocery   |
-   | Trips -   | nte | bush segment from the DfT van survey, for the     |
-   | Grocery   | ger | **base year**.                                    |
-   | Bush      |     |                                                   |
-   +-----------+-----+---------------------------------------------------+
-   | Delivery  | R   | Growth factor to apply to the annual delivery     |
-   | Growth    | eal | trips to factor to forecast year.                 |
-   | Factor    | (>  |                                                   |
-   |           | 0)  |                                                   |
-   +-----------+-----+---------------------------------------------------+
-   | B2C vs    | R   | The ratio of business-to-customer vs              |
-   | B2B       | eal | business-to-business delivery trips               |
-   | Weighting | (0  |                                                   |
-   |           | -   |                                                   |
-   |           | 1)  |                                                   |
-   +-----------+-----+---------------------------------------------------+
-   | Depots    | Com | List of all zones in areas that aren't covered by |
-   | Infill    | ma- | the warehouse dataset (e.g. Scotland), these      |
-   | Zones     | sep | zones will have depots allocated based on number  |
-   |           | ara | of households.                                    |
-   |           | ted |                                                   |
-   |           | l   |                                                   |
-   |           | ist |                                                   |
-   +-----------+-----+---------------------------------------------------+
+   +-----------+-----------+---------------------------------------------------+
+   | Parameter | Data Type | Description                                       |
+   +===========+===========+===================================================+
+   | Annual    | Integer   | The total annual trip productions for the         |
+   | Trip      |           | delivery parcel stem segment from the DfT van     |
+   | Pr        |           | survey, for the **base year**.                    |
+   | oductions |           |                                                   |
+   | - Parcel  |           |                                                   |
+   | Stem      |           |                                                   |
+   +-----------+-----------+---------------------------------------------------+
+   | Annual    | Integer   | The total annual trips for the delivery parcel    |
+   | Trips -   |           | bush segment from the DfT van survey, for the     |
+   | Parcel    |           | **base year**.                                    |
+   | Bush      |           |                                                   |
+   +-----------+-----------+---------------------------------------------------+
+   | Annual    | Integer   | The total annual trips for the delivery grocery   |
+   | Trips -   |           | bush segment from the DfT van survey, for the     |
+   | Grocery   |           | **base year**.                                    |
+   | Bush      |           |                                                   |
+   +-----------+-----------+---------------------------------------------------+
+   | Delivery  | Real (>0) | Growth factor to apply to the annual delivery     |
+   | Growth    |           | trips to factor to forecast year.                 |
+   | Factor    |           |                                                   |
+   +-----------+-----------+---------------------------------------------------+
+   | B2C vs    | Real (>0) | The ratio of business-to-customer vs              |
+   | B2B       |           | business-to-business delivery trips               |
+   | Weighting |           |                                                   |
+   +-----------+-----------+---------------------------------------------------+
+   | Depots    | Comma -   | List of all zones in areas that aren't covered by |
+   | Infill    | seperated | the warehouse dataset (e.g. Scotland), these      |
+   | Zones     | list      | zones will have depots allocated based on number  |
+   |           |           | of households.                                    |
+   +-----------+-----------+---------------------------------------------------+
 
 Commute Warehouse Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -373,51 +363,37 @@ than, approximately, 1/365.*
 
 .. table:: Required columns for the time period factors sheet.
 
-   +-----------+---+------------------------------------------------------+
-   | Column    | D | Description                                          |
-   | Names     | a |                                                      |
-   |           | t |                                                      |
-   |           | a |                                                      |
-   |           | T |                                                      |
-   |           | y |                                                      |
-   |           | p |                                                      |
-   |           | e |                                                      |
-   +===========+===+======================================================+
-   | Time      | T | The name of the time period, will be used for naming |
-   | Period    | e | the outputs                                          |
-   |           | x |                                                      |
-   |           | t |                                                      |
-   +-----------+---+------------------------------------------------------+
-   | Service   | R | The factor to multiply the annual matrix by to get   |
-   |           | e | the average daily time period (e.g. AM) for this     |
-   |           | a | segment                                              |
-   |           | l |                                                      |
-   +-----------+---+------------------------------------------------------+
-   | Delivery  | R | The factor to multiply the annual matrix by to get   |
-   | Parcel    | e | the average daily time period (e.g. AM) for this     |
-   | Stem      | a | segment                                              |
-   |           | l |                                                      |
-   +-----------+---+------------------------------------------------------+
-   | Delivery  | R | The factor to multiply the annual matrix by to get   |
-   | Parcel    | e | the average daily time period (e.g. AM) for this     |
-   | Bush      | a | segment                                              |
-   |           | l |                                                      |
-   +-----------+---+------------------------------------------------------+
-   | Delivery  | R | The factor to multiply the annual matrix by to get   |
-   | Grocery   | e | the average daily time period (e.g. AM) for this     |
-   |           | a | segment                                              |
-   |           | l |                                                      |
-   +-----------+---+------------------------------------------------------+
-   | Commuting | R | The factor to multiply the annual matrix by to get   |
-   | Drivers   | e | the average daily time period (e.g. AM) for this     |
-   |           | a | segment                                              |
-   |           | l |                                                      |
-   +-----------+---+------------------------------------------------------+
-   | Commuting | R | The factor to multiply the annual matrix by to get   |
-   | Skilled   | e | the average daily time period (e.g. AM) for this     |
-   | Trades    | a | segment                                              |
-   |           | l |                                                      |
-   +-----------+---+------------------------------------------------------+
+   +-----------+------+------------------------------------------------------+
+   | Column    | Data | Description                                          |
+   | Names     | Type |                                                      |
+   +===========+======+======================================================+
+   | Time      | Text | The name of the time period, will be used for naming |
+   | Period    |      | the outputs                                          |
+   +-----------+------+------------------------------------------------------+
+   | Service   | Real | The factor to multiply the annual matrix by to get   |
+   |           |      | the average daily time period (e.g. AM) for this     |
+   |           |      | segment                                              |
+   +-----------+------+------------------------------------------------------+
+   | Delivery  | Real | The factor to multiply the annual matrix by to get   |
+   | Parcel    |      | the average daily time period (e.g. AM) for this     |
+   | Stem      |      | segment                                              |
+   +-----------+------+------------------------------------------------------+
+   | Delivery  | Real | The factor to multiply the annual matrix by to get   |
+   | Parcel    |      | the average daily time period (e.g. AM) for this     |
+   | Bush      |      | segment                                              |
+   +-----------+------+------------------------------------------------------+
+   | Delivery  | Real | The factor to multiply the annual matrix by to get   |
+   | Grocery   |      | the average daily time period (e.g. AM) for this     |
+   |           |      | segment                                              |
+   +-----------+------+------------------------------------------------------+
+   | Commuting | Real | The factor to multiply the annual matrix by to get   |
+   | Drivers   |      | the average daily time period (e.g. AM) for this     |
+   |           |      | segment                                              |
+   +-----------+------+------------------------------------------------------+
+   | Commuting | Real | The factor to multiply the annual matrix by to get   |
+   | Skilled   |      | the average daily time period (e.g. AM) for this     |
+   | Trades    |      | segment                                              |
+   +-----------+------+------------------------------------------------------+
 
 
 
@@ -516,23 +492,23 @@ Constructions (constructions_path)
 This should contains the dwelling and employment floorspace changes in the model zoning.
 
 .. table:: Required columns in the Constructions CSV
-+--------------+--------+-----------------------------------------------+
-| Column       | Data   | Description                                   |                                      
-| Name         | Type   |                                               |
-+==============+========+===============================================+
-| zone         | Text   | The model zoning IDs.                         |
-|              | or     |                                               |
-|              | int    |                                               |
-+--------------+--------+-----------------------------------------------+
-| additonal_   | Real   | The number of dwellings constructed in the    | 
-| dwellings    |        | model year within the zone.                   |
-+--------------+--------+-----------------------------------------------+
-| demolished_  | Real   | The number of dwellings constructed in the    |
-| dwellings    |        | model year within the zone.                   |
-+--------------+--------+-----------------------------------------------+
-| buisness_    | Real   | The floorspace, in m^2, constructed in the    |
-| floorspace   |        | model year, within the zone.                  |
-+--------------+--------+-----------------------------------------------+
++----------------------+--------+--------------------------------------------+
+| Column               | Data   | Description                                |                                      
+| Name                 | Type   |                                            |
++======================+========+============================================+
+| zone                 | Text   | The model zoning IDs.                      |
+|                      | or     |                                            |
+|                      | int    |                                            |
++----------------------+--------+--------------------------------------------+
+| additonal_dwellings  | Real   | The number of dwellings constructed in the | 
+|                      |        | model year within the zone.                |
++----------------------+--------+--------------------------------------------+
+| demolished_dwellings | Real   | The number of dwellings constructed in the |
+|                      |        | model year within the zone.                |
++----------------------+--------+--------------------------------------------+
+| buisness_floorspace  | Real   | The floorspace, in m^2, constructed in the |
+|                      |        | model year, within the zone.               |
++----------------------+--------+--------------------------------------------+
 
 Census Occupation Data
 ----------------------
@@ -550,38 +526,29 @@ the units persons.
 
 .. table:: Required columns for the QS606EW occupation data CSV.
 
+   +-------------------------------------+------------+-----------------------+
+   | Column Name                         | Data Type  | Description           |
+   +=====================================+============+=======================+
+   | 2011 super output area - lower      | Text       | LSOA name             |
+   | layer                               |            |                       |
+   +-------------------------------------+------------+-----------------------+
+   | mnemonic                            | Text       | LSOA area code        |
+   +-------------------------------------+------------+-----------------------+
+   | All categories: Occupation          | Integer    | Total occupation      |
    +-------------------------------------+-----+-------------------------+
-   | Column Name                         | D   | Description             |
-   |                                     | ata |                         |
-   |                                     | T   |                         |
-   |                                     | ype |                         |
-   +=====================================+=====+=========================+
-   | 2011 super output area - lower      | T   | LSOA name               |
-   | layer                               | ext |                         |
-   +-------------------------------------+-----+-------------------------+
-   | mnemonic                            | T   | LSOA area code          |
-   |                                     | ext |                         |
-   +-------------------------------------+-----+-------------------------+
-   | All categories: Occupation          | I   | Total occupation        |
-   |                                     | nte |                         |
-   |                                     | ger |                         |
-   +-------------------------------------+-----+-------------------------+
-   | 51. Skilled agricultural and        | I   | Occupation numbers for  |
-   | related trades                      | nte | this segment            |
-   |                                     | ger |                         |
-   +-------------------------------------+-----+-------------------------+
-   | 52. Skilled metal, electrical and   | I   | Occupation numbers for  |
-   | electronic trades                   | nte | this segment            |
-   |                                     | ger |                         |
-   +-------------------------------------+-----+-------------------------+
-   | 53. Skilled construction and        | I   | Occupation numbers for  |
-   | building trades                     | nte | this segment            |
-   |                                     | ger |                         |
-   +-------------------------------------+-----+-------------------------+
-   | 821. Road Transport Drivers         | I   | Occupation numbers for  |
-   |                                     | nte | this segment            |
-   |                                     | ger |                         |
-   +-------------------------------------+-----+-------------------------+
+   | 51. Skilled agricultural and        | Integer    | Occupation numbers for|
+   | related trades                      |            | this segment          |
+   +-------------------------------------+------------+-----------------------+
+   | 52. Skilled metal, electrical and   | Integer    | Occupation numbers for|
+   | electronic trades                   |            | this segment          |
+   +-------------------------------------+------------+-----------------------+
+   | 53. Skilled construction and        | Integer    | Occupation numbers for|
+   | building trades                     |            | this segment          |
+   +-------------------------------------+------------+-----------------------+
+   | 821. Road Transport Drivers         | Integer    | Occupation numbers for|
+   |                                     |            | this segment          |
+   +-------------------------------------+------------+-----------------------+
+   
 
 The QS606UK census table should contain the occupation data extracted
 for Scotland only at datazone level and should be provided with the
@@ -590,38 +557,27 @@ table below.
 
 .. table:: Required columns for the QS606UK occupation data CSV.
 
-   +---------------------------------------+-----+------------------------+
-   | Column Name                           | D   | Description            |
-   |                                       | ata |                        |
-   |                                       | T   |                        |
-   |                                       | ype |                        |
-   +=======================================+=====+========================+
-   | 2011 scottish datazone                | T   | Datazone name          |
-   |                                       | ext |                        |
-   +---------------------------------------+-----+------------------------+
-   | mnemonic                              | T   | Datazone area code     |
-   |                                       | ext |                        |
-   +---------------------------------------+-----+------------------------+
-   | All categories: Occupation            | I   | Total occupation       |
-   |                                       | nte |                        |
-   |                                       | ger |                        |
-   +---------------------------------------+-----+------------------------+
-   | 51. Skilled agricultural and related  | I   | Occupation numbers for |
-   | trades                                | nte | this segment           |
-   |                                       | ger |                        |
-   +---------------------------------------+-----+------------------------+
-   | 52. Skilled metal, electrical and     | I   | Occupation numbers for |
-   | electronic trades                     | nte | this segment           |
-   |                                       | ger |                        |
-   +---------------------------------------+-----+------------------------+
-   | 53. Skilled construction and building | I   | Occupation numbers for |
-   | trades                                | nte | this segment           |
-   |                                       | ger |                        |
-   +---------------------------------------+-----+------------------------+
-   | 82. Transport and mobile machine      | I   | Occupation numbers for |
-   | drivers and operatives                | nte | this segment           |
-   |                                       | ger |                        |
-   +---------------------------------------+-----+------------------------+
+   +---------------------------------------+-----------+------------------------+
+   | Column Name                           | Data Type | Description            |
+   +=======================================+===========+========================+
+   | 2011 scottish datazone                | Text      | Datazone name          |
+   +---------------------------------------+-----------+------------------------+
+   | mnemonic                              | Text      | Datazone area code     |
+   +---------------------------------------+-----------+------------------------+
+   | All categories: Occupation            | Integer   | Total occupation       |
+   +---------------------------------------+-----------+------------------------+
+   | 51. Skilled agricultural and related  | Integer   | Occupation numbers for |
+   | trades                                |           | this segment           |
+   +---------------------------------------+-----------+------------------------+
+   | 52. Skilled metal, electrical and     | Integer   | Occupation numbers for |
+   | electronic trades                     |           | this segment           |
+   +---------------------------------------+-----------+------------------------+
+   | 53. Skilled construction and building | Integer   | Occupation numbers for |
+   | trades                                |           | this segment           |
+   +---------------------------------------+-----------+------------------------+
+   | 82. Transport and mobile machine      | Integer   | Occupation numbers for |
+   | drivers and operatives                |           | this segment           |
+   +---------------------------------------+-----------+------------------------+
 
 Zone Correspondences
 -------------------------
