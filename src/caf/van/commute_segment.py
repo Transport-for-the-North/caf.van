@@ -228,7 +228,7 @@ class CommuteTripEnds:
             qs606uk,
             self.zone_lookups["lsoa lookup"],
             df_cols=(cols[0],),
-            rezoneCols=cols[1:],
+            rezone_cols=cols[1:],
         )
 
     def _calc_construction_factors(self):

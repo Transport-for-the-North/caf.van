@@ -238,7 +238,6 @@ class LGVMatrices:
             + self.delivery_grocery
             + self.commuting_drivers
             + self.commuting_skilled_trades
-            + self.personal
         )
         if self.personal is not None:
             self.combined += self.personal
@@ -696,6 +695,7 @@ def run_gravity_model(
 
         gm_params = input_paths.gm_parameters[name]
         calibrate = gm_params.calibrate
+    
         calib_gm: VanGravityModelResults = _gravity_model(
             te,
             name,
@@ -705,20 +705,10 @@ def run_gravity_model(
             output_folder / f"gravity_model_{name}_calibration_log.csv",
         )
 
-        try:
-            calibrate = gm_params.loc[name, "calibrate"]
-            calib_gm = _gravity_model(
-                te,
-                name,
-                input_paths,
-                gm_params,
-                calibrate,
-                output_folder / f"gravity_model_{name}_calibration_log.csv",
-            )
 
-        except Exception as e:  # pylint: disable = broad-exception-caught
-            LOG.info("\t%s: %s", e.__class__.__name__, e)
-            continue
+        #except Exception as e:  # pylint: disable = broad-exception-caught
+        #    LOG.info("\t%s: %s", e.__class__.__name__, e)
+        #    continue
 
         # Check if segment outputs a PA matrix which needs to be converted
         if name in PA_MATRICES:
@@ -924,7 +914,7 @@ def produce_personal_matrix(
         matrix,
         lookup,
         df_cols=("origin", "destination"),
-        rezoneCols="values",
+        rezone_cols="values",
     )
 
     # Apply personal LGV factor
