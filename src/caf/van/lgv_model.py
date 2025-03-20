@@ -697,7 +697,7 @@ def run_gravity_model(
 
         gm_params = input_paths.gm_parameters[name]
         calibrate = gm_params.calibrate
-    
+
         calib_gm: VanGravityModelResults = _gravity_model(
             te,
             name,
@@ -707,8 +707,7 @@ def run_gravity_model(
             output_folder / f"gravity_model_{name}_calibration_log.csv",
         )
 
-
-        #except Exception as e:  # pylint: disable = broad-exception-caught
+        # except Exception as e:  # pylint: disable = broad-exception-caught
         #    LOG.info("\t%s: %s", e.__class__.__name__, e)
         #    continue
 
