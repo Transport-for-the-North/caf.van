@@ -252,9 +252,11 @@ class LGVMatrices:
             "commuting_drivers",
             "commuting_skilled_trades",
             "personal",
-            "combined",
             "zones",
         )
+        if self.personal is None:
+            attrs = attrs + ("personal",)
+
         return {a: getattr(self, a).copy() for a in attrs}
 
     def __str__(self) -> str:
