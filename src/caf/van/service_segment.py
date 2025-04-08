@@ -25,7 +25,7 @@ class ServiceTripEnds:
     household_paths : LFT.data_utils.DataPaths
         Paths to the CSVs containing the household projections data and
         the relevant zone correspondence.
-    bres_paths : EmploymentPaths
+    employment_paths : EmploymentPaths
         Paths to the CSVs containing the BRES data and the relevant
         zone correpondence.
     service_trips : Path
@@ -86,7 +86,7 @@ class ServiceTripEnds:
     def _check_paths(
         self,
         household_paths: lgv_inputs.DwellingPaths,
-        employment_paths: utilities.DataPaths,
+        employment_paths: utilities.EmploymentPaths,
         service_trips: Path,
     ):
         """Checks the input files exist and are the expected type."""

@@ -34,8 +34,6 @@ from caf.van.rezone import Rezone
 from caf.van.service_segment import ServiceTripEnds
 from caf.van.utilities import DataPaths
 
-##### IMPORTS #####
-
 
 ##### CONSTANTS #####
 LOG = logging.getLogger(__name__)
@@ -618,7 +616,7 @@ def _gravity_model(
 
 
 def extract_cost_func_params(
-    cost_funct_params: tuple[float, ...], cost_func_name: Literal["log_normal", "tanner"]
+    cost_funct_params: tuple[float, float], cost_func_name: Literal["log_normal", "tanner"]
 ) -> dict[str, float]:
     """Extracts the cost function parameters from a tuple.
 

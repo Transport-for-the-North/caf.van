@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 # Built-Ins
-# TODO(kf) move to using this functionality in caf.toolkit
 import argparse
 import pathlib
 from typing import Optional

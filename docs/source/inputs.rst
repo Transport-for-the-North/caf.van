@@ -19,6 +19,8 @@ can be created with the command ``python -m LFT.lgv_model -e``.*
 .. code:: yaml
   
    zoning: Name of the zoning system to use for the model
+   model_zones: Path to CSV containing lookup for zones in model study area.
+
    household_paths: 
       occupied: Path to the occupied dwellings data DVector
          No specific segmentation is required as it is aggregated to total households by zone.
@@ -36,43 +38,59 @@ can be created with the command ``python -m LFT.lgv_model -e``.*
        required
      low: CSV of LSOA warehouse floorspace for commute segment (low weighting), optional
      high: CSV of LSOA warehouse floorspace for commute segment (high weighting), optional
+
+   parameters_path: Path to the van model parameters Excel workbook.
    qs606ew_path: Path to the England & Wales Census Occupation data CSV
    qs606sc_path: Path to the Scottish Census Occupation data CSV
    constructions_path: Path to GB construction data csv.
    lsoa_lookup_path: Path to the LSOA to model zone correspondence CSV
    tripend_balancing_regions_path: Path to csv containing trip end balancing regions to zone correspondence
-   model_study_area: Path to CSV containing lookup for zones in model study area
    cost_matrix_path: Path to CSV containing cost matrix, should be square matrix with
      zone numbers as column names and indices
    summary_zone_translation: 
       path: Path to model zones to summary zones correspondance CSV
       from_zoning: Name of model zoning system in translation file
       to_zoning: Name of summary zoning system in translation file
+
    gm_parameters:
-      segment_name:
+      # Separate gravity model parameters for each van segment:
+      # service, delivery_parcel_stem, delivery_parcel_bush,
+      # delivery_grocery, commuting_drivers, commuting_skilled_trades
+      service:
          trip_length_distribution_path: Path to the Trip Length Distribution CSV."""
          cost_function: The cost function to use for the gravity model. Either 'log_normal' or 'tanner'
          cost_function_params: Starting (calibration)/run params for the cost function.
          calibrate: Whether to calibrate the cost function paramas (True) or run with given params (False).
          cat_zone_correspondance_path: Path to CSV with correspondence between the categories in the TLD and the model zones.
          furness_jacobian: Whether to Furness the Jacobian matrix in the gravity model. Find your nearest demand modelling expert for more information.
+      delivery_parcel_stem:
+         ...
    output_folder: Path to folder to save outputs to
 
 
 Household data
 -------------------------------------------
-UK household data in caf.base DVector format. Singular DVectors are required for each of the data inputs.
-No specific segmentation is required, since the data is aggregated to the number of household per zone.
-Occupied dwellings is required and unoccupied dwellings is optional. 
+
+UK household data for occupied and unoccupied (optional) dwellings in
+DVector format [#dvector]_. Singular DVectors are required for each of the data
+inputs with the same zone system but no specific segmentation is required,
+since the data is aggregated to the number of household per zone.
 If both are given the number of dwellings used is the sum of both datasets, if unoccupied is not given, the occupied data is used as is.
-The zone correspondence path should point to a csv in caf.space format which contains zone correspondence from the DVector's zoning to the model zoning.
+
+The zone correspondence path should point to a CSV, which contains zone correspondence from the DVector's zoning to the model zoning,
+see :ref:`Zone Correspondences` for information on the format of the CSV.
 
 
 Employment Data
 ---------------
-UK employment data in caf.base DVector format. A single DVector is required for the data input.
-The DVector must be segmented by 'sic_1_digit', any other segments will be aggregated.
-The zone correspondence path should point to a csv in caf.space format which contains zone correspondence from the DVector's zoning to the model zoning.
+
+A single DVector [#dvector] containing the UK employment data, from the TfN land-use model.
+The DVector must be segmented by 'sic_1_digit', see
+`caf.base <https://github.com/Transport-for-the-North/caf.base>`_ for
+details on segmentations, any other segments will be aggregated.
+
+The zone correspondence path should point to a CSV, which contains zone correspondence from the DVector's zoning to the model zoning,  
+see :ref:`Zone Correspondences` for information on the format of the CSV. 
 
 
 Warehouse Data
@@ -397,17 +415,20 @@ than, approximately, 1/365.*
 
 
 
-Gravity Model Parameters (gm_parameters)
-----------------------------------------
-A dictionary should be passed with keys of the names of each of the output matrices i.e.
-('service', 'delivery_parcel_stem', 'delivery_parcel_bush', 'delivery_grocery', 'commuting_drivers', 'commuting_skilled_trades')
-The tool supports both single and multi TLD calibration.
-The following parameters should be defined for each matrix.
+Gravity Model Parameters (``gm_parameters``)
+--------------------------------------------
 
-Trip Length Distribution (trip_length_distribution_path)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-This should be a CSV containing the trip length distribution(s) to use for calibration.
-The CSV should be in the following format:
+The gravity model is ran separately for each van segment, therefore the parameters
+should be specified separately for each. The segment names should be given exactly
+as follows: 'service', 'delivery_parcel_stem', 'delivery_parcel_bush', 'delivery_grocery', 'commuting_drivers', 'commuting_skilled_trades'.
+
+The following sections outline the parameters which should be defined for each segment.
+
+Trip Length Distribution (``trip_length_distribution_path``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This should be a CSV containing the trip length distribution(s) (TLD) to use for
+calibration. The CSV should contain the following columns, with names:
 
 +--------------+--------+-----------------------------------------------+
 | Column       | Data   | Description                                   |                                      
@@ -428,13 +449,17 @@ The CSV should be in the following format:
 |              |        | bin and area.                                 |
 +--------------+--------+-----------------------------------------------+
 
-if cat_zone_correspondance_path is not given. The csv does not need to contain 
-the area column and the tool will perform a single TLD calibration
+.. note::
+    If ``cat_zone_correspondance_path`` is not given, the CSV does not need to contain 
+    the area column and the tool will perform a single TLD calibration.
+    Alternatively, TLDs can be calibrated to separately for different zones.
 
-Category-Zone correspondence (cat_zone_correspondance_path)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-This CSV should contain zones and the TLD categories they should use.
-If the path is not given a single TLD will be performed.
+Category-Zone correspondence (``cat_zone_correspondance_path``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The category-zone correspondence is an optional lookup which defines which model zones
+are calibrated to each TLD provided. This is required when attempting to perform
+multi-TLD gravity model calibration.
 
 .. table:: Format of the category zone correspondence
 +--------------+--------+-----------------------------------------------+
@@ -450,11 +475,45 @@ If the path is not given a single TLD will be performed.
 |              | int    |                                               |
 +--------------+--------+-----------------------------------------------+
 
-Cost Function (cost_function)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The cost function to use for the gravity model: "log_normal" or "tanner"
-If you don't know which to use, consult TAG or your nearest Demand modelling
+Cost Function (``cost_function``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The cost function to use for the gravity model, either "log_normal" or "tanner".
+If you don't know which to use, consult TAG or your nearest demand modelling
 expert.
+
+.. note::
+    If using multi-TLD calibration all TLDs will use the same cost function,
+    although different parameters can be defined for each (see
+    :ref:`Cost Function params (cost_function_params)`).
+
+Log Normal
+**********
+
+The log normal function is defined as:
+
+.. math::
+
+    f(C_{ij}) = \frac{1}{C_{ij} \cdot \sigma \cdot \sqrt{2\pi}}
+    \cdot \exp\left(-\frac{(\ln C_{ij}-\mu)^2}{2\sigma^2}\right)
+
+where:
+
+- :math:`C_{ij}`: cost from i to j.
+- :math:`\sigma, \mu`: calibration parameters.
+
+Tanner
+******
+
+The tanner function is defined as:
+
+.. math:: f(C_{ij}) = C_{ij}^\alpha \cdot \exp(\beta C_{ij})
+
+where:
+
+- :math:`C_{ij}`: cost from i to j.
+- :math:`\alpha, \beta`: calibration parameters.
+
 
 Cost Function params (cost_function_params)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -470,21 +529,34 @@ param order
 Log Normal: mu, sigma
 Tanner: alpha, beta
 
-calibrate
+Calibrate
 ~~~~~~~~~
-True to calibrate the gravity model, false to run the gravity model.
 
-furness jacobian
+* True to calibrate the gravity model to the TLD(s).
+* False to run the gravity model with given cost parameters.
+
+Furness Jacobian
 ~~~~~~~~~~~~~~~~
-Whether to Furness the Jacobian matrix in the gravity model. Find your nearest demand modelling expert for more information.
-.. note:: setting this to True may cause poor results for matrices that fail to converge, this a known issue for the "bush" matrices ("delivery grocery" and "delivery bush") which contain mostly intrazonal trips by definition. If you find poor results for these matrices, try setting furness jacobian off.
 
-Trip End Balancing regions (tripend_balancing_regions_path)
------------------------------------------------------------
+Whether to furness the Jacobian matrix in the gravity model, see
+`caf.distribute <https://cafdistribute.readthedocs.io/en/stable/>`_ for
+the implementation details.
 
-A CSV that defines the areas for which the trip ends will be balanced within.
+.. warning::
+    Setting this to True may cause poor results for matrices that fail to converge,
+    this a known issue for the "bush" matrices ("delivery grocery" and "delivery bush")
+    which contain mostly intrazonal trips by definition. If you find poor results for
+    these matrices, try setting furness jacobian to off.
 
-This is in the same format as the category zone correspondence path defined above.
+Trip End Balancing regions (``tripend_balancing_regions_path``)
+---------------------------------------------------------------
+
+Optional CSV containing zone groups which the van trip ends will be balanced at.
+The CSV should be in the same format as the
+:ref:`Category-Zone correspondence (cat_zone_correspondance_path)`.
+
+If this isn't given then the trip ends will be balanced at all zones, i.e. the
+GB total trip ends.
 
 Constructions (constructions_path)
 ----------------------------------
@@ -535,7 +607,7 @@ the units persons.
    | mnemonic                            | Text       | LSOA area code        |
    +-------------------------------------+------------+-----------------------+
    | All categories: Occupation          | Integer    | Total occupation      |
-   +-------------------------------------+-----+-------------------------+
+   +-------------------------------------+------------+-----------------------+
    | 51. Skilled agricultural and        | Integer    | Occupation numbers for|
    | related trades                      |            | this segment          |
    +-------------------------------------+------------+-----------------------+
@@ -598,7 +670,8 @@ The summary zone system can be chosen by the user to suit the specific situation
    3      Real      Splitting factor for correspondence
    ====== ========= ===================================
 
-The summary zone correspondence should be in caf.space format, containing the following columns:
+The summary zone correspondence should be in `caf.space <https://cafspace.readthedocs.io/en/stable/>`_
+format, containing the following columns:
    - {from_zoning}_id - the model zone ID
    - {to_zoning}_id - the summary zone ID
    - {from_zoning}_{to_zoning} - translation factor, best practice is to use aggragated zones 
@@ -606,8 +679,8 @@ The summary zone correspondence should be in caf.space format, containing the fo
 
 Zoning
 ------
-this should be the name of the model zoning system, which should match that in the 
-zone correspondence file
+This should be the name of the model zoning system, which should match that in the 
+zone correspondence file.
 
 Model zones
 -----------
