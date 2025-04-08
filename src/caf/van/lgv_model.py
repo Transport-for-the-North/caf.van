@@ -251,7 +251,7 @@ class LGVMatrices:
             "delivery_grocery",
             "commuting_drivers",
             "commuting_skilled_trades",
-            "personal",
+            "combined",
             "zones",
         )
         if self.personal is None:
