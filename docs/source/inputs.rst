@@ -529,21 +529,34 @@ param order
 Log Normal: mu, sigma
 Tanner: alpha, beta
 
-calibrate
+Calibrate
 ~~~~~~~~~
-True to calibrate the gravity model, false to run the gravity model.
 
-furness jacobian
+* True to calibrate the gravity model to the TLD(s).
+* False to run the gravity model with given cost parameters.
+
+Furness Jacobian
 ~~~~~~~~~~~~~~~~
-Whether to Furness the Jacobian matrix in the gravity model. Find your nearest demand modelling expert for more information.
-.. note:: setting this to True may cause poor results for matrices that fail to converge, this a known issue for the "bush" matrices ("delivery grocery" and "delivery bush") which contain mostly intrazonal trips by definition. If you find poor results for these matrices, try setting furness jacobian off.
 
-Trip End Balancing regions (tripend_balancing_regions_path)
------------------------------------------------------------
+Whether to furness the Jacobian matrix in the gravity model, see
+`caf.distribute <https://cafdistribute.readthedocs.io/en/stable/>`_ for
+the implementation details.
 
-A CSV that defines the areas for which the trip ends will be balanced within.
+.. warning::
+    Setting this to True may cause poor results for matrices that fail to converge,
+    this a known issue for the "bush" matrices ("delivery grocery" and "delivery bush")
+    which contain mostly intrazonal trips by definition. If you find poor results for
+    these matrices, try setting furness jacobian to off.
 
-This is in the same format as the category zone correspondence path defined above.
+Trip End Balancing regions (``tripend_balancing_regions_path``)
+---------------------------------------------------------------
+
+Optional CSV containing zone groups which the van trip ends will be balanced at.
+The CSV should be in the same format as the
+:ref:`Category-Zone correspondence (cat_zone_correspondance_path)`.
+
+If this isn't given then the trip ends will be balanced at all zones, i.e. the
+GB total trip ends.
 
 Constructions (constructions_path)
 ----------------------------------
@@ -594,7 +607,7 @@ the units persons.
    | mnemonic                            | Text       | LSOA area code        |
    +-------------------------------------+------------+-----------------------+
    | All categories: Occupation          | Integer    | Total occupation      |
-   +-------------------------------------+-----+-------------------------+
+   +-------------------------------------+------------+-----------------------+
    | 51. Skilled agricultural and        | Integer    | Occupation numbers for|
    | related trades                      |            | this segment          |
    +-------------------------------------+------------+-----------------------+
@@ -657,7 +670,8 @@ The summary zone system can be chosen by the user to suit the specific situation
    3      Real      Splitting factor for correspondence
    ====== ========= ===================================
 
-The summary zone correspondence should be in caf.space format, containing the following columns:
+The summary zone correspondence should be in `caf.space <https://cafspace.readthedocs.io/en/stable/>`_
+format, containing the following columns:
    - {from_zoning}_id - the model zone ID
    - {to_zoning}_id - the summary zone ID
    - {from_zoning}_{to_zoning} - translation factor, best practice is to use aggragated zones 
@@ -665,8 +679,8 @@ The summary zone correspondence should be in caf.space format, containing the fo
 
 Zoning
 ------
-this should be the name of the model zoning system, which should match that in the 
-zone correspondence file
+This should be the name of the model zoning system, which should match that in the 
+zone correspondence file.
 
 Model zones
 -----------

@@ -17,9 +17,6 @@ import pydantic
 # Local Imports
 from caf.van import errors, lgv_inputs, utilities
 
-##### IMPORTS #####
-
-
 ##### CONSTANTS #####
 LOG = logging.getLogger(__name__)
 
@@ -149,7 +146,7 @@ class DeliveryTripEnds:
     ):
         """Checks the input files exist and are the expected type."""
         plain_text_extensions = (".csv", ".txt")
-        dvec_extensions = (".dvec", ".hdf", "h5")
+        dvec_extensions = (".dvec", ".hdf", ".h5")
 
         utilities.check_file_path(
             warehouse_paths.path, "warehouse data", *plain_text_extensions
@@ -186,8 +183,8 @@ class DeliveryTripEnds:
             {
                 "Warehouse Data Path": str(self._warehouse_paths.path),
                 "Warehouse Zone Correspondence Path": str(self._warehouse_paths.zc_path),
-                "BRES Data Path": str(self._employment_paths.path),
-                "BRES Zone Correspondence Path": str(self._employment_paths.zc_path),
+                "Employment Data Path": str(self._employment_paths.path),
+                "Employment Zone Correspondence Path": str(self._employment_paths.zc_path),
                 "Household Data Path": str(self._household_paths.path),
                 "Household Zone Correspondence Path": str(self._household_paths.zc_path),
                 "Delivery Parameters Path": str(self._parameters_path),
