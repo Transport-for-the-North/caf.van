@@ -34,8 +34,6 @@ from caf.van.rezone import Rezone
 from caf.van.service_segment import ServiceTripEnds
 from caf.van.utilities import DataPaths
 
-##### IMPORTS #####
-
 
 ##### CONSTANTS #####
 LOG = logging.getLogger(__name__)

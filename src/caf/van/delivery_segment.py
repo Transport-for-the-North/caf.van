@@ -140,7 +140,7 @@ class DeliveryTripEnds:
     def _check_paths(
         self,
         warehouse_paths: utilities.DataPaths,
-        employment_paths: utilities.DataPaths,
+        employment_paths: lgv_inputs.EmploymentPaths,
         household_paths: lgv_inputs.DwellingPaths,
         parameters_path: Path,
     ):
