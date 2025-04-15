@@ -24,7 +24,6 @@ from caf.distribute.gravity_model import multi_area
 from caf.van.commute_segment import CommuteTripEnds
 from caf.van.delivery_segment import DeliveryTripEnds
 from caf.van.lgv_inputs import (
-    GMInputs,
     LGVInputPaths,
     lgv_parameters,
     read_time_factors,
@@ -32,7 +31,7 @@ from caf.van.lgv_inputs import (
 from caf.van.matrix_validation import MatrixReport
 from caf.van.rezone import Rezone
 from caf.van.service_segment import ServiceTripEnds
-from caf.van.utilities import DataPaths
+from caf.van.utilities import DataPaths, GMInputs
 
 
 ##### CONSTANTS #####

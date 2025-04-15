@@ -11,7 +11,7 @@ import json
 import re
 from itertools import islice
 from pathlib import Path
-from typing import Dict, Union
+from typing import Dict, Literal, Optional, Union
 
 # Third Party
 import pandas as pd
@@ -545,3 +545,104 @@ def to_dict(df: pd.DataFrame, key_col: str, val_col: tuple[str, type], name: str
         dictionary[df.at[i, key_col]] = df.at[i, val_col]
 
     return dictionary
+
+
+@dataclasses.dataclass
+class GMInputs:
+    """Defines the input paths and parameters for the gravity model."""
+
+    trip_length_distribution_path: pydantic.types.FilePath
+    """Path to the Trip Length Distribution CSV."""
+    cost_function: Literal["log_normal", "tanner"]
+    """The cost function to use for the gravity model."""
+    cost_function_params: tuple[float, float] | dict[int | str, tuple[float, float]]
+    """Starting (calibration)/run params for the cost function."""
+    calibrate: bool
+    """Whether to calibrate the cost function paramas (True) or run with given params (False)."""
+    cat_zone_correspondance_path: Optional[pydantic.types.FilePath] = None
+    """Correspondence between the categories in the TLD and the model zones."""
+    furness_jacobian: bool = True
+    """Whether to Furness the Jacobian matrix in the gravity model. Find your nearest demand modelling expert for more information."""
+
+    @pydantic.field_validator("cost_function_params", mode="before")
+    @classmethod
+    def _parse_parameters(
+        cls, params: dict[str, str | list[str]] | list[str] | str
+    ) -> dict[str, list[str]] | list[str]:
+        """Parse the cost cost function params into a tuple of floats from string|dict[str, str].
+
+        Parameters
+        ----------
+        params : dict[str, str] | str
+            The cost function parameters to unpack.
+
+        Returns
+        -------
+        dict[str | int, tuple[float, ...]] | tuple[float, ...]
+            unpacked cost function parameters.
+        """
+        if isinstance(params, str):
+            return params.split(",")
+
+        if isinstance(params, dict):
+            new_dict = {}
+            for key, value in params.items():
+                if isinstance(value, str):
+                    new_dict[key] = value.split(",")
+                else:
+                    new_dict = value
+
+            return new_dict
+
+        return params
+
+    @pydantic.model_validator(mode="after")
+    def _check_cost_params(self) -> GMInputs:
+
+        multi_tld = True
+
+        try:
+            tld_cats = set(pd.read_csv(self.trip_length_distribution_path)["area"].unique())
+
+        except KeyError as e:
+            if self.cat_zone_correspondance_path is None:
+                multi_tld = False
+            else:
+                raise ValueError(
+                    "If cat_zone_correspondance is passed, the area column in"
+                    " trip_length_distribution_path, must be defined"
+                ) from e
+
+        if isinstance(self.cost_function_params, tuple):
+            # if we have a multi TLD and and using run mode (a.k.a. not self.calibrate)
+            # then we must have a dictionary
+            if multi_tld and not self.calibrate:
+                raise KeyError(
+                    'if cat_zone_correspondance_path is passed when using "run" mode,'
+                    " the cost_function_params must be passed as a dictionary with keys"
+                    ' of the unique values in the "area" column in '
+                    "cat_zone_correspondance_path and trip_length_distribution_path"
+                )
+        else:
+
+            assert isinstance(self.cost_function_params, dict)
+
+            correspondance_cats = set(
+                pd.read_csv(self.cat_zone_correspondance_path)["area"].unique()
+            )
+
+            if tld_cats != correspondance_cats:
+                raise KeyError(
+                    'the "area" column in cat_zone_correspondance_path and '
+                    "trip_length_distribution_path must have the same unique values"
+                )
+
+            if tld_cats != set(self.cost_function_params.keys()):
+                raise KeyError(
+                    'if cat_zone_correspondance_path is passed when using "run" mode,'
+                    " the cost_function_params must be passed as a dictionary with keys"
+                    ' of the unique values in the "area" column in '
+                    "cat_zone_correspondance_path and trip_length_distribution_path"
+                )
+
+        return self
