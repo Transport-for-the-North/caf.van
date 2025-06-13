@@ -477,5 +477,3 @@ def read_time_factors(path: Path) -> dict[str, dict[str, float]]:
     rename = {v[0]: k for k, v in TIME_PERIOD_COLUMNS.items()}
     df.rename(columns=rename, inplace=True)
     return df.to_dict(orient="index")
-
-

@@ -33,7 +33,6 @@ from caf.van.rezone import Rezone
 from caf.van.service_segment import ServiceTripEnds
 from caf.van.utilities import DataPaths, GMInputs
 
-
 ##### CONSTANTS #####
 LOG = logging.getLogger(__name__)
 TRIP_DISTRIBUTION_SHEETS = {
