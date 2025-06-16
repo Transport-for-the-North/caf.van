@@ -95,7 +95,10 @@ def _compare_tlds(
                     )
 
                 else:
-                    label = re.search(r"\d{1,2}$", dist_name).group()
+                    matched = re.search(r"\d{1,2}$", dist_name)
+                    if matched is None:
+                        raise ValueError(f"couldn't find label for {dist_name}")
+                    label = matched.group()
                     comparisons[f"{label}_{run_name}"] = ctk.cost_utils.CostDistribution(sheet)
             elif dist_name.startswith("Target Distribution"):
 

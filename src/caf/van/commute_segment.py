@@ -228,7 +228,7 @@ class CommuteTripEnds:
             qs606uk,
             self.zone_lookups["lsoa lookup"],
             df_cols=(cols[0],),
-            rezoneCols=cols[1:],
+            rezone_cols=cols[1:],
         )
 
     def _calc_construction_factors(self):
@@ -242,9 +242,7 @@ class CommuteTripEnds:
         # we calculate total builds as net additional dwellings + 2*demolitions as for net dwellings to be >= 0 each demolished
         # building needs to be replaces (only true if additional dwellings >=0)
 
-        if (
-            construction["demolished_dwellings"] < 0
-        ).any():  # negative demolitions not allowed
+        if (construction["demolished_dwellings"] < 0).any():
             raise ValueError(
                 "Demolitions smaller than 0 were found in the construction data. "
                 "these are not allowed!"

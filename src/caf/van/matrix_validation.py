@@ -144,12 +144,12 @@ class MatrixReport:
     @property
     def row_sum(self) -> pd.DataFrame:
         """The row sums of the matrix."""
-        return self.matrix.sum(axis=0)
+        return self.matrix.sum(axis=1)
 
     @property
     def column_sum(self) -> pd.DataFrame:
         """The column sums of the matrix."""
-        return self.matrix.sum(axis=1)
+        return self.matrix.sum(axis=0)
 
     @classmethod
     def from_file(
@@ -166,14 +166,14 @@ class MatrixReport:
         ----------
         path : Path
             Path to the matrix csv.
-        translation_path : Optional[Path], optional
-            Path to correspondence between matrix zoning and summary zoning, by default None
-        translation_from_col : Optional[str], optional
-            The column in the translation matrix with zoning to translate from, by default None.
-        translation_to_col : Optional[str], optional
-            The column in the translation matrix with zoning to translate to, by default None.
-        translation_factors_col : Optional[str], optional
-            The column in the translation matrix to use as factors, by default None.
+        translation_path : Path, optional
+            Path to correspondence between matrix zoning and summary zoning.
+        translation_from_col : str, optional
+            The column in the translation matrix with zoning to translate from.
+        translation_to_col : str, optional
+            The column in the translation matrix with zoning to translate to.
+        translation_factors_col : str, optional
+            The column in the translation matrix to use as factors.
 
         Returns
         -------

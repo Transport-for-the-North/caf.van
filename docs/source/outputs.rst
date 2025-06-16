@@ -78,16 +78,16 @@ Excel Log File
 ~~~~~~~~~~~~~~
 
 The Excel log spreadsheet that is created contains various statistics
-and results from the LGV model process. Sectorised statistics are used by
+and results from the LGV model process. Aggregated statistics are used by
 translating the matrix to a higher level summary zone system using the 
 summary_zone_translation input. The spreadsheet is named
 ``{segment_name}-GM_log.xlsx`` and contains the following worksheets:
 
--  Summary: This sheet contains high-level statistics of the sectorised and original 
-   matrices. Inclused mean, min, max, standard deviation, 5%, 25%, 50%, 75% and 95% quantiles,
+-  Summary: This sheet contains high-level statistics of the sector aggregated and original 
+   matrices. Including mean, min, max, standard deviation, 5%, 25%, 50%, 75% and 95% percentiles,
    sum, number of zeros and almost zeros and number of NaNs. 
--  Trips Ends: This sheet contains the sectorised trip ends of the resultant matrix.
--  Matrix: Contains the sectorised matrix.
+-  Trips Ends: This sheet contains the sector aggregated trip ends of the resultant matrix.
+-  Matrix: Contains the sector aggregated matrix.
 -  Calibration Results: This sheet lists the calibration parameters used
    for the final run of the gravity model and the :math:`R^2` values
    when the matrix is compared against the trip distributions.

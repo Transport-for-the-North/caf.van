@@ -487,7 +487,7 @@ class GMInputs:
     """Path to the Trip Length Distribution CSV."""
     cost_function: Literal["log_normal", "tanner"]
     """The cost function to use for the gravity model."""
-    cost_function_params: tuple[float, ...] | dict[str | int, tuple[float, ...]]
+    cost_function_params: tuple[float, float] | dict[int | str, tuple[float, float]]
     """Starting (calibration)/run params for the cost function."""
     calibrate: bool
     """Whether to calibrate the cost function paramas (True) or run with given params (False)."""
@@ -498,9 +498,9 @@ class GMInputs:
 
     @field_validator("cost_function_params", mode="before")
     @classmethod
-    def parse_parameters(
-        cls, params: dict[int | str, str] | str
-    ) -> dict[str | int, tuple[float, ...]] | tuple[float, ...]:
+    def _parse_parameters(
+        cls, params: dict[str, str | list[str]] | list[str] | str
+    ) -> dict[str, list[str]] | list[str]:
         """Parse the cost cost function params into a tuple of floats from string|dict[str, str].
 
         Parameters
@@ -513,37 +513,20 @@ class GMInputs:
         dict[str | int, tuple[float, ...]] | tuple[float, ...]
             unpacked cost function parameters.
         """
-        # keys will be read in as strings even if numeric.
-        # try converting them to numeric if possible
+        if isinstance(params, str):
+            return params.split(",")
 
         if isinstance(params, dict):
-            checked_keys = {}
-            no_errors = True
+            new_dict = {}
+            for key, value in params.items():
+                if isinstance(value, str):
+                    new_dict[key] = value.split(",")
+                else:
+                    new_dict = value
 
-            for key, vals in params.items():
-                try:
-                    checked_keys[int(key)] = vals
-                except ValueError:
-                    # if one isnt an int we dont convert any
-                    no_errors = False
-            if no_errors:
-                key_checked_params = checked_keys
-            else:
-                key_checked_params = params
+            return new_dict
 
-            processed_params: dict[str | int, tuple[float, ...]] = {}
-            for key, val in key_checked_params.items():
-                split_vals = []
-                for v in val.split(","):
-                    split_vals.append(float(v))
-                processed_params[key] = tuple(split_vals)
-            return processed_params
-        else:
-            assert isinstance(params, str)
-            split_vals = []
-            for v in params.split(","):
-                split_vals.append(float(v))
-            return tuple(split_vals)
+        return params
 
     @model_validator(mode="after")
     def _check_cost_params(self) -> GMInputs:
