@@ -61,7 +61,7 @@ can be created with the command ``python -m LFT.lgv_model -e``.*
 
 Household data
 -------------------------------------------
-UK household data in caf.base DVector format. Singular DVectors are required for each of the data inputs.
+UK household data in :class:`caf.base.DVector` output format. Singular DVectors are required for each of the data inputs.
 No specific segmentation is required, since the data is aggregated to the number of household per zone.
 Occupied dwellings is required and unoccupied dwellings is optional. 
 If both are given the number of dwellings used is the sum of both datasets, if unoccupied is not given, the occupied data is used as is.
@@ -70,7 +70,7 @@ The zone correspondence path should point to a csv in caf.space format which con
 
 Employment Data
 ---------------
-UK employment data in caf.base DVector format. A single DVector is required for the data input.
+UK employment data in :class:`caf.base.DVector` output format. A single DVector is required for the data input.
 The DVector must be segmented by 'sic_1_digit', any other segments will be aggregated.
 The zone correspondence path should point to a csv in caf.space format which contains zone correspondence from the DVector's zoning to the model zoning.
 

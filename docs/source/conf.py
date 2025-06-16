@@ -80,6 +80,7 @@ sphinx_gallery_conf = {
 # -- Options for Linking to external docs (intersphinx) ----------------------
 intersphinx_mapping = {
     "caf.distribute": ("https://cafdistribute.readthedocs.io/en/stable/", None),
+    "caf.base": ("https://cafbase.readthedocs.io/en/stable/", None),
 }
 intersphinx_timeout = 30
 
