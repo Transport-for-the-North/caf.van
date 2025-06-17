@@ -242,7 +242,7 @@ class PriorAdjustmentMatrix:
         )
         cost_matrix = pd.read_csv(cost_matrix_path, index_col=0)
         cost_matrix.columns = [int(col) for col in cost_matrix.columns]
-        distribution, sectoral_adj = _4d_constraint_gravity_model(
+        distribution, pre_constraint, sectoral_adj = _4d_constraint_gravity_model(
             balanced_adj_trip_ends,
             self.name,
             self.gm_inputs,
@@ -253,6 +253,9 @@ class PriorAdjustmentMatrix:
             csv_logging_path=matrix_output_dir / f"{self.name}_gravity_model.csv",
         )
         sectoral_adj.to_csv(matrix_output_dir / f"{self.name}_sectoral_adjustment_factors.csv")
+        pre_constraint.to_csv(
+            matrix_output_dir / f"{self.name}_pre_constraint_distribution.csv"
+        )
 
         LOG.debug("Finished gravity model, processing results")
 
@@ -488,13 +491,14 @@ def sector_time_period_annual_factors(
 def read_annual_matrix(
     paths: dict[str, pathlib.Path], tp_to_annual_factors: dict[str, pathlib.Path]
 ) -> pd.DataFrame:
+    factor = {"AM": 0.125, "IP": 0.25, "PM": 0.125, "OP": 0.5}
     """Read in the annual matrix from the paths."""
     annual_matrix = None
     for tp, path in paths.items():
         if annual_matrix is None:
-            annual_matrix = pd.read_csv(path, index_col=0) / tp_to_annual_factors[tp]
+            annual_matrix = (pd.read_csv(path, index_col=0) / tp_to_annual_factors[tp]) * factor[tp]
         else:
-            annual_matrix += pd.read_csv(path, index_col=0) / tp_to_annual_factors[tp]
+            annual_matrix += (pd.read_csv(path, index_col=0) / tp_to_annual_factors[tp]) * factor[tp]
 
     return annual_matrix
 
@@ -508,7 +512,7 @@ def _4d_constraint_gravity_model(
     sector_target_matrix: pd.DataFrame,
     calibrate: bool,
     csv_logging_path: pathlib.Path,
-) -> tuple[lgv_model.VanGravityModelResults :, pd.DataFrame]:
+) -> tuple[lgv_model.VanGravityModelResults, pd.DataFrame, pd.DataFrame]:
     """Internal function used in `run_gravity_model` for running the GM with calibration."""
 
     tld_path = gm_data.trip_length_distribution_path
@@ -588,6 +592,7 @@ def _4d_constraint_gravity_model(
         return_distributions=False,
         verbose=2,
     )
+   
 
     sectoral_inputs = furness.SectoralConstraintInputs(
         constraint_area_trans,
@@ -605,11 +610,15 @@ def _4d_constraint_gravity_model(
     matrix, sectoral_factors = furness.sectoral_constraint(
         pd.DataFrame(calib_gm.achieved_distribution, index=zones, columns=zones),
         sectoral_inputs,
+        furness_inputs=furness.FurnessInputs(
+        seed_vals= calib_gm.achieved_distribution,#TODO THIS VERY VERY BAD. THIS IS NOT THE SEED VAL USED BUT NEED IT TO INITIALISE CLASS, FIX THIS
+        row_targets=trip_ends["row_targets"].to_numpy(),
+        col_targets=trip_ends["column_targets"].to_numpy(),)
     )
 
     results = lgv_model.VanGravityModelResults(matrix, zones, gravity_model_results)
 
-    return results, sectoral_factors
+    return results, pd.DataFrame(calib_gm.achieved_distribution, index=zones, columns=zones), sectoral_factors
 
 
 def process_annual_matrices(
