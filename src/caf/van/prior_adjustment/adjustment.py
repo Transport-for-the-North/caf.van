@@ -175,10 +175,13 @@ class PriorAdjustmentMatrix:
         cost_matrix_path: pd.DataFrame,
         output_path: pathlib.Path,
     ) -> pd.DataFrame:
+
         LOG.debug("adjusting tripends")
         if self.pa_prior_matrices is not None:
+            is_pa = True
             prior_matrix = self.get_annual_pa_matrix()
         else:
+            is_pa = False
             prior_matrix = self.get_annual_od_matrix(output_path)
 
         matrix_output_dir = output_path / ANNUAL_MATRICES_DIR
@@ -216,19 +219,25 @@ class PriorAdjustmentMatrix:
 
         adj_trip_ends = adj_trip_ends.drop(columns=["demand", "row_factors", "column_factors"])
 
+        balancing_factor = adj_trip_ends["row_targets"].sum()/adj_trip_ends["column_targets"].sum()
+
+        LOG.info("Trip Ends balanced using factor %s on column targets", balancing_factor)
+
+        adj_trip_ends["column_targets"] *= balancing_factor 
+
         adj_trip_ends.to_csv(
             matrix_output_dir / f"{self.name}_adjusted_trip_ends.csv", index=False
         )
 
         LOG.info("Balancing trip ends")
-
-        balanced_adj_trip_ends = lgv_model.balance_trip_ends(
-            adj_trip_ends.set_index("zone"),
-            translations.rename(columns={"from": "zone_id", "to_sector": "area"}),
-            "row_targets",
-            "column_targets",
-            self.name,
-        )
+        balanced_adj_trip_ends = adj_trip_ends.set_index("zone")
+        # balanced_adj_trip_ends = lgv_model.balance_trip_ends(
+        #    adj_trip_ends.set_index("zone"),
+        #    translations.rename(columns={"from": "zone_id", "to_sector": "area"}),
+        #    "row_targets",
+        #    "column_targets",
+        #    self.name,
+        # )
         LOG.info("running gravity model")
         sector_target_matrix = ctk.translation.pandas_matrix_zone_translation(
             post_me_matrix,
@@ -261,7 +270,7 @@ class PriorAdjustmentMatrix:
 
         od_annual_matrix = process_annual_matrices(
             distribution,
-            True,
+            is_pa,
             balanced_adj_trip_ends,
             cost_matrix,
             matrix_output_dir,
@@ -371,8 +380,14 @@ class PriorAdjustmentInput(ctk.BaseConfig):
 
         for adjustment in self.adjustments:
             LOG.info("Running adjustment %s", adjustment.name)
+            post_me_purpose = self.post_me_purpose(
+                prior_od_annual_matrix, translations, adjustment.name
+            )
+            post_me_purpose.to_csv(
+                (self.output_path / INTERMEDIARY_MATRIX_DIR / f"{adjustment.name}_post_me.csv")
+            )
             od_annual_matrix = adjustment.run(
-                self.post_me_purpose(prior_od_annual_matrix, translations, adjustment.name),
+                post_me_purpose,
                 translations,
                 self.cost_matrix_path,
                 self.output_path,
@@ -388,6 +403,7 @@ class PriorAdjustmentInput(ctk.BaseConfig):
                     "to_sector",
                     "from",
                     "factors",
+                    check_totals=False
                 )
                 od_tp_matrices[tp][adjustment.name] = od_annual_matrix * zonal_factors
                 od_tp_matrices[tp][adjustment.name].to_csv(
@@ -450,6 +466,40 @@ class PriorAdjustmentInput(ctk.BaseConfig):
             / prior_od_annual_matrix
         )
 
+        purpose_factors.to_csv(self.output_path / f"{name}_purpose_factors.csv")
+
+        post_od_purposes = self.get_annual_post_od_matrix() * purpose_factors
+
+        if selected_adjustment.pa_prior_matrices is None:
+
+            return post_od_purposes
+
+        od_to_pa_factors = selected_adjustment.get_network_annual_pa_matrix(
+            self.output_path, translation
+        ) / selected_adjustment.get_network_annual_od_matrix(self.output_path, translation)
+        # TODO fillna with 0 or 1?
+        od_to_pa_factors = od_to_pa_factors.fillna(0)
+        od_to_pa_factors.to_csv(self.output_path / f"{name}_od_to_pa_factors.csv")
+
+        return post_od_purposes * od_to_pa_factors
+
+    def post_me_purpose_sector(
+        self, prior_od_annual_matrix: pd.DataFrame, translation: pd.DataFrame, name: str
+    ) -> pd.DataFrame:
+        selected_adjustment: PriorAdjustmentMatrix | None = None
+        for adjustment in self.adjustments:
+            if adjustment.name == name:
+                selected_adjustment = adjustment
+                # read in the pa matrix
+        assert selected_adjustment is not None, f"No adjustment found for {name}"
+
+        purpose_factors = (
+            selected_adjustment.get_network_annual_od_matrix(self.output_path, translation)
+            / prior_od_annual_matrix
+        )
+
+        network_sector_translation = create_network_to_sector_translation(translation)
+
         post_od_purposes = self.get_annual_post_od_matrix() * purpose_factors
 
         if selected_adjustment.pa_prior_matrices is None:
@@ -496,9 +546,13 @@ def read_annual_matrix(
     annual_matrix = None
     for tp, path in paths.items():
         if annual_matrix is None:
-            annual_matrix = (pd.read_csv(path, index_col=0) / tp_to_annual_factors[tp]) * factor[tp]
+            annual_matrix = (
+                pd.read_csv(path, index_col=0) / tp_to_annual_factors[tp]
+            ) * factor[tp]
         else:
-            annual_matrix += (pd.read_csv(path, index_col=0) / tp_to_annual_factors[tp]) * factor[tp]
+            annual_matrix += (
+                pd.read_csv(path, index_col=0) / tp_to_annual_factors[tp]
+            ) * factor[tp]
 
     return annual_matrix
 
@@ -589,10 +643,9 @@ def _4d_constraint_gravity_model(
         cost_distributions,
         csv_logging_path,
         gravity_model.GMCalibParams(furness_jac=gm_data.furness_jacobian),
-        return_distributions=False,
+        # return_distributions=False,
         verbose=2,
     )
-   
 
     sectoral_inputs = furness.SectoralConstraintInputs(
         constraint_area_trans,
@@ -610,15 +663,19 @@ def _4d_constraint_gravity_model(
     matrix, sectoral_factors = furness.sectoral_constraint(
         pd.DataFrame(calib_gm.achieved_distribution, index=zones, columns=zones),
         sectoral_inputs,
-        furness_inputs=furness.FurnessInputs(
-        seed_vals= calib_gm.achieved_distribution,#TODO THIS VERY VERY BAD. THIS IS NOT THE SEED VAL USED BUT NEED IT TO INITIALISE CLASS, FIX THIS
-        row_targets=trip_ends["row_targets"].to_numpy(),
-        col_targets=trip_ends["column_targets"].to_numpy(),)
+        # furness_inputs=furness.FurnessInputs(
+        # seed_vals= calib_gm.achieved_distribution,#TODO THIS VERY VERY BAD. THIS IS NOT THE SEED VAL USED BUT NEED IT TO INITIALISE CLASS, FIX THIS
+        # row_targets=trip_ends["row_targets"].to_numpy(),
+        # col_targets=trip_ends["column_targets"].to_numpy(),)
     )
 
     results = lgv_model.VanGravityModelResults(matrix, zones, gravity_model_results)
 
-    return results, pd.DataFrame(calib_gm.achieved_distribution, index=zones, columns=zones), sectoral_factors
+    return (
+        results,
+        pd.DataFrame(calib_gm.achieved_distribution, index=zones, columns=zones),
+        sectoral_factors,
+    )
 
 
 def process_annual_matrices(
