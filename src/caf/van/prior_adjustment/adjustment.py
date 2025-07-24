@@ -7,6 +7,7 @@ from functools import reduce
 
 # Third Party
 import caf.toolkit as ctk
+import numpy as np
 import pandas as pd
 import tqdm.contrib.logging as tqdm_log
 from caf.distribute import cost_functions, furness, gravity_model
@@ -176,83 +177,56 @@ class PriorAdjustmentMatrix:
         output_path: pathlib.Path,
     ) -> pd.DataFrame:
 
+        matrix_output_dir = output_path / ANNUAL_MATRICES_DIR
+        matrix_output_dir.mkdir(parents=True, exist_ok=True)
+
         LOG.debug("adjusting tripends")
         if self.pa_prior_matrices is not None:
             is_pa = True
             prior_matrix = self.get_annual_pa_matrix()
+            trip_ends = pd.read_csv(self.prior_trip_ends)
+            trip_ends = adjust_trip_ends(
+                trip_ends,
+                prior_matrix,
+                post_me_matrix,
+                translations,
+                matrix_output_dir,
+                self.name,
+            )
+
+            sector_target_matrix = ctk.translation.pandas_matrix_zone_translation(
+                post_me_matrix,
+                create_network_to_sector_translation(translations),
+                "network",
+                "to_sector",
+                "factors",
+            )
+            sector_target_matrix.to_csv(
+                matrix_output_dir / f"{self.name}_sector_target_matrix.csv"
+            )
+
         else:
             is_pa = False
             prior_matrix = self.get_annual_od_matrix(output_path)
+            trip_ends = pd.read_csv(self.prior_trip_ends)
+            trip_ends = trip_ends.rename(
+                columns={
+                    "Zone": "zone",
+                    "Productions": "row_targets",
+                    "Attractions": "column_targets",
+                    "Origins": "row_targets",
+                    "Destinations": "column_targets",
+                }
+            ).set_index("zone")
+            sector_target_matrix = None
 
-        matrix_output_dir = output_path / ANNUAL_MATRICES_DIR
-        matrix_output_dir.mkdir(parents=True, exist_ok=True)
-
-        adj_factors, sector_adj_factors = calculate_trip_end_adjustment_factors(
-            prior_matrix, post_me_matrix, translations
-        )
-        sector_adj_factors.to_csv(
-            matrix_output_dir / f"{self.name}_sector_trip_end_adjustment_factors.csv"
-        )
-        del sector_adj_factors
-
-        # read in trip ends
-        trip_ends = pd.read_csv(self.prior_trip_ends)
-        trip_ends = trip_ends.rename(
-            columns={
-                "Zone": "zone",
-                "Productions": "row_targets",
-                "Attractions": "column_targets",
-                "Origins": "row_targets",
-                "Destinations": "column_targets",
-            }
-        )
-
-        adj_trip_ends = trip_ends.merge(
-            adj_factors, how="outer", left_on="zone", right_on="demand"
-        )
-        adj_trip_ends["row_targets"] = (
-            adj_trip_ends["row_targets"] * adj_trip_ends["row_factors"]
-        )
-        adj_trip_ends["column_targets"] = (
-            adj_trip_ends["column_targets"] * adj_trip_ends["column_factors"]
-        )
-
-        adj_trip_ends = adj_trip_ends.drop(columns=["demand", "row_factors", "column_factors"])
-
-        balancing_factor = adj_trip_ends["row_targets"].sum()/adj_trip_ends["column_targets"].sum()
-
-        LOG.info("Trip Ends balanced using factor %s on column targets", balancing_factor)
-
-        adj_trip_ends["column_targets"] *= balancing_factor 
-
-        adj_trip_ends.to_csv(
-            matrix_output_dir / f"{self.name}_adjusted_trip_ends.csv", index=False
-        )
-
-        LOG.info("Balancing trip ends")
-        balanced_adj_trip_ends = adj_trip_ends.set_index("zone")
-        # balanced_adj_trip_ends = lgv_model.balance_trip_ends(
-        #    adj_trip_ends.set_index("zone"),
-        #    translations.rename(columns={"from": "zone_id", "to_sector": "area"}),
-        #    "row_targets",
-        #    "column_targets",
-        #    self.name,
-        # )
         LOG.info("running gravity model")
-        sector_target_matrix = ctk.translation.pandas_matrix_zone_translation(
-            post_me_matrix,
-            create_network_to_sector_translation(translations),
-            "network",
-            "to_sector",
-            "factors",
-        )
-        sector_target_matrix.to_csv(
-            matrix_output_dir / f"{self.name}_sector_target_matrix.csv"
-        )
+
         cost_matrix = pd.read_csv(cost_matrix_path, index_col=0)
         cost_matrix.columns = [int(col) for col in cost_matrix.columns]
+
         distribution, pre_constraint, sectoral_adj = _4d_constraint_gravity_model(
-            balanced_adj_trip_ends,
+            trip_ends,
             self.name,
             self.gm_inputs,
             cost_matrix,
@@ -261,17 +235,19 @@ class PriorAdjustmentMatrix:
             calibrate=True,
             csv_logging_path=matrix_output_dir / f"{self.name}_gravity_model.csv",
         )
-        sectoral_adj.to_csv(matrix_output_dir / f"{self.name}_sectoral_adjustment_factors.csv")
-        pre_constraint.to_csv(
-            matrix_output_dir / f"{self.name}_pre_constraint_distribution.csv"
-        )
+        if sectoral_adj is not None:
+            sectoral_adj.to_csv(matrix_output_dir / f"{self.name}_sectoral_adjustment_factors.csv")
+        if pre_constraint is not None:
+            pre_constraint.to_csv(
+                matrix_output_dir / f"{self.name}_pre_constraint_distribution.csv"
+            )
 
         LOG.debug("Finished gravity model, processing results")
 
         od_annual_matrix = process_annual_matrices(
             distribution,
             is_pa,
-            balanced_adj_trip_ends,
+            trip_ends,
             cost_matrix,
             matrix_output_dir,
             translations,
@@ -279,6 +255,58 @@ class PriorAdjustmentMatrix:
         )
 
         return od_annual_matrix
+
+
+def adjust_trip_ends(
+    trip_ends: pd.DataFrame,
+    prior_matrix: pd.DataFrame,
+    post_me_matrix: pd.DataFrame,
+    translations: pd.DataFrame,
+    matrix_output_dir: pathlib.Path,
+    name: str,
+) -> pd.DataFrame:
+    adj_factors, sector_adj_factors = calculate_trip_end_adjustment_factors(
+        prior_matrix, post_me_matrix, translations
+    )
+    sector_adj_factors.to_csv(
+        matrix_output_dir / f"{name}_sector_trip_end_adjustment_factors.csv"
+    )
+    del sector_adj_factors
+
+    # read in trip ends
+
+    trip_ends = trip_ends.rename(
+        columns={
+            "Zone": "zone",
+            "Productions": "row_targets",
+            "Attractions": "column_targets",
+            "Origins": "row_targets",
+            "Destinations": "column_targets",
+        }
+    )
+
+    adj_trip_ends = trip_ends.merge(
+        adj_factors, how="outer", left_on="zone", right_on="demand"
+    )
+    adj_trip_ends["row_targets"] = adj_trip_ends["row_targets"] * adj_trip_ends["row_factors"]
+    adj_trip_ends["column_targets"] = (
+        adj_trip_ends["column_targets"] * adj_trip_ends["column_factors"]
+    )
+
+    adj_trip_ends = adj_trip_ends.drop(columns=["demand", "row_factors", "column_factors"])
+
+    balancing_factor = (
+        adj_trip_ends["row_targets"].sum() / adj_trip_ends["column_targets"].sum()
+    )
+
+    LOG.info("Trip Ends balanced using factor %s on column targets", balancing_factor)
+
+    adj_trip_ends["column_targets"] *= balancing_factor
+
+    adj_trip_ends.to_csv(matrix_output_dir / f"{name}_adjusted_trip_ends.csv", index=False)
+
+    LOG.info("Balancing trip ends")
+    return adj_trip_ends.set_index("zone")
 
 
 def create_network_to_sector_translation(translation: pd.DataFrame) -> pd.DataFrame:
@@ -398,12 +426,7 @@ class PriorAdjustmentInput(ctk.BaseConfig):
                     od_tp_matrices[tp] = {}
                     (tp_matrix_dir / tp).mkdir(parents=True, exist_ok=True)
                 zonal_factors = ctk.translation.pandas_matrix_zone_translation(
-                    factors,
-                    translations,
-                    "to_sector",
-                    "from",
-                    "factors",
-                    check_totals=False
+                    factors, translations, "to_sector", "from", "factors", check_totals=False
                 )
                 od_tp_matrices[tp][adjustment.name] = od_annual_matrix * zonal_factors
                 od_tp_matrices[tp][adjustment.name].to_csv(
@@ -563,10 +586,10 @@ def _4d_constraint_gravity_model(
     gm_data: utilities.GMInputs,
     cost_matrix: pd.DataFrame,
     constraint_area_trans: pd.DataFrame,
-    sector_target_matrix: pd.DataFrame,
+    sector_target_matrix: pd.DataFrame | None,
     calibrate: bool,
     csv_logging_path: pathlib.Path,
-) -> tuple[lgv_model.VanGravityModelResults, pd.DataFrame, pd.DataFrame]:
+) -> tuple[lgv_model.VanGravityModelResults, pd.DataFrame|None, pd.DataFrame|None]:
     """Internal function used in `run_gravity_model` for running the GM with calibration."""
 
     tld_path = gm_data.trip_length_distribution_path
@@ -579,7 +602,6 @@ def _4d_constraint_gravity_model(
         raise KeyError("Trip ends have duplicated zones labels. Please fix this")
 
     zones = trip_ends.index.to_numpy()
-    cost_matrix_validated = cost_matrix.loc[zones, zones].to_numpy()
 
     LOG.info("Running Gravity Model: %s, with calibration %s", name, calibrate)
 
@@ -631,11 +653,14 @@ def _4d_constraint_gravity_model(
         lookup_cat_col="area",
         lookup_zone_col="zone_id",
     )
+    adjusted_cost_matrix = adjust_intrazonal_cost(
+        cost_matrix.loc[zones, zones].to_numpy(), cost_distributions
+    )
 
     calib_gm = gravity_model.MultiAreaGravityModelCalibrator(
         trip_ends["row_targets"].to_numpy(),
         trip_ends["column_targets"].to_numpy(),
-        cost_matrix_validated,
+        adjusted_cost_matrix,
         cost_function,
     )
 
@@ -647,26 +672,28 @@ def _4d_constraint_gravity_model(
         verbose=2,
     )
 
+    if sector_target_matrix is None:
+        return (
+            lgv_model.VanGravityModelResults(
+                pd.DataFrame(calib_gm.achieved_distribution, index=zones, columns=zones),
+                zones,
+                gravity_model_results,
+            ),
+            None,
+            None,
+        )
+
     sectoral_inputs = furness.SectoralConstraintInputs(
         constraint_area_trans,
         from_col="from",
         to_col="to_sector",
         factor_col="factors",
         target_mat=sector_target_matrix,
-        zonal_zones=zones,
-        # furness_inputs=furness.FurnessInputs(
-        #    seed_vals= calib_gm.achieved_distribution,
-        #    row_targets=trip_ends["row_targets"].to_numpy(),
-        #    column_targets=trip_ends["column_targets"].to_numpy(),
     )
 
     matrix, sectoral_factors = furness.sectoral_constraint(
         pd.DataFrame(calib_gm.achieved_distribution, index=zones, columns=zones),
         sectoral_inputs,
-        # furness_inputs=furness.FurnessInputs(
-        # seed_vals= calib_gm.achieved_distribution,#TODO THIS VERY VERY BAD. THIS IS NOT THE SEED VAL USED BUT NEED IT TO INITIALISE CLASS, FIX THIS
-        # row_targets=trip_ends["row_targets"].to_numpy(),
-        # col_targets=trip_ends["column_targets"].to_numpy(),)
     )
 
     results = lgv_model.VanGravityModelResults(matrix, zones, gravity_model_results)
@@ -676,6 +703,21 @@ def _4d_constraint_gravity_model(
         pd.DataFrame(calib_gm.achieved_distribution, index=zones, columns=zones),
         sectoral_factors,
     )
+
+
+def adjust_intrazonal_cost(
+    cost_matrix: np.ndarray, cost_distributions: gravity_model.MultiCostDistribution
+) -> np.ndarray:
+    adj_cost_matrix = cost_matrix.copy()
+    for dist in cost_distributions:
+        mean_distance = sum(
+            dist.cost_distribution.weighted_avg_vals * dist.cost_distribution.band_share_vals
+        )
+        adjust = np.vectorize(lambda x: x if x <= mean_distance else mean_distance)
+        adj_cost_matrix[dist.zones, dist.zones] = adjust(
+            adj_cost_matrix[dist.zones, dist.zones]
+        )
+    return adj_cost_matrix
 
 
 def process_annual_matrices(
@@ -733,7 +775,7 @@ def process_annual_matrices(
 
         for cat, gm_cat_results in calib_results.info.items():
 
-            gm_cat_results.plot_distributions().savefig(
+            gm_cat_results.plot_distributions(truncate_last_bin=True).savefig(
                 output_folder / (name + f"-distribution_{cat}.pdf")
             )
             gm_cat_results.cost_distribution.df.to_excel(
