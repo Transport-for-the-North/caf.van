@@ -86,7 +86,7 @@ class ServiceTripEnds:
     def _check_paths(
         self,
         household_paths: lgv_inputs.DwellingPaths,
-        employment_paths: utilities.EmploymentPaths,
+        employment_paths: lgv_inputs.EmploymentPaths,
         service_trips: Path,
     ):
         """Checks the input files exist and are the expected type."""
