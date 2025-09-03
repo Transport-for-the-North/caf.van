@@ -250,7 +250,7 @@ class LGVMatrices:
             "combined",
             "zones",
         )
-        if self.personal is None:
+        if self.personal is not None:
             attrs = attrs + ("personal",)
 
         return {a: getattr(self, a).copy() for a in attrs}
