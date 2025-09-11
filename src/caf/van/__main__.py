@@ -1,5 +1,5 @@
 """
-    Main module for running the LGV model.
+Main module for running the LGV model.
 """
 
 ##### IMPORTS #####
@@ -15,12 +15,13 @@ from caf.van import lgv_inputs, lgv_model
 
 
 def main():
+    """Main function for the package."""
     # Check if commandline arguments are given
     parser = lgv_model.lgv_arg_parser()
     args = parser.parse_args()
 
     if args.example:
-        lgv_inputs.write_example_config(args.config_file)
+        lgv_inputs.LGVInputPaths.write_example(lgv_inputs.EXAMPLE_CONFIG_NAME)
 
     elif args.config_file is not None:
         # Run the LGV model without displaying the UI if config is given

@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-    Module for running the LGV model.
+Module for running the LGV model.
 """
-
-##### IMPORTS #####
+from __future__ import annotations
 
 # Built-Ins
 import argparse
@@ -13,29 +12,26 @@ import pprint
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable
+from typing import Literal, Optional
 
 # Third Party
 import numpy as np
 import pandas as pd
 from caf.distribute import cost_functions, gravity_model
+from caf.distribute.gravity_model import multi_area
 
 # Local Imports
 from caf.van.commute_segment import CommuteTripEnds
 from caf.van.delivery_segment import DeliveryTripEnds
-from caf.van.furnessing import annual_pa_to_od
-from caf.van.gravity_model import CalibrateGravityModel, calculate_vehicle_kms
 from caf.van.lgv_inputs import (
     LGVInputPaths,
     lgv_parameters,
-    read_gm_params,
-    read_study_area,
     read_time_factors,
 )
 from caf.van.matrix_validation import MatrixReport
 from caf.van.rezone import Rezone
 from caf.van.service_segment import ServiceTripEnds
-from caf.van.utilities import DataPaths, read_csv, read_excel
+from caf.van.utilities import DataPaths, GMInputs
 
 ##### CONSTANTS #####
 LOG = logging.getLogger(__name__)
@@ -48,6 +44,7 @@ TRIP_DISTRIBUTION_SHEETS = {
     "commuting_skilled_trades": "Commuting",
 }
 """Name of sheet in trip distributions file for each segment."""
+
 PA_MATRICES = [
     "service",
     "delivery_parcel_stem",
@@ -55,11 +52,30 @@ PA_MATRICES = [
     "commuting_skilled_trades",
 ]
 """List of matrices which are in PA format and will be converted to OD."""
-NTEM_PURPOSES = {"hb": list(range(1, 9)), "nhb": [12, 13, 14, 15, 16, 18]}
-PERSONAL_TIME_PERIODS = [1, 2, 3, 4]
-"""Time periods to aggregate NHB together for."""
 
+NTEM_PURPOSES = {"hb": list(range(1, 9)), "nhb": [12, 13, 14, 15, 16, 18]}
+"""NTEM purpose to hb/nhb correspondence."""
+
+PERSONAL_TIME_PERIODS = [1, 2, 3, 4]
+"""Time periods to aggregate NHB together."""
+
+TRIP_DISTRIBUTION_COLS = dict.fromkeys(
+    ("start", "end", "average", "observed proportions"), float
+)
+"""Names and dtypes of the columns expected in the trip distributions input."""
+
+FUNCTION_LABELS = {
+    "log_normal": r"Log Normal: $\sigma={:.1e}$, $\mu={:.1e}$",
+    "tanner": r"Tanner: $\alpha={:.1e}$, $\beta={:.1e}$",
+}
+"""Labels for the cost functions in the gravity model."""
+
+# --------- Definitions -------------
 PA_DIFFERENCE_TOL = 1e-3
+"""Tolerance for difference in productions and attractions."""
+
+DUMMY_CAT = 1
+"""Label to use when no category is given for the zones/tlds for the gravity model."""
 
 
 ##### CLASSES #####
@@ -176,7 +192,7 @@ class LGVMatrices:
     commuting_skilled_trades: pd.DataFrame
     """Commuting skilled trades (SOCs 51, 52, 53) trips matrix,
     with zone numbers for columns and indices."""
-    personal: pd.DataFrame
+    personal: pd.DataFrame | None = None
     """Contains personal trip matrix outputs from normits,
     with zone numbers for columns and indices"""
     combined: pd.DataFrame = field(init=False)
@@ -197,8 +213,9 @@ class LGVMatrices:
             "delivery_grocery",
             "commuting_drivers",
             "commuting_skilled_trades",
-            "personal",
         )
+        if self.personal is not None:
+            dataframes += ("personal",)
         index = pd.Index([], dtype=int)
         for nm in dataframes:
             index = index.union(getattr(self, nm).index)
@@ -217,8 +234,9 @@ class LGVMatrices:
             + self.delivery_grocery
             + self.commuting_drivers
             + self.commuting_skilled_trades
-            + self.personal
         )
+        if self.personal is not None:
+            self.combined += self.personal
 
     def asdict(self) -> dict[str, pd.DataFrame]:
         """Return copies of class attributes as a dictionary."""
@@ -229,10 +247,12 @@ class LGVMatrices:
             "delivery_grocery",
             "commuting_drivers",
             "commuting_skilled_trades",
-            "personal",
             "combined",
             "zones",
         )
+        if self.personal is not None:
+            attrs = attrs + ("personal",)
+
         return {a: getattr(self, a).copy() for a in attrs}
 
     def __str__(self) -> str:
@@ -267,8 +287,6 @@ def calculate_trip_ends(
         Model year LGV growth factor.
     year : int
         Model year.
-    message_hook : Callable, optional
-        Function for writing messages, by default print
 
     Returns
     -------
@@ -283,25 +301,24 @@ def calculate_trip_ends(
     """
     output_folder.mkdir(exist_ok=True)
 
-    bres_paths = DataPaths(
-        "LGV BRES Data", input_paths.bres_path, input_paths.lsoa_lookup_path
-    )
-
-    model_zones: pd.Series = pd.read_csv(input_paths.model_study_area, usecols=["zone"])[
-        "zone"
-    ]
+    model_zones: pd.Series = pd.read_csv(input_paths.model_zones, usecols=["zone"])["zone"]
     model_zones.name = "Zone"
+
+    if input_paths.tripend_balancing_regions_path is not None:
+        regions = pd.read_csv(input_paths.tripend_balancing_regions_path)
+    else:
+        regions = None
 
     LOG.info("Calculating Service trip ends")
     service = ServiceTripEnds(
         input_paths.household_paths,
-        bres_paths,
+        input_paths.employment_paths,
         input_paths.parameters_path,
         lgv_growth,
         model_zones,
+        input_paths.zoning,
     )
     service.read()
-    service.trip_ends.to_csv(output_folder / "service_trip_ends.csv")
 
     # Calculate the delivery trip ends and save outputs
     LOG.info("Calculating Delivery trip ends")
@@ -309,16 +326,13 @@ def calculate_trip_ends(
         DataPaths(
             "LGV Delivery Warehouse", input_paths.warehouse_path, input_paths.lsoa_lookup_path
         ),
-        bres_paths,
+        input_paths.employment_paths,
         input_paths.household_paths,
         input_paths.parameters_path,
         year,
         model_zones,
     )
     delivery.read()
-    delivery.parcel_stem_trip_ends.to_csv(output_folder / "delivery_parcel_stem_trip_ends.csv")
-    delivery.parcel_bush_trip_ends.to_csv(output_folder / "delivery_parcel_bush_trip_ends.csv")
-    delivery.grocery_bush_trip_ends.to_csv(output_folder / "delivery_grocery_trip_ends.csv")
 
     # Calculate commuting trip ends and save output
     LOG.info("Calculating Commuting trip ends")
@@ -327,15 +341,124 @@ def calculate_trip_ends(
     for key in commute_trips:
         commute_trips[key].to_csv(output_folder / Path(f"commute_{key}_trip_ends.csv"))
 
+    # if balancing regions aren't given,
+    # we create a lookup from all zones to 1 area to balance to trip end totals
+    if regions is None:
+        regions = model_zones.to_frame("zone_id")
+        regions["area"] = DUMMY_CAT
+
+    # To avoid MyPy whinging
+    assert isinstance(regions, pd.DataFrame)
+
+    LOG.info("Balancing Trip Ends")
+    service_te = balance_trip_ends(
+        service.trip_ends, regions, "Productions", "Attractions", "Service"
+    )
+    delivery_parcel_stem_te = balance_trip_ends(
+        delivery.parcel_stem_trip_ends,
+        regions,
+        "Productions",
+        "Attractions",
+        "Delivery Parcel Stem",
+    )
+    delivery_parcel_bush_te = balance_trip_ends(
+        delivery.parcel_bush_trip_ends,
+        regions,
+        "Origins",
+        "Destinations",
+        "Parcel Bush Trip Ends",
+    )
+    delivery_grocery_bush_te = balance_trip_ends(
+        delivery.grocery_bush_trip_ends,
+        regions,
+        "Origins",
+        "Destinations",
+        "Grocery Bush Trip Ends",
+    )
+    commute_drivers = balance_trip_ends(
+        commute_trips["Drivers"],
+        regions,
+        "Productions",
+        "Attractions",
+        "Commuting Drivers",
+    )
+    commute_skilled_trades = balance_trip_ends(
+        commute_trips["Skilled trades"],
+        regions,
+        "Productions",
+        "Attractions",
+        "Skilled Trades",
+    )
+
+    service_te.to_csv(output_folder / "service_trip_ends.csv")
+    delivery_parcel_stem_te.to_csv(output_folder / "delivery_parcel_stem_trip_ends.csv")
+    delivery_parcel_bush_te.to_csv(output_folder / "delivery_parcel_bush_trip_ends.csv")
+    delivery_grocery_bush_te.to_csv(output_folder / "delivery_grocery_trip_ends.csv")
+    commute_drivers.to_csv(output_folder / "commute_drivers_trip_ends.csv")
+    commute_skilled_trades.to_csv(output_folder / Path("commute_skilled_trades_trip_ends.csv"))
+
     LOG.info("\tDone with trip ends")
     return LGVTripEnds(
-        service=service.trip_ends,
-        delivery_parcel_stem=delivery.parcel_stem_trip_ends,
-        delivery_parcel_bush=delivery.parcel_bush_trip_ends,
-        delivery_grocery=delivery.grocery_bush_trip_ends,
-        commuting_drivers=commute_trips["Drivers"],
-        commuting_skilled_trades=commute_trips["Skilled trades"],
+        service=service_te,
+        delivery_parcel_stem=delivery_parcel_stem_te,
+        delivery_parcel_bush=delivery_parcel_bush_te,
+        delivery_grocery=delivery_grocery_bush_te,
+        commuting_drivers=commute_drivers,
+        commuting_skilled_trades=commute_skilled_trades,
     )
+
+
+def balance_trip_ends(
+    trip_ends: pd.DataFrame,
+    regions: pd.DataFrame,
+    control_col: str,
+    variable_col: str,
+    name: str,
+) -> pd.DataFrame:
+    """Balance variable column to control column within the regions."""
+
+    # Create a copy so we don't change anything out of function scope
+    balanced_trip_ends = trip_ends.copy()
+
+    # check all zones are in the region correspondence
+    if trip_ends.index.isin(~regions["zone_id"]).any():
+        raise KeyError(
+            "Trip Ends Balancing Regions have zones missing when compared to trip ends"
+        )
+
+    # iterate through unique areas (we dont care what the areas are, just want the zones within each)
+    for r in regions["area"].sort_values().unique():
+        # Get the zones we want to balance
+        zones = regions.loc[regions["area"] == r, "zone_id"]
+
+        # calculate difference between control and variable columns
+        trip_end_difference = (
+            balanced_trip_ends.loc[zones, control_col].sum()
+            - balanced_trip_ends.loc[zones, variable_col].sum()
+        )
+
+        if np.abs(trip_end_difference) > PA_DIFFERENCE_TOL:
+            # calculate factor needed to make variable sum equal control sum
+            factor = (
+                balanced_trip_ends.loc[zones, control_col].sum()
+                / balanced_trip_ends.loc[zones, variable_col].sum()
+            )
+            # apply factor
+            balanced_trip_ends.loc[zones, variable_col] *= factor
+            warnings.warn(
+                f"{control_col} and {variable_col} are imbalanced in for"
+                f" {name} region {r} (difference= {trip_end_difference})."
+                f" Factoring {variable_col} to {control_col} (factor = {factor})"
+            )
+
+        else:
+            LOG.info(
+                "Trip ends for %s: %s look fine -- difference: %s",
+                name,
+                r,
+                trip_end_difference,
+            )
+    return balanced_trip_ends
 
 
 class VanGravityModelResults:
@@ -379,111 +502,99 @@ class VanGravityModelResults:
         for key, results in info.items():
             summary_build[key] = results.summary
 
-        self.summary = pd.DataFrame(summary_build)
+        self.summary = pd.DataFrame(summary_build).transpose()
 
 
 def _gravity_model(
     trip_ends: pd.DataFrame,
     name: str,
-    input_paths: LGVInputPaths,
-    gm_params: pd.DataFrame,
+    gm_data: GMInputs,
+    cost_matrix: pd.DataFrame,
     calibrate: bool,
     csv_logging_path: Path,
 ) -> VanGravityModelResults:
     """Internal function used in `run_gravity_model` for running the GM with calibration."""
+
     trip_ends = trip_ends.rename(
         columns={
             **dict.fromkeys(("Productions", "Origins"), "row_targets"),
             **dict.fromkeys(("Attractions", "Destinations"), "col_targets"),
         }
     )
-    # check PA/OD are balanced - if not balance and add warning with difference
-    trip_ends = balance_trip_ends(trip_ends, "Origins", "Destinations")
 
-    tld_path = input_paths.trip_distributions_path[name]
+    tld_path = gm_data.trip_length_distribution_path
 
-    # we have to do this because caf distribute does not look at index values, just order
+    # we have to do this because caf distribute does not look at index values, just order.
     trip_ends = trip_ends.sort_index()
-    # define zones to order everthing on
 
+    # define zones to order everthing on from the ordered trip end index.
     if trip_ends.index.has_duplicates:
         raise KeyError("Trip ends have duplicated zones labels. Please fix this")
 
     zones = trip_ends.index.to_numpy()
+    cost_matrix_validated = cost_matrix.loc[zones, zones].to_numpy()
 
     LOG.info("Running Gravity Model: %s, with calibration %s", name, calibrate)
 
-    cost_matrix = pd.read_csv(
-        input_paths.cost_matrix_path, index_col=0
-    )  # TODO this should have validation
-
-    # nonzero returns a tuple with array of indices
-    cost_matrix_validated = cost_matrix.loc[zones, zones].to_numpy()
-
-    # read in things we need for distribution
-    cat_zone_correspondence = pd.read_csv(input_paths.cat_zone_correspondence_path)
-
-    # different segments require different cost function and starting params - we determine extract these below
-
-    func_params: dict[str | int, dict[str, float]] = {}
-
-    if gm_params.loc[name, "function"] == "log_normal":
-
-        cost_function = cost_functions.BuiltInCostFunction.LOG_NORMAL.get_cost_function()
-        for key in cat_zone_correspondence["area"].unique():
-            func_params[key] = {  # TODO how do we set input Params
-                "mu": gm_params.loc[name, "param1"],
-                "sigma": gm_params.loc[name, "param2"],
-            }
-    elif gm_params.loc[name, "function"] == "tanner":
-        cost_function = cost_functions.BuiltInCostFunction.TANNER.get_cost_function()
-        for key in cat_zone_correspondence["area"].unique():
-            func_params[key] = {
-                "alpha": gm_params.loc[name, "param1"],
-                "beta": gm_params.loc[name, "param2"],
-            }
-    else:
-        raise ValueError(f"Cost Function {gm_params.loc[name, 'function']} not found")
-
     tld = pd.read_csv(tld_path)
-    # interate through different TLD categories
-    cost_distributions: gravity_model.MultiCostDistribution = (
-        gravity_model.MultiCostDistribution.from_pandas(
-            pd.Series(zones),
-            tld,
-            cat_zone_correspondence,
-            func_params,
-            tld_cat_col="area",
-            tld_min_col="from",
-            tld_max_col="to",
-            tld_avg_col="av_distance",
-            tld_trips_col="normalised",
-            lookup_cat_col="area",
-            lookup_zone_col="zone_id",
+
+    # Use cat zone lookup if it exists.
+    if gm_data.cat_zone_correspondance_path is not None:
+        cat_zone_correspondence = pd.read_csv(gm_data.cat_zone_correspondance_path)
+    else:
+        # If not, create a correspondence for all zones to one area i.e. run a single TLD gravity model.
+        cat_zone_correspondence = pd.DataFrame({"zone_id": zones})
+        cat_zone_correspondence["area"] = DUMMY_CAT
+        tld["area"] = DUMMY_CAT
+
+    # Define the cost function and parameters
+    if gm_data.cost_function == "log_normal":
+        cost_function = cost_functions.BuiltInCostFunction.LOG_NORMAL.get_cost_function()
+    elif gm_data.cost_function == "tanner":
+        cost_function = cost_functions.BuiltInCostFunction.TANNER.get_cost_function()
+    else:
+        raise NotImplementedError(
+            f"cost function {gm_data.cost_function} is not implemented, please use either log_normal "
+            "(mu, sigma) or tanner (alpha, beta)"
         )
+
+    func_params = {}
+    if isinstance(gm_data.cost_function_params, dict):
+        for cat, params in gm_data.cost_function_params.items():
+            func_params[cat] = extract_cost_func_params(params, gm_data.cost_function)
+    else:
+        # process params when they are a tuple
+        for cat in tld["area"].unique():
+            func_params[cat] = extract_cost_func_params(
+                gm_data.cost_function_params, gm_data.cost_function
+            )
+
+    cost_distributions = gravity_model.MultiCostDistribution.from_pandas(
+        pd.Series(zones),
+        tld,
+        cat_zone_correspondence,
+        func_params,
+        tld_cat_col="area",
+        tld_min_col="from",
+        tld_max_col="to",
+        tld_avg_col="av_distance",
+        tld_trips_col="normalised",
+        lookup_cat_col="area",
+        lookup_zone_col="zone_id",
     )
 
-    if name in PA_MATRICES:
-        calib_gm = gravity_model.MultiAreaGravityModelCalibrator(
-            trip_ends["Productions"].to_numpy(),
-            trip_ends["Attractions"].to_numpy(),
-            cost_matrix_validated,
-            cost_function,
-        )
-    else:
-        calib_gm = gravity_model.MultiAreaGravityModelCalibrator(
-            trip_ends["Origins"].to_numpy(),
-            trip_ends["Destinations"].to_numpy(),
-            cost_matrix_validated,
-            cost_function,
-        )
+    calib_gm = gravity_model.MultiAreaGravityModelCalibrator(
+        trip_ends["row_targets"].to_numpy(),
+        trip_ends["col_targets"].to_numpy(),
+        cost_matrix_validated,
+        cost_function,
+    )
 
     if calibrate:
         gravity_model_results = calib_gm.calibrate(
             cost_distributions,
             csv_logging_path,
-            gravity_model.GMCalibParams(),
-            # TODO figure out which key word args with default values needed to be changed
+            multi_area.GMCalibParams(furness_jac=gm_data.furness_jacobian),
             verbose=2,
         )
 
@@ -502,54 +613,43 @@ def _gravity_model(
     return results
 
 
-def balance_trip_ends(trip_ends: pd.DataFrame, target_col: str, test_col: str) -> pd.DataFrame:
-    """Check trip end totals match and factor if needed.
+def extract_cost_func_params(
+    cost_funct_params: tuple[float, float], cost_func_name: Literal["log_normal", "tanner"]
+) -> dict[str, float]:
+    """Extracts the cost function parameters from a tuple.
 
     Parameters
     ----------
-    trip_ends : pd.DataFrame
-        Trip end data containing columns `target_col` and `test_col`.
-    target_col : str
-        Column which has the accurate trip end total.
-    test_col : str
-        Column which will be factored, if needed.
+    cost_funct_params : tuple[float, ...]
+        Ordered parameters for the cost function.
+    cost_func_name : Literal["log_normal", "tanner"]
+        Name of the cost function.
 
     Returns
     -------
-    pd.DataFrame
-        Copy of `trip_ends` after any factoring.
+    dict[str, float]
+        Unpacked cost function parameters.
 
-    Warns
-    -----
-    UserWarning
-        If the trip ends don't match and are factored.
+    Raises
+    ------
+    ValueError
+        If the cost function name is not recognised.
     """
-    # determine difference in column totals
-    trip_end_difference = trip_ends[target_col].sum() - trip_ends[test_col].sum()
-    # avoid changing input out the function scope
-    balanced_trip_ends = trip_ends.copy()
+    if cost_func_name == "log_normal":
 
-    if np.abs(trip_end_difference) > PA_DIFFERENCE_TOL:
-        # calculate and apply factor to balance test col to target col
-        factor = balanced_trip_ends[target_col].sum() / balanced_trip_ends[test_col].sum()
-
-        warnings.warn(
-            f"{target_col} and {test_col} are imbalanced (difference"
-            f" = {trip_end_difference}) Factoring {test_col} to"
-            f" {target_col} (factor = {factor})"
-        )
-
-        balanced_trip_ends[test_col] *= factor
-
+        func_params = {
+            "mu": cost_funct_params[0],
+            "sigma": cost_funct_params[1],
+        }
+    elif cost_func_name == "tanner":
+        func_params = {
+            "alpha": cost_funct_params[0],
+            "beta": cost_funct_params[1],
+        }
     else:
-        LOG.debug(
-            "Trip ends look fine\ntarget total %s," "\ntest total %s\ndifference %s",
-            trip_ends[target_col].sum(),
-            trip_ends[test_col].sum(),
-            trip_end_difference,
-        )
+        raise ValueError(f"Cost Function {cost_func_name} not found")
 
-    return balanced_trip_ends
+    return func_params
 
 
 def run_gravity_model(
@@ -567,43 +667,52 @@ def run_gravity_model(
         Trip ends for each segment.
     output_folder : Path
         Path to folder to save outputs.
-    message_hook : Callable, optional
-        Function for writing messages, by default print
 
     Returns
     -------
     dict[str, pd.DataFrame]
         Trip matrices for each segment.
     """
-    internals = read_study_area(input_paths.model_study_area)
-    gm_params = read_gm_params(input_paths.parameters_path)
     matrices: dict[str, pd.DataFrame] = {}
     output_folder.mkdir(exist_ok=True)
 
+    cost_matrix = pd.read_csv(input_paths.cost_matrix_path, index_col=0)
+    # Pandas casts column names to str, even if theyre numerical (I can't find a parameter to change this)
+    # therefore we try to convert to ints
+    try:
+        cost_matrix.columns = [int(x) for x in cost_matrix.columns]
+
+    # This is for the case where they are strings
+    except ValueError:
+        pass
+
     for name, te in trip_ends.asdict().items():
+
         if name == "zones":
             continue
-        # TODO put this back to normal once dev is done
-        try:
-            calibrate = gm_params.loc[name, "calibrate"]
-            calib_gm = _gravity_model(
-                te,
-                name,
-                input_paths,
-                gm_params,
-                calibrate,
-                output_folder / f"gravity_model_{name}_calibration_log.csv",
-            )
 
-        # TODO handle dictionary outputs for run method
-        except Exception as e:
-            LOG.info("\t%s: %s", e.__class__.__name__, e)
-            continue
+        gm_params = input_paths.gm_parameters[name]
+        calibrate = gm_params.calibrate
+
+        calib_gm: VanGravityModelResults = _gravity_model(
+            te,
+            name,
+            gm_params,
+            cost_matrix,
+            calibrate,
+            output_folder / f"gravity_model_{name}_calibration_log.csv",
+        )
+
+        # except Exception as e:  # pylint: disable = broad-exception-caught
+        #    LOG.info("\t%s: %s", e.__class__.__name__, e)
+        #    continue
 
         # Check if segment outputs a PA matrix which needs to be converted
         if name in PA_MATRICES:
             # Save PA matrix to CSV and convert to OD dataframe
+
             LOG.info("\tConverting PA to OD")
+
             pa_matrix = pd.DataFrame(calib_gm.distribution, index=te.index, columns=te.index)
             pa_matrix.to_csv(output_folder / (name + "-trip_matrix-PA.csv"))
 
@@ -629,14 +738,14 @@ def run_gravity_model(
         matrices[name].to_csv(path_or_buf=output_folder / (name + "-trip_matrix-OD.csv"))
 
         with pd.ExcelWriter(output_folder / (name + "-GM_log.xlsx")) as writer:
-            # TODO write out metadata
+            # TODO(kf) write out metadata
 
             summary = MatrixReport(
                 matrices[name],
-                pd.read_csv(input_paths.ca_lookup_path),
-                "NTEM_id",
-                "CA_id",
-                "NTEM_to_CA",
+                pd.read_csv(input_paths.summary_zone_translation.path),
+                f"{input_paths.summary_zone_translation.from_zoning}_id",
+                f"{input_paths.summary_zone_translation.to_zoning}_id",
+                f"{input_paths.summary_zone_translation.from_zoning}_to_{input_paths.summary_zone_translation.to_zoning}",
             )
             LOG.info("writing %s summary to excel", name)
             summary.write_to_excel(writer, output_matrix=True)
@@ -656,14 +765,11 @@ def run_gravity_model(
 
             calib_gm.summary.to_excel(writer, sheet_name="Gravity Model Info")
 
-            # TODO We have already read this in inside _calibrate_gm: figure out if this stores in memory nicely
-            cost_matrix = pd.read_csv(input_paths.cost_matrix_path, index_col=0)
-
             if name in PA_MATRICES:
-                vehicle_kms = calculate_vehicle_kms(pa_matrix, cost_matrix, internals)
+                vehicle_kms = calculate_vehicle_kms(pa_matrix, cost_matrix)
                 vehicle_kms.to_excel(writer, sheet_name="Vehicle Kilometres (PA)")
 
-            vehicle_kms = calculate_vehicle_kms(matrices[name], cost_matrix, internals)
+            vehicle_kms = calculate_vehicle_kms(matrices[name], cost_matrix)
             vehicle_kms.to_excel(writer, sheet_name="Vehicle Kilometres")
         LOG.info("\tFinished writing")
 
@@ -798,14 +904,14 @@ def produce_personal_matrix(
     )
 
     # calling lookup
-    # TODO Add column names to stop errors coming up
+    # TODO(kf) Add column names to stop errors coming up
     lookup = Rezone.read(normits_to_msoa_lookup, None)
     # rezoning matrix NoHAM to NTEM
-    matrix = Rezone.rezoneOD(
+    matrix = Rezone.rezone_od(
         matrix,
         lookup,
-        dfCols=("origin", "destination"),
-        rezoneCols="values",
+        df_cols=("origin", "destination"),
+        rezone_cols="values",
     )
 
     # Apply personal LGV factor
@@ -823,7 +929,7 @@ def produce_personal_matrix(
     od_matrix = pd.DataFrame(od_matrix, index=matrix.index, columns=matrix.columns)
     od_matrix.to_csv(output_folder / "personal-trip_matrix-OD.csv")
 
-    # TODO Add more tests at some point
+    # TODO(kf) Add more tests at some point
     # negative and nans check
     negatives = (od_matrix < 0).values
     if np.any(negatives):
@@ -870,25 +976,24 @@ def produce_annual_matrices(
     )
 
     try:
-        LOG.info("Calculating personal segment matrices from NorMITs car demand")
-        personal_matrix = produce_personal_matrix(
-            input_paths.normits_pa_folder,
-            input_paths.personal_purposes,
-            year=year,
-            normits_to_msoa_lookup=input_paths.normits_to_msoa_lookup,
-            factor=input_paths.normits_to_personal_factor,
-            output_folder=output_folder,
-        )
-        LOG.info("Finished personal segment matrices")
+        if input_paths.normits_pa_folder is None:
+            personal_matrix = None
+        else:
+            LOG.info("Calculating personal segment matrices from NorMITs car demand")
+            personal_matrix = produce_personal_matrix(
+                input_paths.normits_pa_folder,
+                input_paths.personal_purposes,
+                year=year,
+                normits_to_msoa_lookup=input_paths.normits_to_msoa_lookup,
+                factor=input_paths.normits_to_personal_factor,
+                output_folder=output_folder,
+            )
+            LOG.info("Finished personal segment matrices")
 
-    except Exception as exc:
-        personal_matrix = pd.DataFrame(
-            np.ones_like(matrices["service"]),
-            columns=matrices["service"].columns,
-            index=matrices["service"].index,
-        )
+    except Exception as exc:  # pylint: disable = broad-exception-caught
+        personal_matrix = None
         warnings.warn(
-            "Failed to produce personal matrix, use dummy matrix of 1s."
+            "Failed to produce personal matrix, this will not be included in the outputs."
             f" {exc.__class__.__name__}: {exc}",
             RuntimeWarning,
         )
@@ -966,3 +1071,189 @@ def lgv_arg_parser() -> argparse.ArgumentParser:
         help="If given will write an example config " "file to the current working directory",
     )
     return parser
+
+
+def _check_gm_inputs(
+    trip_ends: pd.DataFrame, costs: pd.DataFrame, calibration: pd.DataFrame = None
+) -> list[pd.DataFrame]:
+    """Sorts the indices and checks the input DataFrames for `gravity_model`."""
+    # Copy the DataFrames so links to them outside this function aren't edited
+    data = [trip_ends.copy(), costs.copy()]
+    names = ["trip_ends", "costs"]
+    if calibration is not None:
+        data.append(calibration.copy())
+        names.append("calibration")
+    for nm, df in zip(names, data):
+        df.sort_index(axis=0, inplace=True)
+        if df.index.has_duplicates:
+            raise ValueError(f"duplicates not allowed in `{nm}` index")
+        if df.columns.has_duplicates:
+            raise ValueError(f"duplicates not allowed in `{nm}` columns")
+        if nm == "trip_ends":
+            continue
+        df.sort_index(axis=1, inplace=True)
+        if not (df.index.equals(data[0].index) and df.columns.equals(data[0].index)):
+            raise ValueError(
+                f"`{nm}` must be a square matrix with same zones as "
+                "`trip_ends` for gravity model calculations"
+            )
+    # Raise error if costs contains zeros
+    zero_costs = np.sum((costs == 0).values)
+    if zero_costs > 0:
+        raise ValueError(f"{zero_costs} zeros in cost matrix")
+    return data
+
+
+def calculate_vehicle_kms(
+    matrix: pd.DataFrame, distances: pd.DataFrame, internals: Optional[set[int]] = None
+) -> pd.DataFrame:
+    """Summarise number of trips and vehicle kilometres by internal/external.
+
+    Parameters
+    ----------
+    matrix : pd.DataFrame
+        Square trip matrix, indices and columns should be
+        zone numbers.
+    distances : pd.DataFrame
+        Square matrix of distances with the same indices
+        and columns as `matrix`
+    internals : set[int], optional
+        Set of all internal zone numbers.
+
+    Returns
+    -------
+    pd.DataFrame
+        The number of trips and vehicle kilometres in the
+        matrix, if `internals` is given then splits the totals
+        into II, IE, EI and EE.
+    """
+    matrix, distances = _check_gm_inputs(matrix, distances)
+    trips = {"All Trips": np.sum(matrix.values)}
+    vehicle_kms = {"All Trips": np.sum((matrix * distances).values)}
+    if internals:
+        internals = set(internals)
+        externals = list(set(matrix.index) - internals)
+        internals = list(internals)
+
+        filters = {
+            "Internal-Internal": (internals, internals),
+            "Internal-External": (internals, externals),
+            "External-Internal": (externals, internals),
+            "External-External": (externals, externals),
+        }
+        for nm, (index, cols) in filters.items():
+            trips[nm] = np.sum(matrix.loc[index, cols].values)
+            vehicle_kms[nm] = np.sum(
+                (matrix.loc[index, cols] * distances.loc[index, cols]).values
+            )
+    df = pd.DataFrame(
+        {("Trips", "Value"): trips, ("Vehicle Kilometers", "Value"): vehicle_kms}
+    )
+    if internals:
+        for c in df.columns.get_level_values(0):
+            df.loc[:, (c, "Percentage")] = df[(c, "Value")] / df.loc["All Trips", (c, "Value")]
+        df.sort_index(axis=1, level=0, sort_remaining=False, inplace=True)
+    return df
+
+
+def _check_matrix(matrix: np.ndarray):
+    """Check given `matrix` is square."""
+    if matrix.ndim != 2:
+        raise ValueError(f"matrix should have 2 dimensions not: {matrix.ndim}")
+    if matrix.shape[0] != matrix.shape[1]:
+        raise ValueError(f"matrix should be a square not shape: {matrix.shape}")
+
+
+def factor_1d(matrix: np.ndarray, total: np.ndarray, axis: int) -> np.ndarray:
+    """Factor the given `axis` of `matrix` to match `total`.
+
+    Parameters
+    ----------
+    matrix : np.ndarray
+        Square matrix to be factored.
+    total : np.ndarray
+        The totals that the `matrix` should be
+        factored to match.
+    axis : int
+        The axis of `matrix` which should be factored.
+
+    Returns
+    -------
+    np.ndarray
+        The `matrix` after it has been factored.
+
+    Raises
+    ------
+    ValueError
+        If `total` isn't the correct shape or
+        `axis` isn't 0 or 1.
+    """
+    _check_matrix(matrix)
+    if total.ndim != 1:
+        raise ValueError(f"total should have 1 dimension not: {total.ndim}")
+    if len(total) != matrix.shape[0]:
+        raise ValueError("total should be the same length as matrix")
+    if axis not in (0, 1):
+        raise ValueError(f"axis should be 0 or 1 not: {axis}")
+
+    curr_tot = np.sum(matrix, axis=axis)
+    # Set factor to 0 wherever curr_tot is zero
+    factor = np.divide(
+        total, curr_tot, out=np.ones_like(total, dtype=float), where=curr_tot != 0
+    )
+    if axis == 0:
+        # Factoring column totals so multiplying factor by each row
+        new_matrix = matrix * factor
+    else:
+        # Factoring row totals so muliplying factor by each column
+        new_matrix = matrix * factor.reshape((len(factor), 1))
+    return new_matrix
+
+
+def factor_totals(
+    col_total: np.ndarray, row_total: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    """Factor column/row total arrays so they have the same total."""
+    trip_ends = [col_total, row_total]
+    totals = np.sum(trip_ends, axis=1)
+    if totals[0] == totals[1]:
+        return col_total, row_total
+    mean_tot = np.mean([np.sum(col_total), np.sum(row_total)])
+    LOG.info("Factoring trip ends sum to mean total: %s", mean_tot)
+    new_totals = []
+    for tot, arr in zip(totals, trip_ends):
+        new_totals.append(arr * mean_tot / tot)
+    return tuple(new_totals)
+
+
+def annual_pa_to_od(
+    matrix: np.ndarray, col_total: np.ndarray, row_total: np.ndarray
+) -> np.ndarray:
+    """Convert annual PA matrix to OD by adding on the transpose after factoring to totals.
+
+    Simple PA to OD conversion by factoring the `matrix` up to
+    the `row_total` and factoring the transposed `matrix` to
+    the `col_total`, then adding the transposed to `matrix`.
+    If the totals are the same then the matrices don't need
+    to be factored.
+
+    Parameters
+    ----------
+    matrix : np.ndarray
+        Square annual PA trip matrix.
+    col_total : np.ndarray
+        Expected column totals.
+    row_total : np.ndarray
+        Expected row totals.
+
+    Returns
+    -------
+    np.ndarray
+        Matrix after conversion to OD.
+    """
+    if np.allclose(col_total, row_total):
+        return matrix + matrix.T
+    col_total, row_total = factor_totals(col_total, row_total)
+    matrix = factor_1d(matrix, row_total, 1)
+    matrix_t = factor_1d(matrix, col_total, 0).T
+    return matrix + matrix_t

@@ -1,0 +1,8 @@
+matrices_path: 
+  steve: U:\9. HGV Data\LFT input examples\2018_Outputs\artic_total_annual_pcus.csv
+  bob: U:\9. HGV Data\LFT input examples\2018_Outputs\artic_total_annual_pcus.csv
+translation_path: U:\9. HGV Data\LFT inputs 2023\Factoring\GBFM_NUTS_space_format.csv
+from_zoning: GBFM
+to_zoning: NUTS
+name: bob
+outpath: C:\Users\KieranFishwick\OneDrive - Transport for the North\Documents\caf-van_rebase\testing\matrix_summary.xlsx

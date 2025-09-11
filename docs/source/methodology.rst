@@ -115,31 +115,9 @@ factor* |LGV commuting attractions trip ends methodology - flowchart|
 Gravity Model
 -------------
 
-The distribution of the trip ends to create annual trip matrices is done
-using a bespoke gravity model. The gravity model is built of two
-sections, the first contains the cost functions (tanner and log normal)
-to calculate the initial matrix and then performs either 1D factoring,
-or 2D furnessing, to constraint the matrix to the trip ends. The gravity
-model process accepts an optional calibration matrix which allows
-adjustments to be applied to specific zone pairs, the flowchart for the
-first section is shown below.
-
-.. figure:: _static/images/LGV_methodology-Gravity_Model.png
-   :alt: LGV gravity model methodology - flowchart
-
-   LGV gravity model methodology - flowchart
-
-The second section of the gravity model is the outer self-calibration
-loop, this finds the optimal cost function parameters to fit the
-resulting matrix to the observed trip distribution. The self-calibration
-process is detailed in the below flowchart and can be turned on or off
-within the `LGV Parameters
-Spreadsheets <#lgv-parameters-spreadsheet>`__.
-
-.. figure:: _static/images/LGV_methodology-Self-Calibrating_GM.png
-   :alt: LGV gravity model self-calibration methodology - flowchart
-
-   LGV gravity model self-calibration methodology - flowchart
+The package utilises caf.distribute multi-TLD gravity model for calibrating and running the gravity model.
+For more information on this process please see the caf.distribute gravity mode documentation here: 
+:class:`caf.distribute.gravity_model.multi_area.MultiAreaGravityModelCalibrator`
 
 Time Period Conversion
 ----------------------

@@ -78,9 +78,16 @@ Excel Log File
 ~~~~~~~~~~~~~~
 
 The Excel log spreadsheet that is created contains various statistics
-and results from the LGV model process. The spreadsheet is named
+and results from the LGV model process. Aggregated statistics are used by
+translating the matrix to a higher level summary zone system using the 
+summary_zone_translation input. The spreadsheet is named
 ``{segment_name}-GM_log.xlsx`` and contains the following worksheets:
 
+-  Summary: This sheet contains high-level statistics of the sector aggregated and original 
+   matrices. Including mean, min, max, standard deviation, 5%, 25%, 50%, 75% and 95% percentiles,
+   sum, number of zeros and almost zeros and number of NaNs. 
+-  Trips Ends: This sheet contains the sector aggregated trip ends of the resultant matrix.
+-  Matrix: Contains the sector aggregated matrix.
 -  Calibration Results: This sheet lists the calibration parameters used
    for the final run of the gravity model and the :math:`R^2` values
    when the matrix is compared against the trip distributions.
@@ -93,14 +100,19 @@ and results from the LGV model process. The spreadsheet is named
 -  Vehicle Kilometres (PA): This sheet contains the same information as
    above but for the PA matrix, if this model segment is PA.
 
+Calibration Log
+~~~~~~~~~~~~~~~
+Contains the results of each gravity model loop for each TLD category.
+The file are named ``gravity_model_{segment_name}-calibration_log.csv``.
+Result contained are, attempt ID, loop number, runtime and resultant
+cost parameters and convergence for each TLD category 
+
 Trip Distributions Graph
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 The PDF contains a graph of the observed trip distributions compared to
-the output annual trip matrix distributions. The file is named
-``{segment_name}-distribution.pdf`` and contains the distributions
-plotted for the observed data, the calibration area of the matrix, the
-whole matrix and the whole OD matrix. All the data used to produce these
+the output annual trip matrix distributions. The file is named ``{segment_name}-distribution_{category}.pdf`` and contains the distributions
+plotted for the observed data and the calibration sub-subset of the matrix for the TLD category. All the data used to produce these
 graphs is given in the Trip Distribution sheet of the `Excel Log
 File <#excel-log-file>`__.
 

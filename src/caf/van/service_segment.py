@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-    Module to calculate the productions and attractions for the LGV
-    service segment in the model zone system.
+Module to calculate the productions and attractions for the LGV
+service segment in the model zone system.
 """
 
 ##### IMPORTS #####
@@ -25,7 +25,7 @@ class ServiceTripEnds:
     household_paths : LFT.data_utils.DataPaths
         Paths to the CSVs containing the household projections data and
         the relevant zone correspondence.
-    bres_paths : LFT.data_utils.DataPaths
+    employment_paths : EmploymentPaths
         Paths to the CSVs containing the BRES data and the relevant
         zone correpondence.
     service_trips : Path
@@ -44,10 +44,9 @@ class ServiceTripEnds:
         If `scale_factor` isn't a positive numeric value.
     """
 
-    BRES_AGGREGATION = {
-        "Office": list(lgv_inputs.letters_range("I", "P")),
-        "Other": list(lgv_inputs.letters_range(end="H"))
-        + list(lgv_inputs.letters_range("Q", "U")),
+    EMPLOYMENT_AGGREGATION = {
+        "Office": list(range(9, 17)),  # I - P (9->16)
+        "Other": list(range(1, 9)) + list(range(17, 22)),  # A - H (1->8)  # Q - U (17->21)
     }
     SERVICE_TRIPS_HEADER = {"Segment": str, "Annual Service Trips": int}
     SERVICE_TRIPS_SEGMENTS = ("Residential", "Office", "All Other")
@@ -55,15 +54,16 @@ class ServiceTripEnds:
 
     def __init__(
         self,
-        household_paths: utilities.DataPaths,
-        bres_paths: utilities.DataPaths,
+        household_paths: lgv_inputs.DwellingPaths,
+        employment_paths: lgv_inputs.EmploymentPaths,
         service_trips: Path,
         scale_factor: float,
         model_zones: pd.Series,
+        zone_name: str,
     ):
         """Initialise class by checking input files exist and are expected type."""
         # Check all given parameters
-        self._check_paths(household_paths, bres_paths, service_trips)
+        self._check_paths(household_paths, employment_paths, service_trips)
         try:
             self._scale_factor = float(scale_factor)
         except ValueError as e:
@@ -73,8 +73,10 @@ class ServiceTripEnds:
         if self._scale_factor <= 0:
             raise ValueError(f"scale_factor should be >= 0 not {self._scale_factor}")
         # Initlise instance variables defined later
+        self._zone_name = zone_name
+
         self.households = None
-        self.bres = None
+        self.employment = None
         self.total_trips = None
         self.model_zones = model_zones
         self._trip_proportions = None
@@ -83,17 +85,31 @@ class ServiceTripEnds:
 
     def _check_paths(
         self,
-        household_paths: utilities.DataPaths,
-        bres_paths: utilities.DataPaths,
+        household_paths: lgv_inputs.DwellingPaths,
+        employment_paths: lgv_inputs.EmploymentPaths,
         service_trips: Path,
     ):
         """Checks the input files exist and are the expected type."""
-        extensions = (".csv", ".txt")
-        for nm, paths in (("Households", household_paths), ("BRES", bres_paths)):
-            utilities.check_file_path(paths.path, f"{nm} data", *extensions)
-            utilities.check_file_path(paths.zc_path, f"{nm} lookup", *extensions)
+        plain_txt_extensions = (".csv", ".txt")
+        dvec_extensions = (".dvec", ".hdf", ".h5")
+        # for nm, paths in (("BRES", employment_paths),):#TODO(kf) validate dwelling paths
+        utilities.check_file_path(employment_paths.path, "employment data", *dvec_extensions)
+        utilities.check_file_path(
+            employment_paths.zc_path, "employment lookup", *plain_txt_extensions
+        )
+        utilities.check_file_path(
+            household_paths.occupied, "occupied dwelling data", *dvec_extensions
+        )
+        utilities.check_file_path(
+            household_paths.zc_path, "dwelling lookup", *plain_txt_extensions
+        )
+        if household_paths.unoccupied is not None:
+            utilities.check_file_path(
+                household_paths.unoccupied, "unoccupied dwelling data", *dvec_extensions
+            )
+
         self._household_paths = household_paths
-        self._bres_paths = bres_paths
+        self._employment_paths = employment_paths
         self._trips_path = utilities.check_file_path(
             service_trips, "Service trips", ".xlsx", return_path=True
         )
@@ -103,10 +119,11 @@ class ServiceTripEnds:
         """pd.DataFrame : Summary table of class input parameters."""
         return pd.DataFrame.from_dict(
             {
-                "Household Data Path": str(self._household_paths.path),
-                "Household Zone Correspondence Path": str(self._household_paths.zc_path),
-                "BRES Data Path": str(self._bres_paths.path),
-                "BRES Zone Correpondence Path": str(self._bres_paths.zc_path),
+                "Occupied Dwellings Path": str(self._household_paths.occupied),
+                "Unoccupied Dwellings Path": str(self._household_paths.unoccupied),
+                "Employment Path": str(self._employment_paths.path),
+                "Dwelling Zone Correspondence Path": str(self._household_paths.zc_path),
+                "Employment Zone Correspondence Path": str(self._employment_paths.zc_path),
                 "Annual Service Trips Path": str(self._trips_path),
                 "Scale Factor": self._scale_factor,
             },
@@ -130,13 +147,14 @@ class ServiceTripEnds:
             Reads, filters and converts the BRES input CSV.
         """
         self.households = lgv_inputs.household_projections(
-            self._household_paths.path, self._household_paths.zc_path
+            self._household_paths.occupied,
+            self._household_paths.zc_path,
+            self._household_paths.unoccupied,
         )
-        self.households.set_index("Zone", inplace=True)
-        self.bres = lgv_inputs.filtered_bres(
-            self._bres_paths.path, self._bres_paths.zc_path, self.BRES_AGGREGATION
+
+        self.employment = lgv_inputs.filtered_employment(
+            self._employment_paths, self.EMPLOYMENT_AGGREGATION
         )
-        self.bres.set_index("Zone", inplace=True)
         # Read and check service trips data
         self.total_trips = utilities.read_multi_sheets(
             self._trips_path,
@@ -158,12 +176,12 @@ class ServiceTripEnds:
         (employees) and Other (employees). Each column sums to 1.
         """
         if self._trip_proportions is None:
-            if self.households is None or self.bres is None:
+            if self.households is None or self.employment is None:
                 raise ValueError(
                     "cannot calculate trip proportions until input data "
                     "has been read, call `ServiceTripEnds.read` first"
                 )
-            trip_data = pd.concat([self.households, self.bres], axis=1)
+            trip_data = pd.concat([self.households, self.employment], axis=1)
             self._trip_proportions = trip_data / trip_data.sum(axis=0)
         return self._trip_proportions
 

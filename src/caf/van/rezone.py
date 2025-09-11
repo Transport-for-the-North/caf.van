@@ -45,7 +45,7 @@ class Rezone:
             cols = {"old": 0, "new": 1, "splitting_factor": 2}
             rename = list(cols.keys())
         else:
-            cols = Parameters.checkParams(
+            cols = Parameters.check_params(
                 columns, ("old", "new", "splitting_factor"), name="INPUT_COLUMNS"
             )
             rename = {v: k for k, v in cols.items()}
@@ -56,9 +56,9 @@ class Rezone:
                 path, "Rezoning Lookup", columns=list(cols.values()), low_memory=False
             )
         except IncorrectParameterError:
-            errType, errVal = sys.exc_info()[:2]
+            err_type, err_val = sys.exc_info()[:2]
             # Log any errors and reraise
-            LOG.error("%s: %s", errType.__name__, str(errVal))
+            LOG.error("%s: %s", err_type.__name__, str(err_val))
             raise
 
         # Set column names if rename is list or use rename method with dicts
@@ -72,11 +72,11 @@ class Rezone:
     def rezone(
         df,
         lookup,
-        dfCol,
-        lookupOld="old",
-        lookupNew="new",
-        splitCol="splitting_factor",
-        rezoneCols="trips",
+        df_col,
+        lookup_old="old",
+        lookup_new="new",
+        split_col="splitting_factor",
+        rezone_cols="trips",
     ):
         """Rezones a dataframe with a lookup dataframe, using splitting factors.
 
@@ -86,18 +86,18 @@ class Rezone:
             The matrix to be rezoned.
         lookup: pandas.DataFrame
             The lookup tables to do the rezoning.
-        dfCol: str
+        df_col: str
             The column to be replaced with a new zone system.
-        lookupOld: str, optional
+        lookup_old: str, optional
             The column that contains the current zone system (present in df).
             Default 'old'
-        lookupNew: str, optional
+        lookup_new: str, optional
             The column that contains the new zone system.
             Default 'new'.
-        splitCol: str, optional
+        split_col: str, optional
             The column that contains the splitting factors.
             Default 'splitting_factor'.
-        rezoneCols: str or list-like, optional, default "trips"
+        rezone_cols: str or list-like, optional, default "trips"
             The column(s) which should be multiplied by the `splitCol`
             during rezoning.
 
@@ -108,29 +108,29 @@ class Rezone:
         missing: DataFrame
             Rows containing zones not present in the lookup dataframe
         """
-        originalCols = df.columns
+        original_cols = df.columns
         # Join the dfs
         merged = df.merge(
             lookup,
-            left_on=dfCol,
-            right_on=lookupOld,
+            left_on=df_col,
+            right_on=lookup_old,
             how="left",
             indicator=True,
             suffixes=("", "_Lookup"),
         )
         missing = merged.loc[merged["_merge"] != "both"]
         # Set the column to the new zones
-        merged[dfCol] = merged[lookupNew]
+        merged[df_col] = merged[lookup_new]
         # Convert the split columns
-        if isinstance(rezoneCols, str):
-            merged[rezoneCols] = merged[rezoneCols] * merged[splitCol]
+        if isinstance(rezone_cols, str):
+            merged[rezone_cols] = merged[rezone_cols] * merged[split_col]
         else:
-            for c in rezoneCols:
-                merged[c] = merged[c] * merged[splitCol]
-        return merged[originalCols], missing
+            for c in rezone_cols:
+                merged[c] = merged[c] * merged[split_col]
+        return merged[original_cols], missing
 
     @classmethod
-    def rezoneOD(cls, df, lookup, dfCols=("origin", "destination"), **kwargs):
+    def rezone_od(cls, df, lookup, df_cols=("origin", "destination"), **kwargs):
         """Rezones the matrix on both the origin and destination columns.
 
         Uses the `rezone` method.
@@ -152,8 +152,8 @@ class Rezone:
             The original dataframe with the columns rezoned.
         """
         # Loop through the dfCols
-        dfCols = list(dfCols)
-        for c in dfCols:
+        df_cols = list(df_cols)
+        for c in df_cols:
             df, missing = cls.rezone(df, lookup, c, **kwargs)
             # Check if there are any missing lookup values
             if len(missing) > 1:
@@ -161,5 +161,5 @@ class Rezone:
                 raise MissingLookupValuesError(missing, c)
 
         # Group the new zones
-        df = df.groupby(dfCols, as_index=False).sum()
+        df = df.groupby(df_cols, as_index=False).sum()
         return df
