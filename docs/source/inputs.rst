@@ -508,19 +508,18 @@ where:
 - :math:`\alpha, \beta`: calibration parameters.
 
 
-Cost Function params (cost_function_params)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The starting values for the cost function parameters to use when calibrating or values to use if calibration is off.
+Cost Function params (``cost_function_params``)  
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
 
-A tuple can be passed to start all TLDs with the same parameters
-A dictionary of tuples can also be passed to start each TLD from different paramters, the keys 
-of the dictionary should correspond to the area ids in the category-zone correspondance and trip length distribution files.
-Values in the tuples should be ordered as specified below.
+The starting values for the cost function parameters to use when calibrating,  
+or just the values to use if calibration is off. Both cost functions require  
+two parameters (in a specific order):  
 
-param order
-***********
-Log Normal: mu, sigma
-Tanner: alpha, beta
+- Log normal: :math:`\mu` (mu), :math:`\sigma` (sigma) 
+- Tanner: :math:`\alpha` (alpha), :math:`\beta` (beta)  
+
+If a single pair of parameters is provided these will be used for all TLDs, 
+alternatively separate parameters can be provided for each of the area IDs in :ref:`Category-Zone correspondence (cat_zone_correspondance_path)`.  
 
 Calibrate
 ~~~~~~~~~

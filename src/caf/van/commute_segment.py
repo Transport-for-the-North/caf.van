@@ -13,6 +13,7 @@ from itertools import chain
 from typing import Callable, Optional, Union
 
 # Third Party
+import caf.toolkit as ctk
 import numpy as np
 import pandas as pd
 import pydantic
@@ -20,9 +21,6 @@ import pydantic
 # Local Imports
 from caf.van import errors, lgv_inputs, utilities
 from caf.van.rezone import Rezone
-
-##### IMPORTS #####
-
 
 ##### CONSTANTS #####
 LOG = logging.getLogger(__name__)
@@ -123,7 +121,7 @@ class CommuteTripEnds:
         self.commute_trips_land_use = {}
         self.trip_productions = None
         self.attractor_factors: dict[str, pd.DataFrame] = {}
-        self.ATTRACTION_FUNCTIONS: dict[str, Callable] = {  # pylint: disable = invalid-name
+        self.attraction_functions: dict[str, Callable] = {  # pylint: disable = invalid-name
             "Construction": self._calc_construction_factors,
             "Residential": self._calc_residential_factors,
             "Employment": self._calc_employment_factors,
@@ -234,13 +232,17 @@ class CommuteTripEnds:
     def _calc_construction_factors(self):
         """Calculates the total change in sqm in residential and business
         floorspace and uses it to calculate construction attractor factors
+
+        We calculate total builds as net additional dwellings +
+        2*demolitions as for net dwellings to be >= 0 each demolished
+        building needs to be replaces (only true if additional dwellings >=0)
         """
         # get residential floorspace
-
-        construction = pd.read_csv(self.paths.constructions_path, index_col="zone")
-
-        # we calculate total builds as net additional dwellings + 2*demolitions as for net dwellings to be >= 0 each demolished
-        # building needs to be replaces (only true if additional dwellings >=0)
+        construction = ctk.io.read_csv(
+            self.paths.constructions_path,
+            index_col="zone",
+            usecols=["demolished_dwellings", "additional_dwellings", "business_floorspace"],
+        )
 
         if (construction["demolished_dwellings"] < 0).any():
             raise ValueError(
@@ -268,8 +270,9 @@ class CommuteTripEnds:
         # BUT I'm prety stupid - so this is here just in case
         if (construction["total_resi_builds"] < 0).any():
             raise ValueError(
-                "total residential build has atleast one negative value. Please review constructions inputs"
-                "total residential build = additional dwellings[this is net value] + 2 x demolished dwellings"
+                "total residential build has atleast one negative value. Please review"
+                " constructions inputs total residential build = additional "
+                "dwellings[this is net value] + 2 x demolished dwellings"
             )
 
         construction["residential_floorspace"] = (
@@ -354,7 +357,7 @@ class CommuteTripEnds:
         ]
         if factors_missing:
             for category in factors_missing:
-                self.ATTRACTION_FUNCTIONS[category]()
+                self.attraction_functions[category]()
 
         # calculate skilled attractions, using just residential and construction
         # because employment is used for drivers
@@ -440,7 +443,7 @@ class CommuteTripEnds:
 
         trip_attractions = {}
         for category in self.commute_trips_main_usage:
-            trip_attractions[category] = self.ATTRACTION_FUNCTIONS[category]()
+            trip_attractions[category] = self.attraction_functions[category]()
 
         # align matrices
         (

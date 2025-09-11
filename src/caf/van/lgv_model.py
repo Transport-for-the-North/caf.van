@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Literal, Optional
 
 # Third Party
+import caf.toolkit as ctk
 import numpy as np
 import pandas as pd
 from caf.distribute import cost_functions, gravity_model
@@ -29,11 +30,9 @@ from caf.van.lgv_inputs import (
     lgv_parameters,
     read_time_factors,
 )
-from caf.van.matrix_validation import MatrixReport
 from caf.van.rezone import Rezone
 from caf.van.service_segment import ServiceTripEnds
 from caf.van.utilities import DataPaths
-
 
 ##### CONSTANTS #####
 LOG = logging.getLogger(__name__)
@@ -340,8 +339,10 @@ def calculate_trip_ends(
     LOG.info("Calculating Commuting trip ends")
     commute = CommuteTripEnds(input_paths, model_zones)
     commute_trips = commute.trips
+    unbalanced_path = output_folder / "unbalanced"
+    unbalanced_path.mkdir(exist_ok=True, parents=True)
     for key in commute_trips:
-        commute_trips[key].to_csv(output_folder / Path(f"commute_{key}_trip_ends.csv"))
+        commute_trips[key].to_csv(unbalanced_path / Path(f"commute_{key}_trip_ends.csv"))
 
     # if balancing regions aren't given,
     # we create a lookup from all zones to 1 area to balance to trip end totals
@@ -423,7 +424,7 @@ def balance_trip_ends(
     balanced_trip_ends = trip_ends.copy()
 
     # check all zones are in the region correspondence
-    if trip_ends.index.isin(~regions["zone_id"]).any():
+    if not trip_ends.index.isin(regions["zone_id"]).all():
         raise KeyError(
             "Trip Ends Balancing Regions have zones missing when compared to trip ends"
         )
@@ -678,15 +679,9 @@ def run_gravity_model(
     matrices: dict[str, pd.DataFrame] = {}
     output_folder.mkdir(exist_ok=True)
 
-    cost_matrix = pd.read_csv(input_paths.cost_matrix_path, index_col=0)
+    cost_matrix = ctk.io.read_csv_matrix(input_paths.cost_matrix_path, format_="square")
     # Pandas casts column names to str, even if theyre numerical (I can't find a parameter to change this)
     # therefore we try to convert to ints
-    try:
-        cost_matrix.columns = [int(x) for x in cost_matrix.columns]
-
-    # This is for the case where they are strings
-    except ValueError:
-        pass
 
     for name, te in trip_ends.asdict().items():
 
@@ -742,12 +737,12 @@ def run_gravity_model(
         with pd.ExcelWriter(output_folder / (name + "-GM_log.xlsx")) as writer:
             # TODO(kf) write out metadata
 
-            summary = MatrixReport(
+            summary = ctk.pandas_utils.MatrixReport(
                 matrices[name],
-                pd.read_csv(input_paths.summary_zone_translation.path),
-                f"{input_paths.summary_zone_translation.from_zoning}_id",
-                f"{input_paths.summary_zone_translation.to_zoning}_id",
-                f"{input_paths.summary_zone_translation.from_zoning}_to_{input_paths.summary_zone_translation.to_zoning}",
+                translation_factors=pd.read_csv(input_paths.summary_zone_translation.path),
+                translation_from_col=f"{input_paths.summary_zone_translation.from_zoning}_id",
+                translation_to_col=f"{input_paths.summary_zone_translation.to_zoning}_id",
+                translation_factors_col=f"{input_paths.summary_zone_translation.from_zoning}_to_{input_paths.summary_zone_translation.to_zoning}",
             )
             LOG.info("writing %s summary to excel", name)
             summary.write_to_excel(writer, output_matrix=True)

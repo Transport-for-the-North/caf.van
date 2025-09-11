@@ -31,6 +31,8 @@ from caf.van.rezone import Rezone
 ##### CONSTANTS #####
 LOG = logging.getLogger(__name__)
 
+ZONING_SYSTEM_NAME = "NorMITS"
+
 HH_PROJECTIONS_HEADER = {"Area Description": str, "HHs": float}
 """Column names (and data types) for input CSV to `household_projections` function."""
 
@@ -167,8 +169,6 @@ class LGVInputPaths(caf.toolkit.BaseConfig):
     """Path to GB construction data csv."""
     lsoa_lookup_path: types.FilePath
     """Path to the LSOA to model zone correspondence CSV."""
-    tripend_balancing_regions_path: types.FilePath
-    """Path to csv containing trip end balancing regions to zone correspondence"""
     summary_zone_translation: ZoneTranslationDefinition
     """Path to model zones to summary zones correspondance CSV"""
     cost_matrix_path: types.FilePath
@@ -178,6 +178,8 @@ class LGVInputPaths(caf.toolkit.BaseConfig):
     """Dictionary of gravity model parameters for each segment."""
     output_folder: types.DirectoryPath
     """Path to folder to save outputs to."""
+    tripend_balancing_regions_path: types.FilePath | None = None
+    """Path to csv containing trip end balancing regions to zone correspondence"""
     normits_pa_folder: Optional[types.DirectoryPath] = None  # keep as is
     """Path to the full PA Normits matrices, should contain all non home
     based and home based matrices"""
@@ -265,7 +267,9 @@ def household_projections(
 
     households = (
         DVector.load(occupied_paths)
-        .translate_zoning(ZoningSystem.get_zoning("NorMITs"), trans_vector=zone_correspondence)
+        .translate_zoning(
+            ZoningSystem.get_zoning(ZONING_SYSTEM_NAME), trans_vector=zone_correspondence
+        )
         .data
     )
 
@@ -275,7 +279,7 @@ def household_projections(
         unoccupied = (
             DVector.load(unoccupied_paths)
             .translate_zoning(
-                ZoningSystem.get_zoning("NorMITs"), trans_vector=zone_correspondence
+                ZoningSystem.get_zoning(ZONING_SYSTEM_NAME), trans_vector=zone_correspondence
             )
             .data
         )
@@ -319,7 +323,7 @@ def filtered_employment(
     emp = caf.base.DVector.load(paths.path)
 
     emp = emp.translate_zoning(
-        ZoningSystem.get_zoning("NorMITs"), trans_vector=pd.read_csv(paths.zc_path)
+        ZoningSystem.get_zoning(ZONING_SYSTEM_NAME), trans_vector=pd.read_csv(paths.zc_path)
     )
     agg_emp = emp.aggregate(["sic_1_digit"])
     emp_data = agg_emp.data
@@ -530,11 +534,16 @@ class GMInputs:
 
     @model_validator(mode="after")
     def _check_cost_params(self) -> GMInputs:
-
+        """Check that the cost parameters passed are
+        in the correct format for the mode selected."""
         multi_tld = True
 
         try:
-            tld_cats = set(pd.read_csv(self.trip_length_distribution_path)["area"].unique())
+            tld_cats = set(
+                pd.read_csv(self.trip_length_distribution_path, usecols=["area"])
+                .iloc[:, 0]
+                .unique()
+            )
 
         except KeyError as e:
             if self.cat_zone_correspondance_path is None:
@@ -560,7 +569,9 @@ class GMInputs:
             assert isinstance(self.cost_function_params, dict)
 
             correspondance_cats = set(
-                pd.read_csv(self.cat_zone_correspondance_path)["area"].unique()
+                pd.read_csv(self.cat_zone_correspondance_path, usecols=["area"])
+                .iloc[:, 0]
+                .unique()
             )
 
             if tld_cats != correspondance_cats:

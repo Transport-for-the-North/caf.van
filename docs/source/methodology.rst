@@ -116,6 +116,9 @@ Gravity Model
 -------------
 
 The package utilises caf.distribute multi-TLD gravity model for calibrating and running the gravity model.
+The gravity model distributes trips based on the purposes' calculated trip ends and inputted trip-length distributions (TLD).
+This is achieved by fitting the cost function parameters to match the target TLD and Furnessing then achieved distribution to match the trip ends.
+The multi-TLD gravity allows for different areas to have their own TLDs 
 For more information on this process please see the caf.distribute gravity mode documentation here: 
 :class:`caf.distribute.gravity_model.multi_area.MultiAreaGravityModelCalibrator`
 
