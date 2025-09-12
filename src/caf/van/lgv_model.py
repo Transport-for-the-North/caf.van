@@ -251,7 +251,7 @@ class LGVMatrices:
             "combined",
             "zones",
         )
-        if self.personal is None:
+        if self.personal is not None:
             attrs = attrs + ("personal",)
 
         return {a: getattr(self, a).copy() for a in attrs}
@@ -306,7 +306,9 @@ def calculate_trip_ends(
     model_zones.name = "Zone"
 
     if input_paths.tripend_balancing_regions_path is not None:
-        regions = pd.read_csv(input_paths.tripend_balancing_regions_path)
+        regions = pd.read_csv(
+            input_paths.tripend_balancing_regions_path, usecols=["zone_id", "area"]
+        )
     else:
         regions = None
 
@@ -543,7 +545,9 @@ def _gravity_model(
 
     # Use cat zone lookup if it exists.
     if gm_data.cat_zone_correspondance_path is not None:
-        cat_zone_correspondence = pd.read_csv(gm_data.cat_zone_correspondance_path)
+        cat_zone_correspondence = pd.read_csv(
+            gm_data.cat_zone_correspondance_path, usecols=["area", "zone_id"]
+        )
     else:
         # If not, create a correspondence for all zones to one area i.e. run a single TLD gravity model.
         cat_zone_correspondence = pd.DataFrame({"zone_id": zones})
@@ -973,16 +977,16 @@ def produce_annual_matrices(
     )
 
     try:
-        if input_paths.normits_pa_folder is None:
+        if input_paths.personal_matrix_inputs.normits_pa_folder is None:
             personal_matrix = None
         else:
             LOG.info("Calculating personal segment matrices from NorMITs car demand")
             personal_matrix = produce_personal_matrix(
-                input_paths.normits_pa_folder,
-                input_paths.personal_purposes,
+                input_paths.personal_matrix_inputs.normits_pa_folder,
+                input_paths.personal_matrix_inputs.personal_purposes,
                 year=year,
-                normits_to_msoa_lookup=input_paths.normits_to_msoa_lookup,
-                factor=input_paths.normits_to_personal_factor,
+                normits_to_msoa_lookup=input_paths.personal_matrix_inputs.normits_to_msoa_lookup,
+                factor=input_paths.personal_matrix_inputs.normits_to_personal_factor,
                 output_folder=output_folder,
             )
             LOG.info("Finished personal segment matrices")

@@ -180,19 +180,8 @@ class LGVInputPaths(caf.toolkit.BaseConfig):
     """Path to folder to save outputs to."""
     tripend_balancing_regions_path: types.FilePath | None = None
     """Path to csv containing trip end balancing regions to zone correspondence"""
-    normits_pa_folder: Optional[types.DirectoryPath] = None  # keep as is
-    """Path to the full PA Normits matrices, should contain all non home
-    based and home based matrices"""
-    normits_to_msoa_lookup: Optional[types.DirectoryPath] = None
-    """Normits to MSOA(NTEM) lookup, this is NorMITs to model zone lookup as the
-    results are taken after normits results are converted back to NoHAM"""
-    normits_to_personal_factor: Optional[float] = None  # keep as is
-    """This is the factor that the personal data should have applied to
-    just include van data 4% is a starting point"""
-    personal_purposes: list[int] = pydantic.Field(
-        default_factory=lambda: list(DEFAULT_PERSONAL_PURPOSES)
-    )
-    """Personal purpose types defined by Normits"""
+    personal_matrix_inputs: PersonalArgs | None = None
+    """Inputs used to calculate the personal matrix."""
     _model_output_folder: Path | None = pydantic.PrivateAttr(None)
 
     @property
@@ -208,6 +197,25 @@ class LGVInputPaths(caf.toolkit.BaseConfig):
 
 
 InfillFunction = Callable[[np.ndarray], float]
+
+
+@dataclasses.dataclass
+class PersonalArgs:
+    """Input arguments for the personal matrix calculation."""
+
+    normits_pa_folder: types.DirectoryPath
+    """Path to the full PA Normits matrices, should contain all non home
+    based and home based matrices"""
+    normits_to_msoa_lookup: types.DirectoryPath
+    """Normits to MSOA(NTEM) lookup, this is NorMITs to model zone lookup as the
+    results are taken after normits results are converted back to NoHAM"""
+    normits_to_personal_factor: float
+    """This is the factor that the personal data should have applied to
+    just include van data 4% is a starting point"""
+    personal_purposes: list[int] = pydantic.Field(
+        default_factory=lambda: list(DEFAULT_PERSONAL_PURPOSES)
+    )
+    """Personal purpose types defined by Normits"""
 
 
 class InfillMethod(enum.Enum):

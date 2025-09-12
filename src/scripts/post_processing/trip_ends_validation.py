@@ -57,7 +57,7 @@ def create_plot(
             ax.set_title(col)
             ax.get_xaxis().set_visible(False)
             ax.get_yaxis().set_visible(False)
-            ax.set_aspect((bounds[2] - bounds[0]) / (bounds[3] - bounds[1]))
+            ax.set_aspect("equal")
             geo_data.plot(col, legend=True, ax=ax, legend_kwds={"label": "Trips"})
 
             pdf.savefig()

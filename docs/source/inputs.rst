@@ -66,6 +66,15 @@ can be created with the command ``python -m LFT.lgv_model -e``.*
       delivery_parcel_stem:
          ...
    output_folder: Path to folder to save outputs to
+   personal_matrix_inputs:
+   # Optional only pass if you want to create a personal matrix
+      normits_pa_folder: Path to the full PA Normits matrices, should contain all non home
+         based and home based matrices
+      normits_to_msoa_lookup: Normits to MSOA(NTEM) lookup, this is NorMITs to model zone lookup as the
+         results are taken after normits results are converted back to NoHAM
+      normits_to_personal_factor: This is the factor that the personal data should have applied to
+         just include van data 4% is a starting point
+      personal_purposes: Personal purpose types defined by Normits
 
 
 Household data
@@ -550,7 +559,7 @@ The CSV should be in the same format as the
 If this isn't given then the trip ends will be balanced at all zones, i.e. the
 GB total trip ends.
 
-Constructions (constructions_path)
+Constructions (``constructions_path``)
 ----------------------------------
 
 This should contains the dwelling and employment floorspace changes in the model zoning.
