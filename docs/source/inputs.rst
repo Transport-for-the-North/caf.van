@@ -48,7 +48,7 @@ can be created with the command ``python -m LFT.lgv_model -e``.*
    cost_matrix_path: Path to CSV containing cost matrix, should be square matrix with
      zone numbers as column names and indices
    summary_zone_translation: 
-      path: Path to model zones to summary zones correspondance CSV
+      path: Path to model zones to summary zones correspondence CSV
       from_zoning: Name of model zoning system in translation file
       to_zoning: Name of summary zoning system in translation file
 
@@ -60,19 +60,18 @@ can be created with the command ``python -m LFT.lgv_model -e``.*
          trip_length_distribution_path: Path to the Trip Length Distribution CSV."""
          cost_function: The cost function to use for the gravity model. Either 'log_normal' or 'tanner'
          cost_function_params: Starting (calibration)/run params for the cost function.
-         calibrate: Whether to calibrate the cost function paramas (True) or run with given params (False).
-         cat_zone_correspondance_path: Path to CSV with correspondence between the categories in the TLD and the model zones.
+         calibrate: Whether to calibrate the cost function params (True) or run with given params (False).
+         cat_zone_correspondence_path: Path to CSV with correspondence between the categories in the TLD and the model zones.
          furness_jacobian: Whether to Furness the Jacobian matrix in the gravity model. Find your nearest demand modelling expert for more information.
       delivery_parcel_stem:
          ...
    output_folder: Path to folder to save outputs to
    personal_matrix_inputs:
    # Optional only pass if you want to create a personal matrix
-      normits_pa_folder: Path to the full PA Normits matrices, should contain all non home
+      normits_pa_folder: Path to the full PA Normits car matrices, should contain all non home
          based and home based matrices
-      normits_to_msoa_lookup: Normits to MSOA(NTEM) lookup, this is NorMITs to model zone lookup as the
-         results are taken after normits results are converted back to NoHAM
-      normits_to_personal_factor: This is the factor that the personal data should have applied to
+      personal_zone_translation: Car matrix zoning to model zoning lookup.
+      personal_factor: This is the factor that the personal data should have applied to
          just include van data 4% is a starting point
       personal_purposes: Personal purpose types defined by Normits
 
@@ -173,7 +172,7 @@ The sheet named “Commute trips by main usage” should contain the annual
 number of commute van trips from the van survey by usage type. The
 following usage types should be included:
 
--  G: Carryings goods
+-  G: Carrying goods
 -  S: Service / trades
 -  C: Commuting
 -  T: Carrying people
@@ -288,7 +287,7 @@ headers “Parameter” and “Value” on the first row.
    | Weighting |           |                                                   |
    +-----------+-----------+---------------------------------------------------+
    | Depots    | Comma -   | List of all zones in areas that aren't covered by |
-   | Infill    | seperated | the warehouse dataset (e.g. Scotland), these      |
+   | Infill    | separated | the warehouse dataset (e.g. Scotland), these      |
    | Zones     | list      | zones will have depots allocated based on number  |
    |           |           | of households.                                    |
    +-----------+-----------+---------------------------------------------------+
@@ -452,11 +451,11 @@ calibration. The CSV should contain the following columns, with names:
 +--------------+--------+-----------------------------------------------+
 
 .. note::
-    If ``cat_zone_correspondance_path`` is not given, the CSV does not need to contain 
+    If ``cat_zone_correspondence_path`` is not given, the CSV does not need to contain 
     the area column and the tool will perform a single TLD calibration.
     Alternatively, TLDs can be calibrated to separately for different zones.
 
-Category-Zone correspondence (``cat_zone_correspondance_path``)
+Category-Zone correspondence (``cat_zone_correspondence_path``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The category-zone correspondence is an optional lookup which defines which model zones
@@ -528,7 +527,7 @@ two parameters (in a specific order):
 - Tanner: :math:`\alpha` (alpha), :math:`\beta` (beta)  
 
 If a single pair of parameters is provided these will be used for all TLDs, 
-alternatively separate parameters can be provided for each of the area IDs in :ref:`Category-Zone correspondence (cat_zone_correspondance_path)`.  
+alternatively separate parameters can be provided for each of the area IDs in :ref:`Category-Zone correspondence (cat_zone_correspondence_path)`.  
 
 Calibrate
 ~~~~~~~~~
@@ -554,7 +553,7 @@ Trip End Balancing regions (``tripend_balancing_regions_path``)
 
 Optional CSV containing zone groups which the van trip ends will be balanced at.
 The CSV should be in the same format as the
-:ref:`Category-Zone correspondence (cat_zone_correspondance_path)`.
+:ref:`Category-Zone correspondence (cat_zone_correspondence_path)`.
 
 If this isn't given then the trip ends will be balanced at all zones, i.e. the
 GB total trip ends.
@@ -573,13 +572,13 @@ This should contains the dwelling and employment floorspace changes in the model
 |                      | or     |                                            |
 |                      | int    |                                            |
 +----------------------+--------+--------------------------------------------+
-| additonal_dwellings  | Real   | The number of dwellings constructed in the | 
+| additional_dwellings  | Real   | The number of dwellings constructed in the | 
 |                      |        | model year within the zone.                |
 +----------------------+--------+--------------------------------------------+
 | demolished_dwellings | Real   | The number of dwellings constructed in the |
 |                      |        | model year within the zone.                |
 +----------------------+--------+--------------------------------------------+
-| buisness_floorspace  | Real   | The floorspace, in m^2, constructed in the |
+| business_floorspace  | Real   | The floorspace, in m^2, constructed in the |
 |                      |        | model year, within the zone.               |
 +----------------------+--------+--------------------------------------------+
 
@@ -675,7 +674,7 @@ The summary zone correspondence should be in `caf.space <https://cafspace.readth
 format, containing the following columns:
    - {from_zoning}_id - the model zone ID
    - {to_zoning}_id - the summary zone ID
-   - {from_zoning}_{to_zoning} - translation factor, best practice is to use aggragated zones 
+   - {from_zoning}_{to_zoning} - translation factor, best practice is to use aggregated zones 
       for the summary, so all of theses should be 1.
 
 Zoning

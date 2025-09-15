@@ -170,7 +170,7 @@ class LGVInputPaths(caf.toolkit.BaseConfig):
     lsoa_lookup_path: types.FilePath
     """Path to the LSOA to model zone correspondence CSV."""
     summary_zone_translation: ZoneTranslationDefinition
-    """Path to model zones to summary zones correspondance CSV"""
+    """Path to model zones to summary zones correspondence CSV"""
     cost_matrix_path: types.FilePath
     """Path to CSV containing cost matrix, should be square matrix with
     zone numbers as column names and indices."""
@@ -206,10 +206,9 @@ class PersonalArgs:
     normits_pa_folder: types.DirectoryPath
     """Path to the full PA Normits matrices, should contain all non home
     based and home based matrices"""
-    normits_to_msoa_lookup: types.DirectoryPath
-    """Normits to MSOA(NTEM) lookup, this is NorMITs to model zone lookup as the
-    results are taken after normits results are converted back to NoHAM"""
-    normits_to_personal_factor: float
+    personal_zone_translation: types.DirectoryPath
+    """Car matrix zoning to model zoning lookup."""
+    personal_factor: float
     """This is the factor that the personal data should have applied to
     just include van data 4% is a starting point"""
     personal_purposes: list[int] = pydantic.Field(
@@ -502,8 +501,8 @@ class GMInputs:
     cost_function_params: tuple[float, float] | dict[int | str, tuple[float, float]]
     """Starting (calibration)/run params for the cost function."""
     calibrate: bool
-    """Whether to calibrate the cost function paramas (True) or run with given params (False)."""
-    cat_zone_correspondance_path: Optional[types.FilePath] = None
+    """Whether to calibrate the cost function params (True) or run with given params (False)."""
+    cat_zone_correspondence_path: Optional[types.FilePath] = None
     """Correspondence between the categories in the TLD and the model zones."""
     furness_jacobian: bool = True
     """Whether to Furness the Jacobian matrix in the gravity model. Find your nearest demand modelling expert for more information."""
@@ -554,11 +553,11 @@ class GMInputs:
             )
 
         except KeyError as e:
-            if self.cat_zone_correspondance_path is None:
+            if self.cat_zone_correspondence_path is None:
                 multi_tld = False
             else:
                 raise ValueError(
-                    "If cat_zone_correspondance is passed, the area column in"
+                    "If cat_zone_correspondence is passed, the area column in"
                     " trip_length_distribution_path, must be defined"
                 ) from e
 
@@ -567,33 +566,33 @@ class GMInputs:
             # then we must have a dictionary
             if multi_tld and not self.calibrate:
                 raise KeyError(
-                    'if cat_zone_correspondance_path is passed when using "run" mode,'
+                    'if cat_zone_correspondence_path is passed when using "run" mode,'
                     " the cost_function_params must be passed as a dictionary with keys"
                     ' of the unique values in the "area" column in '
-                    "cat_zone_correspondance_path and trip_length_distribution_path"
+                    "cat_zone_correspondence_path and trip_length_distribution_path"
                 )
         else:
 
             assert isinstance(self.cost_function_params, dict)
 
-            correspondance_cats = set(
-                pd.read_csv(self.cat_zone_correspondance_path, usecols=["area"])
+            correspondence_cats = set(
+                pd.read_csv(self.cat_zone_correspondence_path, usecols=["area"])
                 .iloc[:, 0]
                 .unique()
             )
 
-            if tld_cats != correspondance_cats:
+            if tld_cats != correspondence_cats:
                 raise KeyError(
-                    'the "area" column in cat_zone_correspondance_path and '
+                    'the "area" column in cat_zone_correspondence_path and '
                     "trip_length_distribution_path must have the same unique values"
                 )
 
             if tld_cats != set(self.cost_function_params.keys()):
                 raise KeyError(
-                    'if cat_zone_correspondance_path is passed when using "run" mode,'
+                    'if cat_zone_correspondence_path is passed when using "run" mode,'
                     " the cost_function_params must be passed as a dictionary with keys"
                     ' of the unique values in the "area" column in '
-                    "cat_zone_correspondance_path and trip_length_distribution_path"
+                    "cat_zone_correspondence_path and trip_length_distribution_path"
                 )
 
         return self

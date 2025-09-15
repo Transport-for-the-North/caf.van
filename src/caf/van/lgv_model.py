@@ -205,7 +205,7 @@ class LGVMatrices:
     def __post_init__(self):
         """Reindex all trip end dataframes to contain all zones.
 
-        Sum invidual matrices together to get `combined` matrix.
+        Sum individual matrices together to get `combined` matrix.
         """
         dataframes = (
             "service",
@@ -532,7 +532,7 @@ def _gravity_model(
     # we have to do this because caf distribute does not look at index values, just order.
     trip_ends = trip_ends.sort_index()
 
-    # define zones to order everthing on from the ordered trip end index.
+    # define zones to order everything on from the ordered trip end index.
     if trip_ends.index.has_duplicates:
         raise KeyError("Trip ends have duplicated zones labels. Please fix this")
 
@@ -544,9 +544,9 @@ def _gravity_model(
     tld = pd.read_csv(tld_path)
 
     # Use cat zone lookup if it exists.
-    if gm_data.cat_zone_correspondance_path is not None:
+    if gm_data.cat_zone_correspondence_path is not None:
         cat_zone_correspondence = pd.read_csv(
-            gm_data.cat_zone_correspondance_path, usecols=["area", "zone_id"]
+            gm_data.cat_zone_correspondence_path, usecols=["area", "zone_id"]
         )
     else:
         # If not, create a correspondence for all zones to one area i.e. run a single TLD gravity model.
@@ -684,7 +684,7 @@ def run_gravity_model(
     output_folder.mkdir(exist_ok=True)
 
     cost_matrix = ctk.io.read_csv_matrix(input_paths.cost_matrix_path, format_="square")
-    # Pandas casts column names to str, even if theyre numerical (I can't find a parameter to change this)
+    # Pandas casts column names to str, even if they're numerical (I can't find a parameter to change this)
     # therefore we try to convert to ints
 
     for name, te in trip_ends.asdict().items():
@@ -832,14 +832,14 @@ def produce_personal_matrix(
     folder: Path,
     purposes: list[int],
     year: int,
-    normits_to_msoa_lookup: Path,
+    zone_translation: Path,
     factor: float,
     output_folder: Path,
 ) -> pd.DataFrame:
     """Produces LGV personal matrix by factoring NorMITs car other demand.
 
     Takes NoRMITS car other matrices for home based and non home bound,
-    makes a dictionary of these values, concats them together, groups by origin,
+    makes a dictionary of these values, concatenates them together, groups by origin,
     stacks the matrices to just 3 columns,
     then converts into NTEM zoning system using the lookup,
     finally a factor is applied to the output to account for just van personal trips.
@@ -869,7 +869,7 @@ def produce_personal_matrix(
     """
     # creating an empty dataframe
     matrix_list: list[pd.DataFrame] = []
-    # reading in and appending home based daftaframes
+    # reading in and appending home based dataframes
     for purp in NTEM_PURPOSES["hb"]:
         if purp not in purposes:
             continue
@@ -896,7 +896,7 @@ def produce_personal_matrix(
                 raise ValueError(f"index and columns aren't equal for '{path.name}'")
             matrix_list.append(df)
 
-    # concatting all matrices from list
+    # concatenating all matrices from list
     matrix = pd.concat(matrix_list, axis=0).groupby(level=0).sum()
     # stacking matrices to long format and renaming columns
     matrix = matrix.stack().reset_index()
@@ -906,7 +906,7 @@ def produce_personal_matrix(
 
     # calling lookup
     # TODO(kf) Add column names to stop errors coming up
-    lookup = Rezone.read(normits_to_msoa_lookup, None)
+    lookup = Rezone.read(zone_translation, None)
     # rezoning matrix NoHAM to NTEM
     matrix = Rezone.rezone_od(
         matrix,
@@ -977,7 +977,7 @@ def produce_annual_matrices(
     )
 
     try:
-        if input_paths.personal_matrix_inputs.normits_pa_folder is None:
+        if input_paths.personal_matrix_inputs is None:
             personal_matrix = None
         else:
             LOG.info("Calculating personal segment matrices from NorMITs car demand")
@@ -985,8 +985,8 @@ def produce_annual_matrices(
                 input_paths.personal_matrix_inputs.normits_pa_folder,
                 input_paths.personal_matrix_inputs.personal_purposes,
                 year=year,
-                normits_to_msoa_lookup=input_paths.personal_matrix_inputs.normits_to_msoa_lookup,
-                factor=input_paths.personal_matrix_inputs.normits_to_personal_factor,
+                zone_translation=input_paths.personal_matrix_inputs.personal_zone_translation,
+                factor=input_paths.personal_matrix_inputs.personal_factor,
                 output_folder=output_folder,
             )
             LOG.info("Finished personal segment matrices")
@@ -1148,7 +1148,7 @@ def calculate_vehicle_kms(
                 (matrix.loc[index, cols] * distances.loc[index, cols]).values
             )
     df = pd.DataFrame(
-        {("Trips", "Value"): trips, ("Vehicle Kilometers", "Value"): vehicle_kms}
+        {("Trips", "Value"): trips, ("Vehicle Kilometres", "Value"): vehicle_kms}
     )
     if internals:
         for c in df.columns.get_level_values(0):
@@ -1206,7 +1206,7 @@ def factor_1d(matrix: np.ndarray, total: np.ndarray, axis: int) -> np.ndarray:
         # Factoring column totals so multiplying factor by each row
         new_matrix = matrix * factor
     else:
-        # Factoring row totals so muliplying factor by each column
+        # Factoring row totals so multiplying factor by each column
         new_matrix = matrix * factor.reshape((len(factor), 1))
     return new_matrix
 
