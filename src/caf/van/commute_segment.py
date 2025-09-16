@@ -241,7 +241,12 @@ class CommuteTripEnds:
         construction = ctk.io.read_csv(
             self.paths.constructions_path,
             index_col="zone",
-            usecols=["demolished_dwellings", "additional_dwellings", "business_floorspace"],
+            usecols=[
+                "zone",
+                "demolished_dwellings",
+                "additional_dwellings",
+                "business_floorspace",
+            ],
         )
 
         if (construction["demolished_dwellings"] < 0).any():

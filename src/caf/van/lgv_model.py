@@ -550,6 +550,10 @@ def _gravity_model(
         )
     else:
         # If not, create a correspondence for all zones to one area i.e. run a single TLD gravity model.
+        if "area" in tld.columns:
+            raise KeyError(
+                "'area' column in tlds but cat_zone_correspondence has not been given."
+            )
         cat_zone_correspondence = pd.DataFrame({"zone_id": zones})
         cat_zone_correspondence["area"] = DUMMY_CAT
         tld["area"] = DUMMY_CAT
