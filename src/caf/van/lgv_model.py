@@ -753,7 +753,7 @@ def run_gravity_model(
                 translation_factors_col=f"{input_paths.summary_zone_translation.from_zoning}_to_{input_paths.summary_zone_translation.to_zoning}",
             )
             LOG.info("writing %s summary to excel", name)
-            summary.write_to_excel(writer, output_matrix=True)
+            summary.write_to_excel(writer, output_sector_matrix=True)
 
             for cat, gm_cat_results in calib_gm.info.items():
                 if calibrate:
