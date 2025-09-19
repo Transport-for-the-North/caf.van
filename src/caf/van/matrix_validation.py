@@ -1,5 +1,5 @@
-""" 
-Contains functions that perform checks and provides high level statistics. 
+"""
+Contains functions that perform checks and provide high level statistics.
 """
 
 from __future__ import annotations
@@ -143,11 +143,13 @@ class MatrixReport:
 
     @property
     def row_sum(self) -> pd.DataFrame:
-        return self.matrix.sum(axis=0)
+        """The row sums of the matrix."""
+        return self.matrix.sum(axis=1)
 
     @property
     def column_sum(self) -> pd.DataFrame:
-        return self.matrix.sum(axis=1)
+        """The column sums of the matrix."""
+        return self.matrix.sum(axis=0)
 
     @classmethod
     def from_file(
@@ -158,12 +160,25 @@ class MatrixReport:
         translation_to_col: Optional[str] = None,
         translation_factors_col: Optional[str] = None,
     ) -> MatrixReport:
-        """Produce matrix report by loading matrix from CSV file.
+        """Create an instance of MatrixReport from file paths.
 
-        See Also
-        --------
-        MatrixReport: for information on expected format of matrix and
-            other parameters.
+        Parameters
+        ----------
+        path : Path
+            Path to the matrix csv.
+        translation_path : Path, optional
+            Path to correspondence between matrix zoning and summary zoning.
+        translation_from_col : str, optional
+            The column in the translation matrix with zoning to translate from.
+        translation_to_col : str, optional
+            The column in the translation matrix with zoning to translate to.
+        translation_factors_col : str, optional
+            The column in the translation matrix to use as factors.
+
+        Returns
+        -------
+        MatrixReport
+            Instance of MatrixReport created from the file paths.
         """
         matrix = pd.read_csv(path, index_col=0)
 
@@ -204,7 +219,11 @@ def matrix_describe(matrix: pd.DataFrame, almost_zero: Optional[float] = None) -
     """
     if almost_zero is None:
         almost_zero = 1 / matrix.size
+
     info = matrix.stack().describe(percentiles=[0.05, 0.25, 0.5, 0.75, 0.95])
+
+    info["columns"] = len(matrix.columns)
+    info["rows"] = len(matrix.index)
     info["sum"] = matrix.sum().sum()
     info["zeros"] = (matrix == 0).sum().sum()
     info["almost_zeros"] = (matrix < almost_zero).sum().sum()

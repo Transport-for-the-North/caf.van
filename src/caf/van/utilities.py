@@ -4,10 +4,10 @@ Set of utilities for use in the freight tool
 """
 ##### IMPORTS #####
 
+from __future__ import annotations
+
 # Built-Ins
 import json
-import logging
-import os
 import re
 from itertools import islice
 from pathlib import Path
@@ -156,7 +156,7 @@ class Parameters:
         return
 
     @staticmethod
-    def checkParams(parameters, expected, name):
+    def check_params(parameters, expected, name):
         """
         Checks if parameters contain expected.
 

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "caf.van"
-dynamic = ["version"]
+dynamic = ["version", "dependencies"]
 description = "Transport demand model to produce van travel matrices."
 readme = "README.md"
 license = { "file" = "LICENSE" }
@@ -16,7 +16,8 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
 ]
-dependencies = []
+[tool.setuptools.dynamic]
+dependencies = { "file" = "requirements.txt" }
 
 [project.optional-dependencies]
 lint = [
@@ -59,6 +60,7 @@ disable = [
     "too-many-lines",
     "use-dict-literal",
     "use-list-literal",
+    "wrong-import-order" # doesn't play well with isort/caf packages
 ]
 
 # Pylint settings

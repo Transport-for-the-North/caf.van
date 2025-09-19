@@ -1,22 +1,22 @@
 """
-    Module to calculate the productions and attractions for the LGV
-    commuting segment in the model zone system.
+Module to calculate the productions and attractions for the LGV
+commuting segment in the model zone system.
 """
 
-##### IMPORTS #####
+from __future__ import annotations
 
 # Built-Ins
 import logging
 import pathlib
 import re
 from itertools import chain
-from typing import Optional, Union
+from typing import Callable, Optional, Union
 
 # Third Party
+import caf.toolkit as ctk
 import numpy as np
 import pandas as pd
 import pydantic
-from pydantic import fields
 
 # Local Imports
 from caf.van import errors, lgv_inputs, utilities
@@ -57,13 +57,13 @@ QS606_HEADER_FOOTER = {"EW": (8, 5), "SC": (7, 5)}
 class WarehouseParameters(pydantic.BaseModel):
     """Parameters for warehouse data used in commute segment."""
 
-    medium: Optional[float] = fields.Field(alias="Weighting - Medium")
-    high: Optional[float] = fields.Field(alias="Weighting - High")
-    low: Optional[float] = fields.Field(alias="Weighting - Low")
-    zone_infill: list[Union[int, str]] = fields.Field(
+    medium: Optional[float] = pydantic.Field(alias="Weighting - Medium")
+    high: Optional[float] = pydantic.Field(alias="Weighting - High")
+    low: Optional[float] = pydantic.Field(alias="Weighting - Low")
+    zone_infill: list[Union[int, str]] = pydantic.Field(
         alias="Model Zone Infill", default_factory=list
     )
-    infill_method: Optional[lgv_inputs.InfillMethod] = fields.Field(
+    infill_method: Optional[lgv_inputs.InfillMethod] = pydantic.Field(
         None, alias="Zone Infill Method"
     )
 
@@ -96,11 +96,11 @@ class CommuteTripEnds:
         "Delivery Segment Parameters": {"Parameter": str, "Value": str},
     }
 
-    BRES_AGGREGATION = {
+    EMPLOYMENT_AGGREGATION = {
         "Non-Construction": list(
             chain(
-                lgv_inputs.letters_range(end="E"),
-                lgv_inputs.letters_range(start="G", end="S"),
+                range(1, 6),  # A - E (1-5)
+                range(7, 20),  # G - S (7-19)
             )
         )
     }
@@ -114,15 +114,14 @@ class CommuteTripEnds:
         self.paths = input_paths
         self.model_zones = model_zones
 
-        self.params = {}
+        self.params: dict[str, float] = {}
         self.warehouse_parameters: WarehouseParameters | None = None
-        self.zone_lookups = {}
+        self.zone_lookups: dict[str, pd.DataFrame] = {}
         self.commute_trips_main_usage = {}
         self.commute_trips_land_use = {}
         self.trip_productions = None
-        self.TEMPro_data = {}
-        self.attractor_factors = {}
-        self.ATTRACTION_FUNCTIONS = {
+        self.attractor_factors: dict[str, pd.DataFrame] = {}
+        self.attraction_functions: dict[str, Callable] = {  # pylint: disable = invalid-name
             "Construction": self._calc_construction_factors,
             "Residential": self._calc_residential_factors,
             "Employment": self._calc_employment_factors,
@@ -130,8 +129,8 @@ class CommuteTripEnds:
             "Drivers": self._estimate_driver_attractions,
         }
         self.trip_attractions = None
-        self.trip_ends = {}
-        self.infill_zones = []
+        self.trip_ends: dict[str, pd.DataFrame] = {}
+        self.infill_zones: list[int | str] = []
 
     @property
     def inputs_summary(self) -> pd.DataFrame:
@@ -150,7 +149,7 @@ class CommuteTripEnds:
             self.paths.parameters_path, sheets=self.COMMUTING_INPUTS_SHEET_HEADERS
         )
 
-        # TODO Create a pydantic dataclass to store / validate the parameters
+        # TODO(MB) Create a pydantic dataclass to store / validate the parameters
         self.params = utilities.to_dict(
             commute_tables["Parameters"], "Parameter", ("Value", float)
         )
@@ -190,6 +189,8 @@ class CommuteTripEnds:
 
     def _read_zone_lookups(self):
         for key, value in self.paths.dict().items():
+            if value is None:
+                continue
             key = key.lower()
             if key.endswith("lookup") or key.endswith("lookup_path"):
                 name = re.sub(r"[\s_]+|path", " ", key).strip()
@@ -221,182 +222,72 @@ class CommuteTripEnds:
 
         # Rezone to model zone system
         cols = qs606uk.columns
-        return Rezone.rezoneOD(
+        return Rezone.rezone_od(
             qs606uk,
             self.zone_lookups["lsoa lookup"],
-            dfCols=(cols[0],),
-            rezoneCols=cols[1:],
-        )
-
-    def _read_dwellings_data(self):
-        """Read in, calculate and rezone additional dwellings data.
-
-        Returns
-        -------
-        pd.DataFrame
-            Additional dwellings data in model zone system.
-        """
-
-        # Read in additional dwellings data for England
-        if not self.params:
-            self._read_commute_tables()
-
-        e_dwellings, _ = read_english_dwellings(
-            self.paths.e_dwellings_path, self.params["Model Year"]
-        )
-
-        # Calculate total additional construction (net additions + demolitions)
-        e_dwellings["additional dwellings"] = (
-            e_dwellings["Net Additions"] + 2 * e_dwellings["Demolitions"]
-        )
-
-        # Calculate ratio of additional construction over net additional dwellings
-        additional_net_ratio = (
-            e_dwellings["additional dwellings"].sum() / e_dwellings["Net Additions"].sum()
-        )
-
-        sc_w_dwellings, _ = read_sc_w_dwellings(
-            self.paths.sc_w_dwellings_path, self.params["Model Year"]
-        )
-
-        # Calculate additional construction
-        sc_w_dwellings.loc[:, "additional dwellings"] = (
-            sc_w_dwellings.loc[:, str(self.params["Model Year"])]
-            - sc_w_dwellings.loc[:, str(self.params["Model Year"] - 1)]
-        ) * additional_net_ratio
-
-        # Concatenate the dwellings data
-        cols = ["zone", "additional dwellings"]
-        dwellings = pd.concat([e_dwellings[cols], sc_w_dwellings[cols]], axis=0)
-
-        # Convert to floorspace
-        dwellings["floorspace"] = (
-            dwellings["additional dwellings"] * self.params["Average new house size"]
-        )
-
-        dwellings.drop(axis=1, labels=["additional dwellings"], inplace=True)
-
-        # rezone dwellings data from LAD to model zone system
-        cols = dwellings.columns
-
-        # Assign to floorspace dictionary
-        return Rezone.rezoneOD(
-            dwellings,
-            self.zone_lookups["lad lookup"],
-            dfCols=(cols[0],),
-            rezoneCols=cols[1:],
-        )
-
-    def _read_ndr(self):
-        """Reads in NDR Business floorspace data, calculates additional
-        floorspace and rezoned to model zone system.
-
-        Returns
-        -------
-        pd.DataFrame
-            Dataframe with NDR additional floorspace data for England and Wales
-        """
-
-        # Check input parameters have been read in
-        if not self.params:
-            self._read_commute_tables()
-
-        ndr, _ = read_ndr_floorspace(self.paths.ndr_floorspace_path, self.params["Model Year"])
-
-        # distinguish columns by year
-        previous_yr = [col for col in ndr.columns if str(self.params["Model Year"] - 1) in col]
-        current_yr = [col for col in ndr.columns if str(self.params["Model Year"]) in col]
-
-        # sort lists alphabetically to ensure they are in the same category order
-        previous_yr.sort()
-        current_yr.sort()
-
-        # Calculate floorspace differences
-        for i, col in enumerate(current_yr):
-            ndr.loc[:, f"{col.split('_')[-1]}"] = (
-                ndr.loc[:, col] - ndr.loc[:, previous_yr[i]]
-            ).abs()
-
-        # Sum all differences
-        ndr["floorspace"] = ndr[BUSINESS_CATEGORIES].sum(axis=1)
-
-        # only include relevant columns
-        ndr = ndr[["zone", "floorspace"]]
-
-        # rezone to model zone system
-        return Rezone.rezoneOD(
-            ndr,
-            self.zone_lookups["lad lookup"],
-            dfCols=(ndr.columns[0],),
-            rezoneCols=ndr.columns[1:],
-        )
-
-    def _read_household_projections(self):
-        """Reads in household projections data."""
-        households = utilities.read_csv(
-            self.paths.household_paths.path,
-            name="Household projections",
-            columns=self.HH_PROJECTIONS_HEADER,
-        ).rename(columns=self.HH_RENAME)
-
-        # Authority and County found in TEMPro outputs as well as MSOAs
-        households = households.loc[~households["zone"].isin(["Authority", "County"]), :]
-
-        # get sum of jobs
-        self.TEMPro_data["EW jobs"] = households[
-            households.zone.str.startswith("E") | households.zone.str.startswith("W")
-        ].jobs.sum()
-
-        # get Scottish jobs data
-        scottish_jobs = households[["zone", "jobs"]][households.zone.str.startswith("S")]
-
-        # rezone to model zone system
-        if not self.zone_lookups:
-            self._read_zone_lookups()
-
-        self.TEMPro_data["S jobs"] = Rezone.rezoneOD(
-            scottish_jobs,
-            self.zone_lookups["msoa lookup"],
-            dfCols=(scottish_jobs.columns[0],),
-            rezoneCols=scottish_jobs.columns[1:],
-        )
-        # Job data is not required for households
-        households.drop(axis=1, labels=["jobs"], inplace=True)
-        self.TEMPro_data["households"] = Rezone.rezoneOD(
-            households,
-            self.zone_lookups["msoa lookup"],
-            dfCols=(households.columns[0],),
-            rezoneCols=households.columns[1:],
+            df_cols=(cols[0],),
+            rezone_cols=cols[1:],
         )
 
     def _calc_construction_factors(self):
         """Calculates the total change in sqm in residential and business
         floorspace and uses it to calculate construction attractor factors
+
+        We calculate total builds as net additional dwellings +
+        2*demolitions as for net dwellings to be >= 0 each demolished
+        building needs to be replaces (only true if additional dwellings >=0)
         """
         # get residential floorspace
-        residential_floorspace = self._read_dwellings_data()
-
-        # get business floorspace for England and Wales
-        ndr_floorspace = self._read_ndr()
-
-        # Estimate Scottish business floorspace from job data
-        if not self.TEMPro_data:
-            self._read_household_projections()
-
-        scottish_floorspace = self.TEMPro_data["S jobs"].copy()
-        scottish_floorspace.loc[:, "floorspace"] = (
-            scottish_floorspace["jobs"]
-            * ndr_floorspace.floorspace.sum()
-            / self.TEMPro_data["EW jobs"]
+        construction = ctk.io.read_csv(
+            self.paths.constructions_path,
+            index_col="zone",
+            usecols=[
+                "zone",
+                "demolished_dwellings",
+                "additional_dwellings",
+                "business_floorspace",
+            ],
         )
-        scottish_floorspace = scottish_floorspace[["zone", "floorspace"]]
 
-        # combine all floorspace differences
+        if (construction["demolished_dwellings"] < 0).any():
+            raise ValueError(
+                "Demolitions smaller than 0 were found in the construction data. "
+                "these are not allowed!"
+            )
+
+        # we want to raise an error if
+        # (additonal dwellings < 0) AND (|additonal dwelling| > demolished dwellings)
+        # which is equivelent below. We do this as otherwise we will end up with negative builds,
+        # which makes no sense
+        if (
+            (-construction["additional_dwellings"]) > construction["demolished_dwellings"]
+        ).any():
+            raise ValueError(
+                "Zones with negative additional dwellings must have enough demolitions"
+                " to account for the net drop in dwellings"
+            )
+
+        construction["total_resi_builds"] = construction["additional_dwellings"] + (
+            2 * construction["demolished_dwellings"]
+        )
+
+        # we should have caught all possibilities that would happen above
+        # BUT I'm prety stupid - so this is here just in case
+        if (construction["total_resi_builds"] < 0).any():
+            raise ValueError(
+                "total residential build has atleast one negative value. Please review"
+                " constructions inputs total residential build = additional "
+                "dwellings[this is net value] + 2 x demolished dwellings"
+            )
+
+        construction["residential_floorspace"] = (
+            construction["total_resi_builds"] * self.params["Average new house size"]
+        )
+
         floorspace = (
-            pd.concat([residential_floorspace, ndr_floorspace, scottish_floorspace])
-            .groupby("zone")
-            .sum()
-        )
+            construction["business_floorspace"] + construction["residential_floorspace"]
+        ).to_frame(name="floorspace")
+
         self.attractor_factors["Construction"] = (floorspace / floorspace.sum()).rename(
             columns={"floorspace": "factor"}
         )
@@ -405,31 +296,33 @@ class CommuteTripEnds:
         """Calculates residential attractor factors from TEMPro households
         data.
         """
-        if not self.TEMPro_data:
-            self._read_household_projections()
-        households = self.TEMPro_data["households"]
-        households.index = households["zone"]
-        households["factor"] = households["households"] / households["households"].sum()
+
+        households = lgv_inputs.household_projections(
+            self.paths.household_paths.occupied,
+            self.paths.household_paths.zc_path,
+            self.paths.household_paths.unoccupied,
+        )
+        households["factor"] = households["Households"] / households["Households"].sum()
         self.attractor_factors["Residential"] = households[["factor"]]
 
     def _calc_employment_factors(self):
-        """Calculates employment attractor factors from BRES data"""
+        """Calculates employment attractor factors from employment data"""
         if not self.zone_lookups:
             self._read_zone_lookups()
-        bres = lgv_inputs.filtered_bres(
-            self.paths.bres_path, self.zone_lookups["lsoa lookup"], self.BRES_AGGREGATION
-        ).rename(columns={"Zone": "zone"})
-        bres.index = bres["zone"]
-        bres["factor"] = (
-            bres[self.BRES_AGGREGATION.keys()] / bres[self.BRES_AGGREGATION.keys()].sum()
+        employment = lgv_inputs.filtered_employment(
+            self.paths.employment_paths, self.EMPLOYMENT_AGGREGATION
         )
-        self.attractor_factors["Employment"] = bres[["factor"]]
+        employment["factor"] = (
+            employment[self.EMPLOYMENT_AGGREGATION.keys()]
+            / employment[self.EMPLOYMENT_AGGREGATION.keys()].sum()
+        )
+        self.attractor_factors["Employment"] = employment[["factor"]]
 
     def estimate_productions(self):
         """Reads in files and estimates trip productions by zone and employment
         segment"""
         qs606uk = self._read_qs606()
-        # TODO review calc to check for 1/3
+        # TODO(MB) review calc to check for 1/3
 
         # Calculate total occupation numbers for Skilled trades and Drivers
         totals = qs606uk.drop(axis=1, labels=["zone", "total"]).sum()
@@ -469,7 +362,7 @@ class CommuteTripEnds:
         ]
         if factors_missing:
             for category in factors_missing:
-                self.ATTRACTION_FUNCTIONS[category]()
+                self.attraction_functions[category]()
 
         # calculate skilled attractions, using just residential and construction
         # because employment is used for drivers
@@ -555,7 +448,7 @@ class CommuteTripEnds:
 
         trip_attractions = {}
         for category in self.commute_trips_main_usage:
-            trip_attractions[category] = self.ATTRACTION_FUNCTIONS[category]()
+            trip_attractions[category] = self.attraction_functions[category]()
 
         # align matrices
         (
@@ -614,7 +507,7 @@ class CommuteTripEnds:
         return self.trip_attractions
 
     @property
-    def trips(self) -> pd.DataFrame:
+    def trips(self) -> dict[str, pd.DataFrame]:
         """Dict[pd.DataFrame] : dictionary with keys Skilled trades and
         Drivers, with values being the trip dataframes, each with productions
         and attractions as columns and zones as indices."""
@@ -624,86 +517,11 @@ class CommuteTripEnds:
 
 
 ##### FUNCTIONS #####
-def read_ndr_floorspace(
-    path: pathlib.Path,
-    model_year: int,
-    rename_columns: dict[str, str] = BUSINESS_FLOORSPACE_RENAME,
-) -> tuple[pd.DataFrame, list[str]]:
-    # TODO Write docstring
-    zone_col = "AREA_CODE"
-    columns = BUSINESS_FLOORSPACE_HEADER.copy()
-
-    data_columns = {}
-    for column_start in [
-        f"Floorspace_{model_year-1}-{str(model_year)[2:]}_",
-        f"Floorspace_{model_year}-{str(model_year + 1)[2:]}_",
-    ]:
-        for category in BUSINESS_CATEGORIES:
-            data_columns[column_start + category] = float
-    columns.update(data_columns)
-
-    ndr = utilities.read_csv(path, columns=columns).rename(columns=rename_columns)
-
-    if zone_col in rename_columns:
-        zone_col = rename_columns[zone_col]
-
-    # Remove rows that are not LAD
-    conditional = ndr[zone_col].str.startswith(BUSINESS_FLOORSPACE_REMOVE_ROWS[0])
-    for row in BUSINESS_FLOORSPACE_REMOVE_ROWS[1:]:
-        conditional = conditional | ndr[zone_col].str.startswith(row)
-    ndr = ndr[~conditional]
-
-    return ndr, list(data_columns.keys())
-
-
-def read_sc_w_dwellings(path: pathlib.Path, model_year: int) -> tuple[pd.DataFrame, list[str]]:
-    # TODO Write docstring
-    data_columns = [str(model_year - i) for i in (0, 1)]
-    sc_w_header = {"zone": str, **dict.fromkeys(data_columns, int)}
-    sc_w_dwellings = utilities.read_csv(path, columns=sc_w_header)
-    return sc_w_dwellings, data_columns
-
-
-def read_english_dwellings(
-    path: pathlib.Path,
-    model_year: int,
-    rename_columns: dict[str, str] = E_DWELLINGS_NEW_COLS,
-    drop_lad_name: bool = True,
-) -> tuple[pd.DataFrame, list[str]]:
-    sheet = f"{model_year}-{model_year - 2000 + 1}"
-    dwellings = (
-        utilities.read_excel(
-            path,
-            columns=E_DWELLINGS_HEADER,
-            skiprows=3,
-            sheet_name=sheet,
-        )
-        .dropna(axis=1, how="all")
-        .dropna(axis=0, how="any")
-        .rename(columns=rename_columns)
-    )
-
-    if drop_lad_name:
-        dwellings.drop(axis=1, labels=["Lower and Single Tier Authority Data"], inplace=True)
-
-    data_columns = ["Demolitions", "Net Additions"]
-    for col in data_columns:
-        try:
-            dwellings.loc[:, col] = dwellings[col].astype(float)
-        except ValueError as err:
-            match = re.match(r"could not convert \w+ to float", str(err), re.IGNORECASE)
-            if match:
-                raise errors.NonNumericDataError(
-                    name=f"{path.stem} column", non_numeric=str(col)
-                )
-            raise
-
-    return dwellings, data_columns
-
-
 def read_qs606(
     ew_path: pathlib.Path, sc_path: pathlib.Path, rename: bool = True
 ) -> dict[str, pd.DataFrame]:
+    """ "Read occupation data."""
+
     def rename_cols(name: str) -> str:
         """Renames the occupation data columns"""
         match = re.match("^(5[1-3])|(82)[1]?", name)
