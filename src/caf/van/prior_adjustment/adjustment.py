@@ -1,4 +1,5 @@
 # Built-Ins
+import argparse
 import dataclasses
 import logging
 import pathlib
@@ -342,9 +343,23 @@ def create_network_to_sector_translation(translation: pd.DataFrame) -> pd.DataFr
     """Create network to sector translation."""
     # Create a translation matrix from the network to the sector
     network_to_sector = (
-        translation.groupby(["to_network", "to_sector"])["factors"].first().reset_index()
+        translation.groupby(["to_network", "to_sector"])["factors"].max().reset_index()
     )
+    if network_to_sector["to_network"].duplicated().any():
+        warnings.warn(
+            "dups in network to sector lookup. known issue for NoHAM -> NoHAM sector, hard coded,"
+            " janky fix implemented but sort this out."
+        )
+        network_to_sector = network_to_sector.drop(
+            index=network_to_sector[
+                (network_to_sector["to_network"] == 130)
+                & (network_to_sector["to_sector"] == "EWM")
+            ].index
+        )
+    if network_to_sector["to_network"].duplicated().any():
+        raise ValueError("Duplicate zones found in network, network and sector zoning must be nested.")
     network_to_sector = network_to_sector.rename(columns={"to_network": "network"})
+    network_to_sector["factors"] = 1
     return network_to_sector
 
 
@@ -369,6 +384,9 @@ def calculate_trip_end_adjustment_factors(
     # Calculate adjustment factors
     row_adjustment_factors = row_post_totals / row_prior_totals
     column_adjustment_factors = column_post_totals / column_prior_totals
+
+    row_adjustment_factors = row_adjustment_factors.fillna(1)
+    column_adjustment_factors = column_adjustment_factors.fillna(1)
 
     # Create a dataframe with the adjustment factors
     sector_adjustment_factors = pd.DataFrame(
@@ -841,9 +859,14 @@ def process_annual_matrices(
 
 if __name__ == "__main__":
 
-    config = PriorAdjustmentInput.load_yaml("prior_adjustment.yml")
+    parser = argparse.ArgumentParser(
+            prog="Caf.Van prior adjustment",
+            )
+    parser.add_argument("config_path", default = "prior_adjustment.yml" )
+    args = parser.parse_args()
+    config = PriorAdjustmentInput.load_yaml(args.config_path)
     with ctk.LogHelper(
-        "caf", ctk.ToolDetails(__package__, __version__), log_file=config.log_file
+        "caf.van.adjustment", ctk.ToolDetails("prior_adjustment", "0.0.0"), log_file=config.log_file
     ) as log:
         # accessing protected attribute is bad, but we have to so we can set the logging level
         tqdm_log.logging_redirect_tqdm(
