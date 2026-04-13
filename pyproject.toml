@@ -35,7 +35,7 @@ test = [
     "pytest-xdist>=3.3.1",
 ]
 
-edit_install = ["versioningit>=2.2.0"]
+edit_install = ["versioningit>=3.3.0"]
 
 [project.urls]
 "Bug Tracker" = "https://github.com/transport-for-the-north/caf.van/issues"
