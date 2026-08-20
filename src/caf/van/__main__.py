@@ -1,6 +1,4 @@
-"""
-Main module for running the LGV model.
-"""
+"""Main module for running the LGV model."""
 
 ##### IMPORTS #####
 
@@ -14,7 +12,7 @@ from caf.van import lgv_inputs, lgv_model
 ##### MAIN #####
 
 
-def main():
+def main() -> None:
     """Main function for the package."""
     # Check if commandline arguments are given
     parser = lgv_model.lgv_arg_parser()

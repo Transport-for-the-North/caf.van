@@ -171,9 +171,7 @@ def _load_oa_lookup(path: pathlib.Path) -> pd.DataFrame:
 def _normalise_names(data: pd.Series) -> pd.Series:
     data = data.str.lower().str.strip()
     data = data.str.replace(r"[!\"#$%&'\()*+,-./:;<=>?@\][\\^_`{|}~]", "", regex=True)
-    data = data.str.replace(r"\s+", " ", regex=True)
-
-    return data
+    return data.str.replace(r"\s+", " ", regex=True)
 
 
 def _normalise_lad_names(data: pd.Series) -> pd.Series:
@@ -302,7 +300,7 @@ def grow_occupation_data(
     qs_data["EW"] = base_data["EW"].merge(
         growth.lsoa[factor_col],
         how="left",
-        left_on=list(commute_segment.QS606_BASE_HEADERS.keys())[0],
+        left_on=next(iter(commute_segment.QS606_BASE_HEADERS.keys())),
         right_index=True,
         validate="1:1",
         indicator=True,
@@ -526,7 +524,7 @@ def _calculate_veh_km_growth_factor(
     )
     index_cols = ["Region", "Area type", "Vehicle Type"]
     rtf_veh_kms.loc[:, index_cols] = rtf_veh_kms[index_cols].fillna(method="ffill")
-    rtf_veh_kms.set_index(index_cols, inplace=True)
+    rtf_veh_kms = rtf_veh_kms.set_index(index_cols)
     rtf_veh_kms.columns = pd.to_numeric(rtf_veh_kms.columns, downcast="unsigned")
 
     data: pd.Series = rtf_veh_kms.loc["England", "All", "LGV"]

@@ -1,6 +1,4 @@
-"""
-Module to calculate the delivery trips for the LGV model.
-"""
+"""Module to calculate the delivery trips for the LGV model."""
 
 from __future__ import annotations
 
@@ -112,7 +110,7 @@ class DeliveryTripEnds:
         parameters_path: Path,
         year: int,
         model_zones: pd.Series,
-    ):
+    ) -> None:
         """Initialise class by checking inputs files exist and are expected type."""
         self._check_paths(warehouse_paths, employment_paths, household_paths, parameters_path)
         try:
@@ -142,7 +140,7 @@ class DeliveryTripEnds:
         employment_paths: lgv_inputs.EmploymentPaths,
         household_paths: lgv_inputs.DwellingPaths,
         parameters_path: Path,
-    ):
+    ) -> None:
         """Checks the input files exist and are the expected type."""
         plain_text_extensions = (".csv", ".txt")
         dvec_extensions = (".dvec", ".hdf", ".h5")
@@ -242,7 +240,7 @@ class DeliveryTripEnds:
         depots = pd.concat([depots.drop(new_depots.index, errors="ignore"), new_depots])
         return depots.fillna(0)
 
-    def read(self):
+    def read(self) -> None:
         """Read the input data and perform any necessary conversions.
 
         See Also
@@ -326,7 +324,7 @@ class DeliveryTripEnds:
                 )
             trip_data = pd.concat([self.depots, self.households, self.employment], axis=1)
             self._trip_proportions = trip_data / trip_data.sum(axis=0)
-            self._trip_proportions.fillna(0, inplace=True)
+            self._trip_proportions = self._trip_proportions.fillna(0)
         return self._trip_proportions.copy()
 
     @property
@@ -371,7 +369,7 @@ class DeliveryTripEnds:
                     trip_ends[-1] = trip_ends[-1].squeeze()
                 trip_ends[-1].name = name
             self._parcel_stem_trip_ends = pd.concat(trip_ends, axis=1)
-            self._parcel_stem_trip_ends.fillna(0, inplace=True)
+            self._parcel_stem_trip_ends = self._parcel_stem_trip_ends.fillna(0)
 
             self._parcel_stem_trip_ends = self._parcel_stem_trip_ends.reindex(
                 index=pd.Index(self.model_zones), fill_value=0

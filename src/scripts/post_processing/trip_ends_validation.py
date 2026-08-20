@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import contextlib
+
 # Built-Ins
 import glob
 import pathlib
@@ -43,16 +45,12 @@ def create_plot(
 
     geo_data = gpd.GeoDataFrame(geo_data_df)
 
-    bounds = geo_data.total_bounds
-
-    try:
+    with contextlib.suppress(ValueError):
         data_cols.remove(data_id_col)
-    except ValueError:
-        pass
 
     with PdfPages(path) as pdf:
         for col in data_cols:
-            fig, ax = plt.subplots(figsize=(6, 9), layout="tight")
+            _fig, ax = plt.subplots(figsize=(6, 9), layout="tight")
             ax.set_title(col)
             ax.get_xaxis().set_visible(False)
             ax.get_yaxis().set_visible(False)

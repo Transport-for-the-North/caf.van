@@ -59,7 +59,7 @@ class ServiceTripEnds:
         scale_factor: float,
         model_zones: pd.Series,
         zone_name: str,
-    ):
+    ) -> None:
         """Initialise class by checking input files exist and are expected type."""
         # Check all given parameters
         self._check_paths(household_paths, employment_paths, service_trips)
@@ -87,7 +87,7 @@ class ServiceTripEnds:
         household_paths: lgv_inputs.DwellingPaths,
         employment_paths: lgv_inputs.EmploymentPaths,
         service_trips: Path,
-    ):
+    ) -> None:
         """Checks the input files exist and are the expected type."""
         plain_txt_extensions = (".csv", ".txt")
         dvec_extensions = (".dvec", ".hdf", ".h5")
@@ -130,7 +130,7 @@ class ServiceTripEnds:
             columns=["Value"],
         )
 
-    def read(self):
+    def read(self) -> None:
         """Read the input data and perform any necessary conversions.
 
         Raises
@@ -196,7 +196,7 @@ class ServiceTripEnds:
                     "been read, call `ServiceTripEnds.read` first"
                 )
             self._trips = self.trip_proportions.copy()
-            self._trips.rename(columns={"Households": "Residential"}, inplace=True)
+            self._trips = self._trips.rename(columns={"Households": "Residential"})
             self._trips["Residential"] *= self.total_trips.at[
                 "Residential", "Annual Service Trips"
             ]

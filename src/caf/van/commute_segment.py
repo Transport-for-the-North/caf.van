@@ -108,9 +108,9 @@ class CommuteTripEnds:
     HH_PROJECTIONS_HEADER = {"Area Description": str, "HHs": float, "Jobs": float}
     HH_RENAME = {"Area Description": "zone", "HHs": "households", "Jobs": "jobs"}
 
-    def __init__(self, input_paths: lgv_inputs.LGVInputPaths, model_zones: pd.Series):
+    def __init__(self, input_paths: lgv_inputs.LGVInputPaths, model_zones: pd.Series) -> None:
         """Initialise class by checking all input paths are in input dict and
-        all input files exist
+        all input files exist.
         """
         self.paths = input_paths
         self.model_zones = model_zones
@@ -144,7 +144,7 @@ class CommuteTripEnds:
         """
         return pd.DataFrame.from_dict(self.paths.dict(), orient="index", columns=["Path"])
 
-    def _read_commute_tables(self):
+    def _read_commute_tables(self) -> None:
         """Read in commuting tables input XLSX."""
         commute_tables = utilities.read_multi_sheets(
             self.paths.parameters_path, sheets=self.COMMUTING_INPUTS_SHEET_HEADERS
@@ -188,12 +188,12 @@ class CommuteTripEnds:
         }
         LOG.info("Grown commute trips land use: %s", self.commute_trips_land_use)
 
-    def _read_zone_lookups(self):
+    def _read_zone_lookups(self) -> None:
         for key, value in self.paths.dict().items():
             if value is None:
                 continue
             key = key.lower()
-            if key.endswith("lookup") or key.endswith("lookup_path"):
+            if key.endswith(("lookup", "lookup_path")):
                 name = re.sub(r"[\s_]+|path", " ", key).strip()
                 self.zone_lookups[name] = Rezone.read(value, None)
 
@@ -230,9 +230,9 @@ class CommuteTripEnds:
             rezone_cols=cols[1:],
         )
 
-    def _calc_construction_factors(self):
+    def _calc_construction_factors(self) -> None:
         """Calculates the total change in sqm in residential and business
-        floorspace and uses it to calculate construction attractor factors
+        floorspace and uses it to calculate construction attractor factors.
 
         We calculate total builds as net additional dwellings +
         2*demolitions as for net dwellings to be >= 0 each demolished
@@ -293,7 +293,7 @@ class CommuteTripEnds:
             columns={"floorspace": "factor"}
         )
 
-    def _calc_residential_factors(self):
+    def _calc_residential_factors(self) -> None:
         """Calculates residential attractor factors from TEMPro households
         data.
         """
@@ -305,8 +305,8 @@ class CommuteTripEnds:
         households["factor"] = households["Households"] / households["Households"].sum()
         self.attractor_factors["Residential"] = households[["factor"]]
 
-    def _calc_employment_factors(self):
-        """Calculates employment attractor factors from employment data"""
+    def _calc_employment_factors(self) -> None:
+        """Calculates employment attractor factors from employment data."""
         if not self.zone_lookups:
             self._read_zone_lookups()
         employment = lgv_inputs.filtered_employment(
@@ -318,9 +318,9 @@ class CommuteTripEnds:
         )
         self.attractor_factors["Employment"] = employment[["factor"]]
 
-    def estimate_productions(self):
+    def estimate_productions(self) -> None:
         """Reads in files and estimates trip productions by zone and employment
-        segment
+        segment.
         """
         qs606uk = self._read_qs606()
         # TODO(MB) review calc to check for 1/3
@@ -341,7 +341,7 @@ class CommuteTripEnds:
             )
 
         self.trip_productions.index = self.trip_productions["zone"]
-        self.trip_productions.drop(columns=["zone"], inplace=True)
+        self.trip_productions = self.trip_productions.drop(columns=["zone"])
         self.trip_productions["Total"] = self.trip_productions.sum(axis=1)
 
     def _estimate_skilled_attractions(self):
@@ -373,14 +373,10 @@ class CommuteTripEnds:
                 self.commute_trips_land_use[key] * self.attractor_factors[key]
             )
 
-        skilled_attractions = sum(skilled_attractions.values()).rename(
-            columns={"factor": "trips"}
-        )
-
-        return skilled_attractions
+        return sum(skilled_attractions.values()).rename(columns={"factor": "trips"})
 
     def _estimate_driver_attractions(self):
-        """Estimates trip attractions for Drivers
+        """Estimates trip attractions for Drivers.
 
         Returns
         -------
@@ -442,8 +438,8 @@ class CommuteTripEnds:
 
         return trips.to_frame("trips")
 
-    def estimate_attractions(self):
-        """Estimates trip attractions"""
+    def estimate_attractions(self) -> None:
+        """Estimates trip attractions."""
         if not self.commute_trips_main_usage:
             self._read_commute_tables()
 
@@ -465,7 +461,7 @@ class CommuteTripEnds:
         for col in trip_attractions:
             self.trip_attractions[col] = trip_attractions[col]["trips"]
 
-    def calc_trip_ends(self):
+    def calc_trip_ends(self) -> None:
         """Takes production and attraction dataframes with skilled trades and
         drivers as columns and zones as indices and creates skilled trade and
         driver trip dataframes with productions and attractions as columns and
@@ -492,7 +488,7 @@ class CommuteTripEnds:
     @property
     def productions(self) -> pd.DataFrame:
         """pd.DataFrame : Trip productions for each zone (index) and
-        with columns Total, Skilled trades and Drivers
+        with columns Total, Skilled trades and Drivers.
         """
         if self.trip_productions is None:
             self.estimate_productions()
@@ -501,7 +497,7 @@ class CommuteTripEnds:
     @property
     def attractions(self) -> pd.DataFrame:
         """pd.DataFrame : Trip productions for each zone (index) and
-        with columns Total, Skilled trades and Drivers
+        with columns Total, Skilled trades and Drivers.
         """
         if self.trip_attractions is None:
             self.estimate_attractions()
@@ -522,10 +518,10 @@ class CommuteTripEnds:
 def read_qs606(
     ew_path: pathlib.Path, sc_path: pathlib.Path, rename: bool = True
 ) -> dict[str, pd.DataFrame]:
-    """ "Read occupation data."""
+    """Read occupation data."""
 
     def rename_cols(name: str) -> str:
-        """Renames the occupation data columns"""
+        """Rename the occupation data columns."""
         match = re.match("^(5[1-3])|(82)[1]?", name)
         if match:
             return match.group(0)

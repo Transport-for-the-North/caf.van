@@ -1,6 +1,4 @@
-"""
-Contains functions that perform checks and provide high level statistics.
-"""
+"""Contains functions that perform checks and provide high level statistics."""
 
 from __future__ import annotations
 
@@ -55,7 +53,7 @@ class MatrixReport:
         translation_from_col: str | None = None,
         translation_to_col: str | None = None,
         translation_factors_col: str | None = None,
-    ):
+    ) -> None:
 
         self.describe = pd.DataFrame()
 

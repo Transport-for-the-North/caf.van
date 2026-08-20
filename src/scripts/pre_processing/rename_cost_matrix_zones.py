@@ -10,7 +10,7 @@ COST_MATRIX = r"I:\NorMITs Supply\Base\voa_gb\CSVs\HWnet_cost_ave-distance.csv"
 OUTPATH = r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\inputs\avg_cost_matrix_voa.csv"
 
 
-def convert_to_normits(normits_path: str, cost_matrix_path: str, out_path: str):
+def convert_to_normits(normits_path: str, cost_matrix_path: str, out_path: str) -> None:
     """Rename cost matrix zones."""
     normits = pd.read_csv(normits_path)["zone_id"].sort_values().reset_index(drop=True)
     normits_cube_lookup = {k + 1: v for k, v in normits.to_dict().items()}

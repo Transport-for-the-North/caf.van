@@ -10,7 +10,7 @@ import shutil
 import warnings
 
 # Third Party
-import caf.base as cb
+import caf.base as cbase
 import caf.toolkit as ctk
 import numpy as np
 import pandas as pd
@@ -38,16 +38,16 @@ class _Config(ctk.BaseConfig):
 class _ZoningSystemRetriever:
     """Get zoning system."""
 
-    def __init__(self, folder: pathlib.Path = cb.zoning.ZONE_CACHE_HOME) -> None:
+    def __init__(self, folder: pathlib.Path = cbase.zoning.ZONE_CACHE_HOME) -> None:
         self._folder = folder
         self._systems = {}
 
-    def get(self, name: str) -> cb.ZoningSystem:
+    def get(self, name: str) -> cbase.ZoningSystem:
         """Retrieve zoning system."""
         if name in self._systems:
             return self._systems[name]
 
-        zoning = cb.ZoningSystem.get_zoning(name)
+        zoning = cbase.ZoningSystem.get_zoning(name)
         self._systems[name] = zoning
         return zoning
 
@@ -65,7 +65,10 @@ def find_zoning_systems(folder: pathlib.Path) -> dict[str, pathlib.Path]:
         for filename in ("zoning.csv", "zoning_meta.yml"):
             filepath = path / filename
             if not filepath.is_file():
-                warnings.warn(f"Found zoning system folder ({path.name}) without {filename}")
+                warnings.warn(
+                    f"Found zoning system folder ({path.name}) without {filename}",
+                    stacklevel=2,
+                )
                 missing = True
 
         if not missing:
@@ -88,7 +91,7 @@ def main() -> None:
         LOG.info("Loading van config: %s", parameters.caf_van_config)
         van_config = lgv_inputs.LGVInputPaths.load_yaml(parameters.caf_van_config)
 
-        systems = find_zoning_systems(cb.zoning.ZONE_CACHE_HOME)
+        find_zoning_systems(cbase.zoning.ZONE_CACHE_HOME)
 
         zoning_systems = _ZoningSystemRetriever()
         to_zone = zoning_systems.get("normits")
@@ -120,8 +123,8 @@ def _check_all_zone_lookups(
     parameters: _Config,
     van_config: lgv_inputs.LGVInputPaths,
     zoning_systems: _ZoningSystemRetriever,
-    to_zone: cb.ZoningSystem,
-):
+    to_zone: cbase.ZoningSystem,
+) -> None:
     zone_lookups = [
         (van_config.lsoa_lookup_path, "lsoa_2011"),
         (van_config.summary_zone_translation.path, "ca_sector_2020"),
@@ -140,7 +143,8 @@ def _check_all_zone_lookups(
         except FileNotFoundError:
             warnings.warn(
                 f"Cannot find zone system {name}, those zones"
-                f" will not be checked fully for {path.name}"
+                f" will not be checked fully for {path.name}",
+                stacklevel=2,
             )
             from_zone = None
 
@@ -155,7 +159,9 @@ def _check_all_zone_lookups(
         )
 
 
-def _check_gm_area_lookups(van_config: lgv_inputs.LGVInputPaths, to_zone: cb.ZoningSystem):
+def _check_gm_area_lookups(
+    van_config: lgv_inputs.LGVInputPaths, to_zone: cbase.ZoningSystem
+) -> None:
     gm_segments = [
         "service",
         "delivery_parcel_stem",
@@ -183,8 +189,8 @@ def _check_gm_area_lookups(van_config: lgv_inputs.LGVInputPaths, to_zone: cb.Zon
 
 
 def _check_zone_lookup(
-    lookup: pd.DataFrame, id_column: str, zoning: cb.ZoningSystem | None, factor_col: str
-):
+    lookup: pd.DataFrame, id_column: str, zoning: cbase.ZoningSystem | None, factor_col: str
+) -> None:
     if zoning is not None:
         lookup_zones = lookup[id_column].unique()
         _check_zones(id_column, zoning, lookup_zones)
@@ -194,13 +200,14 @@ def _check_zone_lookup(
     if not np.allclose(factors, 1):
         warnings.warn(
             f"{np.sum(np.isclose(factors, 1))} zones have factors"
-            f" ({factor_col}) which don't some to 1.0 for {id_column}"
+            f" ({factor_col}) which don't some to 1.0 for {id_column}",
+            stacklevel=2,
         )
     else:
         LOG.info("Factors for %s zone translation all sum to 1.0", factor_col)
 
 
-def _check_zones(id_column: str, zoning: cb.ZoningSystem, lookup_zones: np.ndarray):
+def _check_zones(id_column: str, zoning: cbase.ZoningSystem, lookup_zones: np.ndarray) -> None:
     missing = lookup_zones[~np.isin(lookup_zones, zoning.zone_ids)]
     additional = zoning.zone_ids[~np.isin(zoning.zone_ids, lookup_zones)]
 
@@ -215,7 +222,8 @@ def _check_zones(id_column: str, zoning: cb.ZoningSystem, lookup_zones: np.ndarr
 
     if len(missing) > 0:
         warnings.warn(
-            f"{len(missing)} zones missing from {id_column} column in zone correspondence"
+            f"{len(missing)} zones missing from {id_column} column in zone correspondence",
+            stacklevel=2,
         )
     else:
         LOG.info("No zones missing from %s column in zone correspondence", id_column)
@@ -223,7 +231,8 @@ def _check_zones(id_column: str, zoning: cb.ZoningSystem, lookup_zones: np.ndarr
     if len(additional) > 0:
         warnings.warn(
             f"{len(additional)} zones found in {id_column} in zone"
-            f" translation which aren't in the zone system {zoning.name}"
+            f" translation which aren't in the zone system {zoning.name}",
+            stacklevel=2,
         )
     else:
         LOG.info("No additional zones found in %s column in zone correspondence", id_column)

@@ -1,6 +1,4 @@
-"""
-Module for running the LGV model.
-"""
+"""Module for running the LGV model."""
 
 from __future__ import annotations
 
@@ -133,7 +131,7 @@ class LGVTripEnds:
         for nm in dataframes:
             df = getattr(self, nm).reindex(index, fill_value=0)
             # Fill any other NaNs with 0s
-            df.fillna(0, inplace=True)
+            df = df.fillna(0)
             setattr(self, nm, df)
 
     def asdict(self) -> dict[str, pd.DataFrame]:
@@ -226,7 +224,7 @@ class LGVMatrices:
             df = getattr(self, nm).reindex(index, fill_value=0)
             df = df.reindex(index, axis=1, fill_value=0)
             # Fill any other NaNs with 0s
-            df.fillna(0, inplace=True)
+            df = df.fillna(0)
             setattr(self, nm, df)
         self.combined = (
             self.service
@@ -252,7 +250,7 @@ class LGVMatrices:
             "zones",
         )
         if self.personal is not None:
-            attrs = attrs + ("personal",)
+            attrs = (*attrs, "personal")
 
         return {a: getattr(self, a).copy() for a in attrs}
 
@@ -452,7 +450,8 @@ def balance_trip_ends(
             warnings.warn(
                 f"{control_col} and {variable_col} are imbalanced in for"
                 f" {name} region {r} (difference= {trip_end_difference})."
-                f" Factoring {variable_col} to {control_col} (factor = {factor})"
+                f" Factoring {variable_col} to {control_col} (factor = {factor})",
+                stacklevel=2,
             )
 
         else:
@@ -496,7 +495,7 @@ class VanGravityModelResults:
         distribution: np.ndarray,
         zones: np.ndarray,
         info: dict[str | int, gravity_model.GravityModelResults],
-    ):
+    ) -> None:
 
         self.distribution = pd.DataFrame(distribution, index=zones, columns=zones)
         self.zones = zones
@@ -996,12 +995,13 @@ def produce_annual_matrices(
             "Failed to produce personal matrix, this will not be included in the outputs."
             f" {exc.__class__.__name__}: {exc}",
             RuntimeWarning,
+            stacklevel=2,
         )
 
     return LGVMatrices(**matrices, personal=personal_matrix)
 
 
-def main(input_paths: LGVInputPaths):
+def main(input_paths: LGVInputPaths) -> None:
     """Runs the LGV model.
 
     Parameters
@@ -1084,14 +1084,14 @@ def _check_gm_inputs(
         data.append(calibration.copy())
         names.append("calibration")
     for nm, df in zip(names, data):
-        df.sort_index(axis=0, inplace=True)
+        df = df.sort_index(axis=0)
         if df.index.has_duplicates:
             raise ValueError(f"duplicates not allowed in `{nm}` index")
         if df.columns.has_duplicates:
             raise ValueError(f"duplicates not allowed in `{nm}` columns")
         if nm == "trip_ends":
             continue
-        df.sort_index(axis=1, inplace=True)
+        df = df.sort_index(axis=1)
         if not (df.index.equals(data[0].index) and df.columns.equals(data[0].index)):
             raise ValueError(
                 f"`{nm}` must be a square matrix with same zones as "
@@ -1152,11 +1152,11 @@ def calculate_vehicle_kms(
     if internals:
         for c in df.columns.get_level_values(0):
             df.loc[:, (c, "Percentage")] = df[(c, "Value")] / df.loc["All Trips", (c, "Value")]
-        df.sort_index(axis=1, level=0, sort_remaining=False, inplace=True)
+        df = df.sort_index(axis=1, level=0, sort_remaining=False)
     return df
 
 
-def _check_matrix(matrix: np.ndarray):
+def _check_matrix(matrix: np.ndarray) -> None:
     """Check given `matrix` is square."""
     if matrix.ndim != 2:
         raise ValueError(f"matrix should have 2 dimensions not: {matrix.ndim}")

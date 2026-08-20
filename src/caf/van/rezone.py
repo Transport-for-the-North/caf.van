@@ -1,6 +1,4 @@
-"""
-Rezones a matrix when given a lookup with splitting factors.
-"""
+"""Rezones a matrix when given a lookup with splitting factors."""
 
 ##### IMPORTS #####
 
@@ -58,7 +56,7 @@ class Rezone:
         except IncorrectParameterError:
             err_type, err_val = sys.exc_info()[:2]
             # Log any errors and reraise
-            LOG.error("%s: %s", err_type.__name__, str(err_val))
+            LOG.exception("%s: %s", err_type.__name__, str(err_val))
             raise
 
         # Set column names if rename is list or use rename method with dicts
@@ -161,5 +159,4 @@ class Rezone:
                 raise MissingLookupValuesError(missing, c)
 
         # Group the new zones
-        df = df.groupby(df_cols, as_index=False).sum()
-        return df
+        return df.groupby(df_cols, as_index=False).sum()

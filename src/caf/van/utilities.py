@@ -1,6 +1,4 @@
-"""
-Set of utilities for use in the freight tool
-"""
+"""Set of utilities for use in the freight tool."""
 
 ##### IMPORTS #####
 
@@ -26,9 +24,7 @@ from caf.van.errors import (
 
 
 class Parameters:
-    """
-    Class for reading the parameters given and creating an empty parameter file for input.
-    """
+    """Class for reading the parameters given and creating an empty parameter file for input."""
 
     # Class constants
     _INDENT = 4
@@ -90,7 +86,7 @@ class Parameters:
         "INPUT": _INPUT,
     }
 
-    def __init__(self, path=None, params=None):
+    def __init__(self, path=None, params=None) -> None:
         """
         Initiate the parameters class by reading file if given, using parameters if given
         or with defaults.
@@ -126,11 +122,9 @@ class Parameters:
         """
         # Read parameters
         with open(path, "rt") as f:
-            params = json.load(f)
+            return json.load(f)
 
-        return params
-
-    def __str__(self):
+    def __str__(self) -> str:
         """
         Creates json string.
 
@@ -143,7 +137,7 @@ class Parameters:
         """
         return json.dumps(self.params, indent=self._INDENT)
 
-    def write(self, path):
+    def write(self, path) -> None:
         """
         Write parameters to file.
 
@@ -187,7 +181,7 @@ class Parameters:
         """
         params = {}
         for i in expected:
-            if i not in parameters.keys():
+            if i not in parameters:
                 raise MissingParameterError(i, name)
             # Only keep required values
             params[i] = parameters[i]
@@ -309,7 +303,9 @@ def check_folder(path: Path, name: str, create: bool = False) -> True:
     raise FileNotFoundError(f"{name} folder does not exist: {path}")
 
 
-def read_csv(path: Path, name: str = None, columns: dict = None, **kwargs) -> pd.DataFrame:
+def read_csv(
+    path: Path, name: str | None = None, columns: dict | None = None, **kwargs
+) -> pd.DataFrame:
     """Wrapper function for `pandas.read_csv` to perform additional checks.
 
     Checks what delimiter the file uses before reading and provides more
@@ -507,8 +503,10 @@ def read_multi_sheets(path: Path, sheets: dict, **kwargs):
     return dfs
 
 
-def to_dict(df: pd.DataFrame, key_col: str, val_col: tuple[str, type], name: str = None):
-    """Transform a dataframe to a dictionary
+def to_dict(
+    df: pd.DataFrame, key_col: str, val_col: tuple[str, type], name: str | None = None
+):
+    """Transform a dataframe to a dictionary.
 
     Parameters
     ----------

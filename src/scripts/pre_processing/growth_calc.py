@@ -1,4 +1,4 @@
-"""this is how we calculated the growth factors, feel free to use different data/methods to do your own, or don't"""
+"""this is how we calculated the growth factors, feel free to use different data/methods to do your own, or don't."""
 
 # Built-Ins
 import pathlib
@@ -119,9 +119,7 @@ def generate_construction(
     # Concatenate the dwellings data
     cols = ["additional_dwellings", "demolished_dwellings", "business_floorspace"]
 
-    growth = england_growth[cols] + sw_dwellings[cols]
-
-    return growth
+    return england_growth[cols] + sw_dwellings[cols]
 
 
 def read_sc_w_dwellings(path: pathlib.Path, model_year: int) -> tuple[pd.DataFrame, list[str]]:
@@ -204,7 +202,7 @@ def read_english_dwellings(
     )
 
     if drop_lad_name:
-        dwellings.drop(axis=1, labels=["Lower and Single Tier Authority Data"], inplace=True)
+        dwellings = dwellings.drop(axis=1, labels=["Lower and Single Tier Authority Data"])
 
     data_columns = ["Demolitions", "Net Additions"]
     for col in data_columns:

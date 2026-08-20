@@ -118,7 +118,7 @@ class DwellingPaths:
     zc_path: types.FilePath
     """Path to the zone correspondence CSV."""
     unoccupied: types.FilePath | None = None
-    """Path to the unoccupied dwellings data DVector. 
+    """Path to the unoccupied dwellings data DVector.
     No specific segmentation is required as it is aggregated to total households by zone."""
 
 
@@ -345,9 +345,7 @@ def filtered_employment(
 
     cat_emp_data = cat_emp_data.groupby("sic_1_digit").sum()
 
-    filtered_employment_data = cat_emp_data.transpose(copy=True)
-
-    return filtered_employment_data
+    return cat_emp_data.transpose(copy=True)
 
 
 def load_warehouse_floorspace(
@@ -378,11 +376,10 @@ def load_warehouse_floorspace(
     lookup = Rezone.read(zone_lookup, None)
 
     rezoned, _ = Rezone.rezone(floorspace, lookup, lsoa_column, rezone_cols=area_column)
-    rezoned.rename(columns={lsoa_column: "Zone"}, inplace=True)
+    rezoned = rezoned.rename(columns={lsoa_column: "Zone"})
     grouped = rezoned.groupby("Zone").sum()
 
-    grouped = grouped.reindex(lookup["new"].unique())
-    return grouped
+    return grouped.reindex(lookup["new"].unique())
 
 
 def lgv_parameters(path: Path) -> dict[str, Any]:
@@ -485,7 +482,7 @@ def read_time_factors(path: Path) -> dict[str, dict[str, float]]:
         index_col=0,
     )
     rename = {v[0]: k for k, v in TIME_PERIOD_COLUMNS.items()}
-    df.rename(columns=rename, inplace=True)
+    df = df.rename(columns=rename)
     return df.to_dict(orient="index")
 
 
