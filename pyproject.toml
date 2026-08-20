@@ -8,11 +8,10 @@ dynamic = ["version", "dependencies", "optional-dependencies"]
 description = "Transport demand model to produce van travel matrices."
 readme = "README.md"
 license = { "file" = "LICENSE" }
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [{ name = "Transport for the North" }]
 classifiers = [
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -48,6 +47,7 @@ disable = [
     "too-many-lines",
     "use-dict-literal",
     "use-list-literal",
+    "wrong-import-order" # doesn't play well with isort/caf packages
 ]
 
 # Pylint settings

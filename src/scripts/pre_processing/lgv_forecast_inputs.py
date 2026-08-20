@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-    Script for growing the LGV model inputs to a forecast year.
+Script for growing the LGV model inputs to a forecast year.
 
-    This is only necessary for inputs which aren't already
-    available for forecast years.
+This is only necessary for inputs which aren't already
+available for forecast years.
 """
 
 ##### IMPORTS #####
@@ -44,6 +44,8 @@ CSV_COMMENT_CHARACTER = "#"
 
 ##### CLASSES #####
 class ForecastInputsConfig(caf.toolkit.BaseConfig):
+    """Inputs for forecasting data."""
+
     base_model_config: types.FilePath
     base_year: int
     forecast_year: int
@@ -57,6 +59,8 @@ class ForecastInputsConfig(caf.toolkit.BaseConfig):
 
 @dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class NTEMGrowthData:
+    """Ntem growth data."""
+
     lsoa: pd.DataFrame
     msoa: pd.DataFrame
     lad: pd.DataFrame
@@ -90,19 +94,21 @@ class NTEMGrowthData:
 
 
 class _GrowthFactorLinRegress:
-    # TODO Add docstrings to class and methods
     def __init__(self, data: pd.Series) -> None:
         self._data = data
         self._results = stats.linregress(data.index, data.values)
 
     @property
     def name(self) -> str:
+        """Name of data."""
         return self._data.name
 
     def line(self, x: np.ndarray) -> np.ndarray:
+        """Get forecast values."""
         return (self._results.slope * x) + self._results.intercept
 
     def year_value(self, x: int):
+        """Value for a forecast year."""
         if x in self._data.index:
             return self._data.at[x]
         else:
@@ -110,18 +116,22 @@ class _GrowthFactorLinRegress:
 
     @property
     def data(self) -> pd.Series:
+        """Return data."""
         return self._data.copy()
 
     @property
     def slope(self) -> float:
+        """Gradient of the forecast."""
         return self._results.slope
 
     @property
     def intercept(self) -> float:
+        """Y intercept of the forcast data."""
         return self._results.intercept
 
     @property
     def rvalue(self) -> float:
+        """R value of data."""
         return self._results.rvalue
 
 
@@ -151,8 +161,7 @@ def _load_planning_data(base_path: pathlib.Path, forecast_path: pathlib.Path):
     return pd.concat(dataframes, axis=1)
 
 
-def load_oa_lookup(path: pathlib.Path) -> pd.DataFrame:
-    # TODO Docstring
+def _load_oa_lookup(path: pathlib.Path) -> pd.DataFrame:
     columns = ["lsoa11cd", "msoa11cd", "ladcd", "ladnm"]
     LOG.info("Reading OA lookup: %s", path.name)
     lookup = pd.read_csv(path, usecols=columns, dtype=str)
@@ -161,7 +170,6 @@ def load_oa_lookup(path: pathlib.Path) -> pd.DataFrame:
 
 
 def _normalise_names(data: pd.Series) -> pd.Series:
-    # TODO Docstring
     data = data.str.lower().str.strip()
     data = data.str.replace(r"[!\"#$%&'\()*+,-./:;<=>?@\][\\^_`{|}~]", "", regex=True)
     data = data.str.replace(r"\s+", " ", regex=True)
@@ -170,7 +178,6 @@ def _normalise_names(data: pd.Series) -> pd.Series:
 
 
 def _normalise_lad_names(data: pd.Series) -> pd.Series:
-    # TODO Docstring
     data = _normalise_names(data)
 
     lad_renaming = {
@@ -185,7 +192,6 @@ def _normalise_lad_names(data: pd.Series) -> pd.Series:
 def _merge_check(
     data: pd.DataFrame, title: str, merge_data: str, left_name: str, right_name: str
 ) -> None:
-    # TODO Docstring
     source_lookup = {"left_only": left_name, "right_only": right_name, "both": "both"}
 
     total = len(data)
@@ -207,10 +213,9 @@ def _merge_check(
         )
 
 
-def get_planning_growth(
+def _get_planning_growth(
     base_path: pathlib.Path, forecast_path: pathlib.Path, lookup: pd.DataFrame
 ) -> NTEMGrowthData:
-    # TODO Docstring
     planning_data = _load_planning_data(base_path, forecast_path)
 
     lad_growth: pd.DataFrame = planning_data.loc["Authority"]
@@ -264,260 +269,6 @@ def get_planning_growth(
     return NTEMGrowthData(lsoa=lsoa_growth, msoa=msoa_growth, lad=lad_growth)
 
 
-def read_base_bres(path: pathlib.Path, forecast_year: int) -> tuple[pd.DataFrame, list[str]]:
-    # TODO Docstring
-    # Read meta data and add comment to date before reading the rest of the file
-    meta_rows = 8
-    meta_data = []
-    with open(path, "rt") as f:
-        for _ in range(meta_rows):
-            line = f.readline()
-            if "Date" in line:
-                line = line[: line.rfind('"')] + f' grown to {forecast_year}"\n'
-            meta_data.append(line)
-
-    base_bres = pd.read_csv(
-        path,
-        usecols=lgv_inputs.BRES_HEADER.keys(),
-        dtype=lgv_inputs.BRES_HEADER,
-        skiprows=meta_rows,
-    )
-
-    # Drop any completely empty columns and any rows with missing values
-    base_bres.dropna(axis=1, how="all", inplace=True)
-    base_bres.dropna(axis=0, how="any", inplace=True)
-
-    return base_bres, meta_data
-
-
-def grow_bres(
-    base_path: pathlib.Path,
-    output_path: pathlib.Path,
-    growth: NTEMGrowthData,
-    forecast_year: int,
-) -> tuple[pathlib.Path, pd.DataFrame]:
-    # TODO Docstring
-    factor_col = growth.jobs_col
-
-    base_bres, bres_meta = read_base_bres(base_path, forecast_year)
-    forecast_bres = base_bres.merge(
-        growth.lsoa[factor_col],
-        left_on="mnemonic",
-        right_index=True,
-        validate="1:1",
-        how="left",
-        indicator=True,
-    )
-    _merge_check(forecast_bres, "growing BRES data", "LSOAs", "BRES base", "LSOA growth")
-
-    missing = forecast_bres[factor_col].isna()
-    scot_zones = forecast_bres["mnemonic"].str.lower().str.startswith("s")
-    missing_not_scot = (missing & ~scot_zones).sum()
-
-    msg = f"{missing_not_scot} LSOAs outside Scotland don't have LSOA growth factors"
-    if missing_not_scot > 0:
-        raise ValueError(msg)
-    else:
-        LOG.info(msg)
-
-    if (missing & scot_zones).sum() > 0:
-        scot_growth = growth.lad.loc[
-            growth.lad.index.str.lower().str.startswith("s"), growth.jobs_col
-        ].mean()
-        LOG.warning(
-            "%s Scottish LSOAs in BRES data being grown "
-            "with average Scottish growth from LADs (%.2f)",
-            scot_zones.sum(),
-            scot_growth,
-        )
-        forecast_bres.loc[scot_zones & missing, factor_col] = scot_growth
-
-    for column, type_ in lgv_inputs.BRES_HEADER.items():
-        if type_ is float:
-            forecast_bres.loc[:, column] = forecast_bres[column] * forecast_bres[factor_col]
-
-    forecast_bres = forecast_bres.drop(columns=factor_col)
-
-    with open(output_path, "wt", encoding="utf-8") as file:
-        file.write("".join(bres_meta))
-        forecast_bres.to_csv(file, index=False)
-    LOG.info(
-        "Grown BRES data to %s using %s and saved to: %s",
-        forecast_year,
-        factor_col,
-        output_path,
-    )
-
-    return output_path, compare_column_totals(base_bres, forecast_bres)
-
-
-def str_replace(text: str, replace: list[tuple[str, str]]) -> str:
-    # TODO Docstring
-    for old, new in replace:
-        text = text.replace(old, new)
-    return text
-
-
-def grow_ndr_floorspace(
-    base_path: pathlib.Path,
-    base_year: int,
-    forecast_year: int,
-    growth: NTEMGrowthData,
-    output_path: pathlib.Path,
-) -> tuple[pathlib.Path, pd.DataFrame]:
-    # TODO Docstring
-    factor_col = growth.jobs_col
-    base_ndr, data_columns = commute_segment.read_ndr_floorspace(base_path, base_year, {})
-
-    area_col = list(commute_segment.BUSINESS_FLOORSPACE_HEADER.keys())[0]
-    forecast_ndr = base_ndr.merge(
-        growth.lad[factor_col],
-        how="left",
-        left_on=area_col,
-        right_index=True,
-        validate="1:1",
-        indicator=True,
-    )
-    _merge_check(
-        forecast_ndr, "grown NDR floorspace", "LADs", "base NDR floorspace", "LAD factors"
-    )
-
-    before = len(forecast_ndr)
-    forecast_ndr = forecast_ndr.dropna(how="any")
-    dropped = before - len(forecast_ndr)
-    if dropped > 0:
-        LOG.warning("Dropped %s rows from grown NDR floorspace for containing Nans", dropped)
-    else:
-        LOG.info("No rows dropped from grown NDR floorspace for containing Nans")
-
-    for column in data_columns:
-        forecast_ndr.loc[:, column] = forecast_ndr[column] * forecast_ndr[factor_col]
-
-    comparison = compare_column_totals(base_ndr, forecast_ndr)
-
-    years_replace = [
-        (str(base_year - 2000 + i), str(forecast_year - 2000 + i)) for i in (-1, 0, 1)
-    ]
-    forecast_ndr = forecast_ndr.drop(columns=[factor_col, "_merge"])
-    forecast_ndr.columns = [str_replace(i, years_replace) for i in forecast_ndr.columns]
-
-    forecast_ndr.to_csv(output_path, index=False)
-    LOG.info(
-        "Grown NDR floorspace from %s to %s using %s and saved to: %s",
-        base_year,
-        forecast_year,
-        factor_col,
-        output_path,
-    )
-
-    return output_path, comparison
-
-
-def grow_english_dwellings_data(
-    base_path: pathlib.Path,
-    output_path: pathlib.Path,
-    base_year: int,
-    forecast_year: int,
-    growth: NTEMGrowthData,
-) -> tuple[pathlib.Path, pd.DataFrame]:
-    # TODO Docstring
-    factor_col = growth.households_col
-    base_dwellings, data_columns = commute_segment.read_english_dwellings(
-        base_path, base_year, {}, False
-    )
-
-    dwellings = base_dwellings.merge(
-        growth.lad[factor_col],
-        how="left",
-        left_on=commute_segment.E_DWELLINGS_HEADER[0],
-        right_index=True,
-        validate="1:1",
-        indicator=True,
-    )
-    _merge_check(
-        dwellings, "growing English dwellings", "LADs", "base dwellings", "LAD growth"
-    )
-
-    for column in data_columns:
-        dwellings.loc[:, column] = (dwellings[column] * dwellings[factor_col]).round()
-
-    dwellings = dwellings.drop(columns=[factor_col, "_merge"])
-
-    forecast_sheet = f"{forecast_year}-{forecast_year - 1999}"
-    dwellings.to_excel(output_path, sheet_name=forecast_sheet, index=False, startrow=3)
-    LOG.info(
-        "Grown English dwellings from %s to %s using %s, saved to '%s' sheet '%s'",
-        base_year,
-        forecast_year,
-        factor_col,
-        output_path.name,
-        forecast_sheet,
-    )
-
-    return output_path, compare_column_totals(base_dwellings, dwellings)
-
-
-def grow_sc_w_dwellings_data(
-    base_path: pathlib.Path,
-    output_path: pathlib.Path,
-    base_year: int,
-    forecast_year: int,
-    growth: NTEMGrowthData,
-) -> tuple[pathlib.Path, pd.DataFrame]:
-    # TODO Docstring
-    factor_col = growth.households_col
-    base_dwellings, data_columns = commute_segment.read_sc_w_dwellings(base_path, base_year)
-
-    zone_col = [i for i in base_dwellings.columns if i not in data_columns]
-    if len(zone_col) != 1:
-        raise ValueError(f"{len(zone_col)} zone columns but expected 1: {zone_col}")
-    zone_col = zone_col[0]
-
-    dwellings = base_dwellings.merge(
-        growth.lad[factor_col],
-        how="left",
-        left_on=zone_col,
-        right_index=True,
-        validate="1:1",
-        indicator=True,
-    )
-    _merge_check(
-        dwellings,
-        "grown Scotland & Wales dwellings",
-        "LADs",
-        "base dwellings",
-        "LAD growth factors",
-    )
-
-    missing = dwellings[factor_col].isna()
-    if missing.sum() > 0:
-        avg_growth = growth.lad[factor_col].mean()
-        dwellings.loc[missing, factor_col] = avg_growth
-        LOG.warning(
-            "%s zones missing from LAD growth factors, using average growth %.2f",
-            missing.sum(),
-            avg_growth,
-        )
-
-    dwellings = dwellings.drop(columns=[factor_col, "_merge"])
-    comparison = compare_column_totals(base_dwellings, dwellings)
-
-    dwellings.rename(
-        columns=dict(zip(data_columns, [str(forecast_year + i) for i in (0, 1)])), inplace=True
-    )
-
-    dwellings.to_csv(output_path, index=False)
-    LOG.info(
-        "Grown Scotland and Wales dwellings from %s to %s using %s and saved to: %s",
-        base_year,
-        forecast_year,
-        factor_col,
-        output_path,
-    )
-
-    return output_path, comparison
-
-
 def grow_occupation_data(
     ew_path: pathlib.Path,
     sc_path: pathlib.Path,
@@ -526,7 +277,8 @@ def grow_occupation_data(
     forecast_year: int,
     output_folder: pathlib.Path,
 ) -> tuple[dict[str, pathlib.Path], dict[str, pd.DataFrame]]:
-    # TODO Docstring
+    """Grow occupation data to forecast year."""
+
     def filter_float(data: dict[str, type]) -> list[str]:
         return [k for k, v in data.items() if v is float]
 
@@ -595,7 +347,7 @@ def grow_occupation_data(
         output_paths[key] = output_folder / f"QS606{key}_grown_{forecast_year}.csv"
         data = data.drop(columns=[factor_col, "_merge"], errors="ignore")
 
-        comparisons[key] = compare_column_totals(base_data[key], data)
+        comparisons[key] = _compare_column_totals(base_data[key], data)
 
         with open(output_paths[key], "wt", encoding="utf-8", newline="") as file:
             file.write(meta_rows[key])
@@ -614,7 +366,7 @@ def grow_warehouse_data(
     forecast_year: int,
     output_folder: pathlib.Path,
 ) -> tuple[dict[str, pathlib.Path], dict[str, pd.DataFrame]]:
-    # TODO Docstring
+    """Grow warehouse data to forecast year."""
     factor_col = growth.jobs_col
     zone_col = "LSOA11CD"
     data_col = "area"
@@ -645,7 +397,7 @@ def grow_warehouse_data(
         data.loc[:, data_col] = data[data_col] * data[factor_col]
         data = data.drop(columns=[factor_col, "_merge"])
 
-        comparisons[name] = compare_column_totals(base_data, data)
+        comparisons[name] = _compare_column_totals(base_data, data)
 
         output_paths[name] = output_folder / f"{name}_grown_{forecast_year}.csv"
         data.to_csv(output_paths[name], index=False)
@@ -662,7 +414,6 @@ def grow_warehouse_data(
 
 
 def _recursive_apply(data: dict[str, Any], func: Callable) -> dict[str, Any]:
-    # TODO Docstring
     for key, value in data.items():
         if isinstance(value, dict):
             data[key] = _recursive_apply(value, func)
@@ -674,13 +425,12 @@ def _recursive_apply(data: dict[str, Any], func: Callable) -> dict[str, Any]:
     return data
 
 
-def write_forecast_log(
+def _write_forecast_log(
     paths: dict[str, Any],
     output_path: pathlib.Path,
     base_year: int,
     forecast_year: int,
 ) -> None:
-    # TODO Docstring
     yaml = strictyaml.as_document(_recursive_apply(paths, str)).as_yaml()
 
     with open(output_path, "wt", encoding="utf-8") as file:
@@ -696,7 +446,6 @@ def write_forecast_log(
 def _plot_linear_fit(
     fit: _GrowthFactorLinRegress, base_year: int, forecast_year: int, output_path: pathlib.Path
 ) -> None:
-    # TODO Docstring
     fig, ax = plt.subplots(figsize=(10, 10))
     fig.set_tight_layout(True)
     ax.set_ylabel(fit.name)
@@ -766,10 +515,9 @@ def _calculate_growth_factors(
     }
 
 
-def calculate_veh_km_growth_factor(
+def _calculate_veh_km_growth_factor(
     veh_kms_path: pathlib.Path, base_year: int, forecast_year: int, plot_path: pathlib.Path
 ) -> dict[str, float]:
-    # TODO Docstring
     rtf_veh_kms = pd.read_excel(
         veh_kms_path,
         sheet_name="Table 1 - Traffic - Area Type",
@@ -789,7 +537,7 @@ def calculate_veh_km_growth_factor(
     return _calculate_growth_factors(fit, base_year, forecast_year, plot_path)
 
 
-def calculate_fleet_projections_growth_factor(
+def _calculate_fleet_projections_growth_factor(
     projections_path: pathlib.Path, base_year: int, forecast_year: int, plot_path: pathlib.Path
 ) -> dict[str, float]:
     data = pd.read_csv(projections_path, comment=CSV_COMMENT_CHARACTER, index_col=0)
@@ -808,8 +556,7 @@ def calculate_fleet_projections_growth_factor(
     return _calculate_growth_factors(fit, base_year, forecast_year, plot_path)
 
 
-def compare_column_totals(base: pd.DataFrame, forecast: pd.DataFrame) -> pd.DataFrame:
-    # TODO Docstring
+def _compare_column_totals(base: pd.DataFrame, forecast: pd.DataFrame) -> pd.DataFrame:
     base.loc[:, "Rows"] = 1
     forecast.loc[:, "Rows"] = 1
 
@@ -823,7 +570,7 @@ def compare_column_totals(base: pd.DataFrame, forecast: pd.DataFrame) -> pd.Data
 
 
 def main(params: ForecastInputsConfig) -> None:
-    # TODO Docstring
+    """Main func."""
     output_folder = (
         params.output_folder / f"LGV Forecast Inputs {params.forecast_year} "
         f"- {dt.date.today():%Y%m%d}"
@@ -844,8 +591,8 @@ def main(params: ForecastInputsConfig) -> None:
         base_config.save_yaml(out_path)
         LOG.info("Written: %s", out_path.name)
 
-        oa_lookup = load_oa_lookup(params.oa_lookup_path)
-        growth = get_planning_growth(
+        oa_lookup = _load_oa_lookup(params.oa_lookup_path)
+        growth = _get_planning_growth(
             params.base_planning_path, params.forecast_planning_path, oa_lookup
         )
 
@@ -861,40 +608,6 @@ def main(params: ForecastInputsConfig) -> None:
 
         grown_inputs_folder = output_folder / "grown_inputs"
         grown_inputs_folder.mkdir(exist_ok=True)
-
-        name = "bres_data"
-        forecast_paths[name], totals_comparison[name] = grow_bres(
-            base_config.bres_path,
-            grown_inputs_folder / f"grown_BRES_{params.forecast_year}.csv",
-            growth,
-            params.forecast_year,
-        )
-
-        name = "ndr_floorspace"
-        forecast_paths[name], totals_comparison[name] = grow_ndr_floorspace(
-            base_config.ndr_floorspace_path,
-            params.base_year,
-            params.forecast_year,
-            growth,
-            grown_inputs_folder / f"grown_NDR_floorspace_{params.forecast_year}.csv",
-        )
-
-        name = "dwellings_england"
-        forecast_paths[name], totals_comparison[name] = grow_english_dwellings_data(
-            base_config.e_dwellings_path,
-            grown_inputs_folder / f"grown_english_dwelling_{params.forecast_year}.xlsx",
-            params.base_year,
-            params.forecast_year,
-            growth,
-        )
-        name = "dwellings_scotland_wales"
-        forecast_paths[name], totals_comparison[name] = grow_sc_w_dwellings_data(
-            base_config.sc_w_dwellings_path,
-            grown_inputs_folder / f"grown_scotland_wales_dwelling_{params.forecast_year}.csv",
-            params.base_year,
-            params.forecast_year,
-            growth,
-        )
 
         forecast_paths["QS606_data"], comparisons = grow_occupation_data(
             base_config.qs606ew_path,
@@ -920,14 +633,14 @@ def main(params: ForecastInputsConfig) -> None:
             forecast_paths, lambda x: x.relative_to(output_folder)
         )
 
-        growth_factors = calculate_veh_km_growth_factor(
+        growth_factors = _calculate_veh_km_growth_factor(
             params.forecasted_vehicle_kms,
             params.base_year,
             params.forecast_year,
             output_folder / "LGV_growth_factor_plot.pdf",
         )
         forecast_paths.update({"Vehicle km based growth factors": growth_factors})
-        growth_factors = calculate_fleet_projections_growth_factor(
+        growth_factors = _calculate_fleet_projections_growth_factor(
             params.fleet_growth,
             params.base_year,
             params.forecast_year,
@@ -937,7 +650,7 @@ def main(params: ForecastInputsConfig) -> None:
             {"NoCARB fleet projections based growth factors": growth_factors}
         )
 
-        write_forecast_log(
+        _write_forecast_log(
             forecast_paths,
             output_folder / "grown_data.yml",
             params.base_year,

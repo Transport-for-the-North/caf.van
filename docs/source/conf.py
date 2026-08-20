@@ -25,6 +25,7 @@ project = "caf.van"
 copyright = "2024, Transport for the North"
 author = "Transport for the North"
 
+# Local Imports
 import caf.van
 
 version = str(caf.van.__version__)
@@ -98,6 +99,7 @@ intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "caf.toolkit": ("https://caftoolkit.readthedocs.io/en/latest/", None),
     "caf.distribute": ("https://cafdistribute.readthedocs.io/en/stable/", None),
+    "caf.base": ("https://cafbase.readthedocs.io/en/stable/", None),
     "pandas": ("https://pandas.pydata.org/docs/", None),
 }
 intersphinx_timeout = 30

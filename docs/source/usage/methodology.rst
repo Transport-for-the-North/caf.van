@@ -119,18 +119,13 @@ each type of trip end.
 Gravity Model
 -------------
 
-The distribution of the trip ends to create annual trip matrices is done
-using a bespoke gravity model from [caf.distribute](https://cafdistribute.readthedocs.io/en/stable/).
-
-The gravity model is built of two sections, the first contains the cost functions
-(tanner and log normal) to calculate the initial matrix seed values and then performs
-either 1D factoring, or 2D furnessing, to constrain the matrix to the trip ends. 
-
-The second section of the gravity model is the outer self-calibration
-loop, this finds the optimal cost function parameters to fit the
-resulting matrix to the observed trip distribution. The self-calibration
-process is detailed in the below flowchart and can be turned on or off
-within the main parameters config, see :ref:`van model inputs`.
+The package utilises [caf.distribute](https://cafdistribute.readthedocs.io/en/stable/) multi-TLD
+gravity model for calibrating and running the gravity model. The gravity model distributes trips
+based on the purposes' calculated trip ends and inputted trip-length distributions (TLD).
+This is achieved by fitting the cost function parameters to match the target TLD and Furnessing
+then achieved distribution to match the trip ends. The multi-TLD gravity allows for different areas
+to have their own TLDs, for more information on this process please see
+:class:`caf.distribute.gravity_model.multi_area.MultiAreaGravityModelCalibrator`.
 
 Time Period Conversion
 ----------------------

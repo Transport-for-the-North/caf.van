@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-    Module to calculate the delivery trips for the LGV model.
+Module to calculate the delivery trips for the LGV model.
 """
-
-##### IMPORTS #####
+from __future__ import annotations
 
 # Built-Ins
 import logging
@@ -14,7 +13,6 @@ from typing import Union
 import numpy as np
 import pandas as pd
 import pydantic
-from pydantic import fields
 
 # Local Imports
 from caf.van import errors, lgv_inputs, utilities
@@ -61,14 +59,14 @@ def zone_list(value: str) -> list[int]:
 class DeliveryParameters(pydantic.BaseModel):
     """Parameters for delivery segment to read from input spreadsheet."""
 
-    trips_parcel_stem: float = fields.Field(
+    trips_parcel_stem: float = pydantic.Field(
         alias="Annual Trip Productions - Parcel Stem", ge=0, title="Test"
     )
-    trips_parcel_bush: float = fields.Field(alias="Annual Trips - Parcel Bush", ge=0)
-    trips_grocery: float = fields.Field(alias="Annual Trips - Grocery Bush", ge=0)
-    growth_factor: float = fields.Field(alias="Delivery Growth Factor", ge=0)
-    b2c: float = fields.Field(alias="B2C vs B2B Weighting", ge=0, le=1)
-    depots_infill: list[Union[int, str]] = fields.Field(
+    trips_parcel_bush: float = pydantic.Field(alias="Annual Trips - Parcel Bush", ge=0)
+    trips_grocery: float = pydantic.Field(alias="Annual Trips - Grocery Bush", ge=0)
+    growth_factor: float = pydantic.Field(alias="Delivery Growth Factor", ge=0)
+    b2c: float = pydantic.Field(alias="B2C vs B2B Weighting", ge=0, le=1)
+    depots_infill: list[Union[int, str]] = pydantic.Field(
         alias="Depots Infill Zones", default_factory=list, Set=True
     )
 
@@ -86,12 +84,12 @@ class DeliveryTripEnds:
         - Path to the CSV containing the warehouse floorspace data.
         - Path to the LSOA zone correspondence file to convert
           data to model zone system.
-    bres_paths : DataPaths
-        - Path to the CSV containing the BRES data.
+    employment_paths : EmploymentPaths
+        - Path to the DVector containing the employment data.
         - Path to the zone correspondence CSV for converting the
-          BRES data to the model zone system.
-    household_paths : DataPaths
-        - Path to the CSV containing the household projections data.
+          employment data to the model zone system.
+    household_paths : DwellingPaths
+        - Path to the DVectors(s) containing the Occupied and (optionally) Unoccupied dwelling data.
         - Path to the zone correspondence file to convert household
           data to the model zone system.
     parameters_path : Path
@@ -103,21 +101,21 @@ class DeliveryTripEnds:
         Full list of model zones.
     """
 
-    BRES_AGGREGATION = {"Employees": list(lgv_inputs.letters_range(end="U"))}
+    EMPLOYMENT_AGGREGATION = {"Employees": list(range(1, 22))}  # A - U (1->21)
     PARAMETERS_SHEET = "Delivery Segment Parameters"
     PARAMETERS_HEADER = {"Parameter": str, "Value": str}
 
     def __init__(
         self,
         warehouse_paths: utilities.DataPaths,
-        bres_paths: utilities.DataPaths,
-        household_paths: utilities.DataPaths,
+        employment_paths: lgv_inputs.EmploymentPaths,
+        household_paths: lgv_inputs.DwellingPaths,
         parameters_path: Path,
         year: int,
         model_zones: pd.Series,
     ):
         """Initialise class by checking inputs files exist and are expected type."""
-        self._check_paths(warehouse_paths, bres_paths, household_paths, parameters_path)
+        self._check_paths(warehouse_paths, employment_paths, household_paths, parameters_path)
         try:
             self._year = int(year)
         except ValueError as error:
@@ -129,7 +127,7 @@ class DeliveryTripEnds:
             )
         # Initialise instance variables
         self.depots = None
-        self.bres = None
+        self.employment = None
         self.households = None
         self.parameters = None
         self.model_zones = model_zones
@@ -142,23 +140,38 @@ class DeliveryTripEnds:
     def _check_paths(
         self,
         warehouse_paths: utilities.DataPaths,
-        bres_paths: utilities.DataPaths,
-        household_paths: utilities.DataPaths,
+        employment_paths: lgv_inputs.EmploymentPaths,
+        household_paths: lgv_inputs.DwellingPaths,
         parameters_path: Path,
     ):
         """Checks the input files exist and are the expected type."""
-        extensions = (".csv", ".txt")
-        for name, paths in (
-            ("Warehouse", warehouse_paths),
-            ("Households", household_paths),
-            ("BRES", bres_paths),
-        ):
-            utilities.check_file_path(paths.path, f"{name} data", *extensions)
-            utilities.check_file_path(paths.zc_path, f"{name} lookup", *extensions)
+        plain_text_extensions = (".csv", ".txt")
+        dvec_extensions = (".dvec", ".hdf", ".h5")
+
+        utilities.check_file_path(
+            warehouse_paths.path, "warehouse data", *plain_text_extensions
+        )
+        utilities.check_file_path(
+            warehouse_paths.zc_path, "warehouse lookup", *plain_text_extensions
+        )
+
+        utilities.check_file_path(employment_paths.path, "employment Data", *dvec_extensions)
+        utilities.check_file_path(
+            employment_paths.zc_path, "employment lookup", *plain_text_extensions
+        )
+
+        utilities.check_file_path(
+            household_paths.occupied, "Households Data", *dvec_extensions
+        )
+        utilities.check_file_path(
+            household_paths.zc_path, "Households lookup", *plain_text_extensions
+        )
+        if household_paths.unoccupied is not None:
+            utilities.check_file_path(household_paths.unoccupied, "Households", ".dvec")
 
         self._warehouse_paths = warehouse_paths
         self._household_paths = household_paths
-        self._bres_paths = bres_paths
+        self._employment_paths = employment_paths
         self._parameters_path = utilities.check_file_path(
             parameters_path, "Delivery Parameters", ".xlsx", return_path=True
         )
@@ -170,8 +183,8 @@ class DeliveryTripEnds:
             {
                 "Warehouse Data Path": str(self._warehouse_paths.path),
                 "Warehouse Zone Correspondence Path": str(self._warehouse_paths.zc_path),
-                "BRES Data Path": str(self._bres_paths.path),
-                "BRES Zone Correspondence Path": str(self._bres_paths.zc_path),
+                "Employment Data Path": str(self._employment_paths.path),
+                "Employment Zone Correspondence Path": str(self._employment_paths.zc_path),
                 "Household Data Path": str(self._household_paths.path),
                 "Household Zone Correspondence Path": str(self._household_paths.zc_path),
                 "Delivery Parameters Path": str(self._parameters_path),
@@ -188,7 +201,12 @@ class DeliveryTripEnds:
         if self.parameters.depots_infill is None:
             return depots
 
-        missing = [i for i in self.parameters.depots_infill if i not in self.households.index]
+        try:
+            infill = [int(z) for z in self.parameters.depots_infill]
+        except ValueError:
+            infill = self.parameters.depots_infill
+
+        missing = [i for i in infill if i not in self.households.index]
         if missing:
             raise errors.MissingDataError("Households for zones", missing)
 
@@ -234,7 +252,7 @@ class DeliveryTripEnds:
         read_parameters: Reads the parameters spreadsheet.
         .lgv_inputs.household_projections
             Reads and converts household input CSV.
-        .lgv_inputs.filtered_bres
+        .lgv_inputs.filtered_employment
             Reads, filters and converts the BRES input CSV.
         """
         self.parameters = self.read_parameters(self._parameters_path)
@@ -243,16 +261,16 @@ class DeliveryTripEnds:
         )
 
         self.households = lgv_inputs.household_projections(
-            self._household_paths.path, self._household_paths.zc_path
+            self._household_paths.occupied,
+            self._household_paths.zc_path,
+            self._household_paths.unoccupied,
         )
-        self.households.set_index("Zone", inplace=True)
 
         self.depots = self._infill_depots(self.depots)
 
-        self.bres = lgv_inputs.filtered_bres(
-            self._bres_paths.path, self._bres_paths.zc_path, self.BRES_AGGREGATION
+        self.employment = lgv_inputs.filtered_employment(
+            self._employment_paths, self.EMPLOYMENT_AGGREGATION
         )
-        self.bres.set_index("Zone", inplace=True)
 
     @classmethod
     def read_parameters(cls, path: Path) -> DeliveryParameters:
@@ -286,7 +304,7 @@ class DeliveryTripEnds:
         params: pd.Series = df.set_index(header[0])[header[1]]
 
         try:
-            params: DeliveryParameters = DeliveryParameters.parse_obj(params.to_dict())
+            params = DeliveryParameters.parse_obj(params.to_dict())
         except pydantic.ValidationError as error:
             raise errors.MissingDataError("Delivery Parameters", str(error)) from error
 
@@ -303,12 +321,12 @@ class DeliveryTripEnds:
         Employees. Each column sums to 1.
         """
         if self._trip_proportions is None:
-            if self.depots is None or self.households is None or self.bres is None:
+            if self.depots is None or self.households is None or self.employment is None:
                 raise ValueError(
                     "cannot calculate trip proportions until input data "
                     "has been read, call `DeliveryTripEnds.read` first"
                 )
-            trip_data = pd.concat([self.depots, self.households, self.bres], axis=1)
+            trip_data = pd.concat([self.depots, self.households, self.employment], axis=1)
             self._trip_proportions = trip_data / trip_data.sum(axis=0)
             self._trip_proportions.fillna(0, inplace=True)
         return self._trip_proportions.copy()
