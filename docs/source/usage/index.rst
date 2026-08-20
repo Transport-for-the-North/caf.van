@@ -13,3 +13,16 @@ Tool Usage
    inputs
    outputs
    methodology
+
+
+Graphical User Interface
+------------------------
+
+.. todo::
+    Does CAF.van have a GUI?
+
+Command-Line Interface
+----------------------
+
+.. todo::
+    Does CAF.van have a CLI?

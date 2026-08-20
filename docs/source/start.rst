@@ -5,11 +5,11 @@ Quick Start
     Write brief description about the possible ways for using the tool e.g. CLI, GUI and
     importing in Python.
 
-*CAF van is provided as a Python package and a command-line utility.
+*CAF.van is provided as a Python package and a command-line utility.
 The command-line utility aims to make some of the commonly used functionality 
 available without needing to use Python code, see :ref:`usage` for details.*
 
-CAF van can be installed from pip, conda-forge or **pipx
+CAF.van can be installed from pip, conda-forge or **pipx
 (when using as a command-line utility).**
 
 Pip
@@ -25,17 +25,16 @@ Installing through conda-forge is easy and can be done in one command:
 Pipx
 ----
 
-.. attention::
-    CAF.van does not currently support being install with `Pipx <https://pipx.pypa.io/stable/>`__,
-    feel free to raise an issue on
-    `GitHub <https://github.com/Transport-for-the-North/caf.van/issues>`__ to request this.
+.. todo::
+    Does CAF.van support being installed with
+    `Pipx <https://pipx.pypa.io/stable/>`__?
 
 
 Usage
 -----
 
 .. todo::
-    Does CAF van have a CLI or GUI?
+    Does CAF.van have a CLI or GUI?
 
 More details can be found in :ref:`tool usage`.
 
@@ -43,9 +42,9 @@ Python
 ^^^^^^
 
 .. todo::
-    Does CAF van have a suggested alias?
+    Does CAF.van have a suggested alias?
 
-When using CAF van functionality within Python:
+When using CAF.van functionality within Python:
 
 .. code:: python
 

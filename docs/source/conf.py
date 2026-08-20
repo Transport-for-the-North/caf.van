@@ -21,11 +21,11 @@ sys.path.insert(0, str(source.absolute()))
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "caf.van"
-copyright = "2024, Transport for the North"
+project = "CAF.van"
+copyright = "2026, Transport for the North"
 author = "Transport for the North"
 
-# Local Imports
+# Third Party
 import caf.van
 
 version = str(caf.van.__version__)
@@ -82,14 +82,24 @@ autodoc_typehints = "description"
 
 # Auto summary options
 autosummary_generate = True
-# TODO(MB): Sort imports within caf.van so this can be switched back to True
-autosummary_imported_members = False
+autosummary_imported_members = True
 modindex_common_prefix = ["caf.", "caf.van."]
+
+autosummary_context = {
+    # Enable inherited methods / attributes in all classes
+    "include_inherited_methods": False,
+    "include_inherited_attributes": False,
+    # Enable / disable inherited methods / attributes in some classes
+    "show_inherited": [],
+    "exclude_inherited": [],
+}
 
 # -- Options for Sphinx Examples gallery -------------------------------------
 sphinx_gallery_conf = {
     "examples_dirs": "../../examples",  # path to your example scripts
-    "gallery_dirs": "examples",  # path to where to save gallery generated output
+    "gallery_dirs": "_generated/examples",  # path to where to save gallery generated output
+    "backreferences_dir": "_generated/examples/backrefs",  # path to the backreferences files
+    "doc_module": ("caf.van",),
     # Regex pattern of filenames to be ran so the output can be included
     "filename_pattern": rf"{re.escape(os.sep)}run_.*\.py",
 }
@@ -104,7 +114,6 @@ intersphinx_mapping = {
 }
 intersphinx_timeout = 30
 
-
 # -- Options for Todo extension ----------------------------------------------
 def get_env_bool(name: str, default: bool) -> bool:
     value = os.getenv(name, default)
@@ -113,7 +122,7 @@ def get_env_bool(name: str, default: bool) -> bool:
     return value.lower().strip() in ("true", "t", "yes", "y", "1")
 
 
-todo_include_todos = get_env_bool("SPHINX_INCLUDE_TODOS", False)
+todo_include_todos = get_env_bool("SPHINX_INCLUDE_TODOS", True)
 todo_emit_warnings = True
 
 # -- Options for HTML output -------------------------------------------------
@@ -123,6 +132,7 @@ todo_emit_warnings = True
 #
 html_theme = "pydata_sphinx_theme"
 html_show_sourcelink = False
+html_logo = "https://www.transportforthenorth.com/logo.svg"
 
 master_doc = "index"
 
@@ -130,11 +140,15 @@ master_doc = "index"
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
+html_css_files = ["css/logo.css"]
 
 html_theme_options = {
     "use_edit_page_button": True,
     "logo": {
+        "image_dark": "https://raw.githubusercontent.com/Transport-for-the-North"
+        "/.github/refs/heads/main/profile/tfn-logo-white.png",
         "text": f"{project} {version}",
+        "alt_text": "Home",
     },
     "icon_links": [
         {
@@ -144,7 +158,7 @@ html_theme_options = {
             "type": "fontawesome",
         }
     ],
-    "header_links_before_dropdown": 4,
+    "header_links_before_dropdown": 3,
     "external_links": [
         {
             "name": "Changelog",
@@ -155,11 +169,16 @@ html_theme_options = {
             "url": "https://github.com/transport-for-the-north/caf.van/issues",
         },
         {
-            "name": "CAF Handbook",
-            "url": "https://transport-for-the-north.github.io/CAF-Handbook/",
+            "name": "TfN GitHub",
+            "url": "https://github.com/Transport-for-the-North",
         },
     ],
     "primary_sidebar_end": ["indices.html", "sidebar-ethical-ads.html"],
+    "announcement": """
+        The documentation pages are currently work-in-progress, if you have any suggestions
+        for improvements please raise an issue on the
+        <a href="https://github.com/transport-for-the-north/caf.van/issues/new/choose">caf.van repository</a>.
+    """,
 }
 html_context = {
     "github_url": "https://github.com",

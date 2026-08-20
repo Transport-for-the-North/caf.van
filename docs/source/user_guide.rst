@@ -1,7 +1,7 @@
 User Guide
 ==========
 
-This section provides an in-depth guide on using CAF van.
+This section provides an in-depth guide on using CAF.van.
 
 .. note::
    - For quick start guide see :ref:`quick start`
@@ -12,6 +12,6 @@ This section provides an in-depth guide on using CAF van.
    :maxdepth: 2
 
    usage/index
-   tutorials/index
-   examples/index
+   tutorial
+   _generated/examples/index
 

@@ -1,7 +1,8 @@
 API Reference
 =============
 
-This section shows the detailed documentation for CAF.van, last updated on |today|.
+This section shows the detailed documentation for CAF.van,
+last updated on |today|.
 
 .. note::
    - For quick start guide see :ref:`quick start`
@@ -9,7 +10,7 @@ This section shows the detailed documentation for CAF.van, last updated on |toda
    - For code examples see :ref:`code examples`
 
 .. autosummary::
-    :toctree: _autosummary/
+    :toctree: _generated/autosummary/
     :recursive:
 
     caf.van
