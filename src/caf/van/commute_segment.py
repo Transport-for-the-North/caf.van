@@ -9,8 +9,8 @@ from __future__ import annotations
 import logging
 import pathlib
 import re
+from collections.abc import Callable
 from itertools import chain
-from typing import Callable, Optional, Union
 
 # Third Party
 import caf.toolkit as ctk
@@ -57,13 +57,13 @@ QS606_HEADER_FOOTER = {"EW": (8, 5), "SC": (7, 5)}
 class WarehouseParameters(pydantic.BaseModel):
     """Parameters for warehouse data used in commute segment."""
 
-    medium: Optional[float] = pydantic.Field(alias="Weighting - Medium")
-    high: Optional[float] = pydantic.Field(alias="Weighting - High")
-    low: Optional[float] = pydantic.Field(alias="Weighting - Low")
-    zone_infill: list[Union[int, str]] = pydantic.Field(
+    medium: float | None = pydantic.Field(alias="Weighting - Medium")
+    high: float | None = pydantic.Field(alias="Weighting - High")
+    low: float | None = pydantic.Field(alias="Weighting - Low")
+    zone_infill: list[int | str] = pydantic.Field(
         alias="Model Zone Infill", default_factory=list
     )
-    infill_method: Optional[lgv_inputs.InfillMethod] = pydantic.Field(
+    infill_method: lgv_inputs.InfillMethod | None = pydantic.Field(
         None, alias="Zone Infill Method"
     )
 
@@ -110,7 +110,8 @@ class CommuteTripEnds:
 
     def __init__(self, input_paths: lgv_inputs.LGVInputPaths, model_zones: pd.Series):
         """Initialise class by checking all input paths are in input dict and
-        all input files exist"""
+        all input files exist
+        """
         self.paths = input_paths
         self.model_zones = model_zones
 
@@ -296,7 +297,6 @@ class CommuteTripEnds:
         """Calculates residential attractor factors from TEMPro households
         data.
         """
-
         households = lgv_inputs.household_projections(
             self.paths.household_paths.occupied,
             self.paths.household_paths.zc_path,
@@ -320,7 +320,8 @@ class CommuteTripEnds:
 
     def estimate_productions(self):
         """Reads in files and estimates trip productions by zone and employment
-        segment"""
+        segment
+        """
         qs606uk = self._read_qs606()
         # TODO(MB) review calc to check for 1/3
 
@@ -510,7 +511,8 @@ class CommuteTripEnds:
     def trips(self) -> dict[str, pd.DataFrame]:
         """Dict[pd.DataFrame] : dictionary with keys Skilled trades and
         Drivers, with values being the trip dataframes, each with productions
-        and attractions as columns and zones as indices."""
+        and attractions as columns and zones as indices.
+        """
         if not self.trip_ends:
             self.calc_trip_ends()
         return self.trip_ends

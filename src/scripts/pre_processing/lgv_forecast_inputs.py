@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Script for growing the LGV model inputs to a forecast year.
 
@@ -13,7 +12,8 @@ import datetime as dt
 import logging
 import pathlib
 import sys
-from typing import Any, Callable, Iterator
+from collections.abc import Callable, Iterator
+from typing import Any
 
 # Third Party
 import caf.toolkit
@@ -111,8 +111,7 @@ class _GrowthFactorLinRegress:
         """Value for a forecast year."""
         if x in self._data.index:
             return self._data.at[x]
-        else:
-            return self.line(x)
+        return self.line(x)
 
     @property
     def data(self) -> pd.Series:

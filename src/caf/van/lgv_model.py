@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Module for running the LGV model.
 """
@@ -13,7 +12,7 @@ import pprint
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal
 
 # Third Party
 import caf.toolkit as ctk
@@ -422,7 +421,6 @@ def balance_trip_ends(
     name: str,
 ) -> pd.DataFrame:
     """Balance variable column to control column within the regions."""
-
     # Create a copy so we don't change anything out of function scope
     balanced_trip_ends = trip_ends.copy()
 
@@ -520,7 +518,6 @@ def _gravity_model(
     csv_logging_path: Path,
 ) -> VanGravityModelResults:
     """Internal function used in `run_gravity_model` for running the GM with calibration."""
-
     trip_ends = trip_ends.rename(
         columns={
             **dict.fromkeys(("Productions", "Origins"), "row_targets"),
@@ -1108,7 +1105,7 @@ def _check_gm_inputs(
 
 
 def calculate_vehicle_kms(
-    matrix: pd.DataFrame, distances: pd.DataFrame, internals: Optional[set[int]] = None
+    matrix: pd.DataFrame, distances: pd.DataFrame, internals: set[int] | None = None
 ) -> pd.DataFrame:
     """Summarise number of trips and vehicle kilometres by internal/external.
 

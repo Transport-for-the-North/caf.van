@@ -3,7 +3,6 @@
 ##### IMPORTS #####
 
 # Built-Ins
-from typing import List, Union
 
 
 ##### ERRORS #####
@@ -37,9 +36,9 @@ class IncorrectParameterError(BaseVanError):
 
     def __init__(self, value, parameter=None, expected=None, *args, **kwargs):
         msg = f"Incorrect value(s) of {value!r}"
-        if not parameter is None:
+        if parameter is not None:
             msg += f" for parameter {parameter}"
-        if not expected is None:
+        if expected is not None:
             msg += f" expected value(s) {expected}"
         super().__init__(msg, *args, **kwargs)
 
@@ -68,7 +67,7 @@ class MissingWorksheetError(BaseVanError):
 class MissingColumnsError(BaseVanError):
     """Raised when columns are missing from input CSV or spreadsheet."""
 
-    def __init__(self, name: str, columns: List, *args, **kwargs):
+    def __init__(self, name: str, columns: list, *args, **kwargs):
         self.columns = columns
         cols = " and".join(", ".join(f"'{s}'" for s in columns).rsplit(",", 1))
         msg = f"Columns missing from {name}: {cols}"
@@ -78,7 +77,7 @@ class MissingColumnsError(BaseVanError):
 class MissingDataError(BaseVanError):
     """Raised when data is missing from an input file."""
 
-    def __init__(self, name: str, missing: Union[List, str], *args, **kwargs):
+    def __init__(self, name: str, missing: list | str, *args, **kwargs):
         self.name = name
         self.missing = missing
         if isinstance(missing, str):
@@ -92,7 +91,7 @@ class MissingDataError(BaseVanError):
 class NonNumericDataError(BaseVanError):
     """Raised when non-numeric data, which should be numeric, is found in an input file."""
 
-    def __init__(self, name: str, non_numeric: Union[List, str], *args, **kwargs):
+    def __init__(self, name: str, non_numeric: list | str, *args, **kwargs):
         if isinstance(non_numeric, str):
             nan = non_numeric
         else:

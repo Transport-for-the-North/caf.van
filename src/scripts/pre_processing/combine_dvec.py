@@ -39,7 +39,6 @@ def concat_dvecs(dir_: pathlib.Path, out: pathlib.Path) -> None:
 
 def zone_dvec(in_path: str, out_path: str) -> None:
     """Change the Dvector zoning name."""
-
     dvec = caf.base.DVector.load(pathlib.Path(in_path))
 
     data = dvec.data

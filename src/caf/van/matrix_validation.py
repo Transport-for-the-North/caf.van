@@ -6,7 +6,6 @@ from __future__ import annotations
 
 # Built-Ins
 from pathlib import Path
-from typing import Optional
 
 # Third Party
 import caf.toolkit as ctk
@@ -52,10 +51,10 @@ class MatrixReport:
     def __init__(
         self,
         matrix: pd.DataFrame,
-        translation: Optional[pd.DataFrame] = None,
-        translation_from_col: Optional[str] = None,
-        translation_to_col: Optional[str] = None,
-        translation_factors_col: Optional[str] = None,
+        translation: pd.DataFrame | None = None,
+        translation_from_col: str | None = None,
+        translation_to_col: str | None = None,
+        translation_factors_col: str | None = None,
     ):
 
         self.describe = pd.DataFrame()
@@ -101,7 +100,7 @@ class MatrixReport:
         self.describe[translated_describe_label] = matrix_describe(matrix)
 
     def write_to_excel(
-        self, writer: pd.ExcelWriter, label: Optional[str] = None, output_matrix: bool = False
+        self, writer: pd.ExcelWriter, label: str | None = None, output_matrix: bool = False
     ) -> None:
         """Write matrix report to multiple sheets in an Excel file.
 
@@ -155,10 +154,10 @@ class MatrixReport:
     def from_file(
         cls,
         path: Path,
-        translation_path: Optional[Path] = None,
-        translation_from_col: Optional[str] = None,
-        translation_to_col: Optional[str] = None,
-        translation_factors_col: Optional[str] = None,
+        translation_path: Path | None = None,
+        translation_from_col: str | None = None,
+        translation_to_col: str | None = None,
+        translation_factors_col: str | None = None,
     ) -> MatrixReport:
         """Create an instance of MatrixReport from file paths.
 
@@ -199,7 +198,7 @@ class MatrixReport:
         )
 
 
-def matrix_describe(matrix: pd.DataFrame, almost_zero: Optional[float] = None) -> pd.Series:
+def matrix_describe(matrix: pd.DataFrame, almost_zero: float | None = None) -> pd.Series:
     """Provide descriptive statistics of `matrix`.
 
     Parameters

@@ -3,7 +3,6 @@
 # Built-Ins
 import collections
 import glob
-import os
 import pathlib
 from functools import reduce
 
@@ -36,7 +35,6 @@ def process_matrices(
     output_path: pathlib.Path,
 ) -> None:
     """Processes matrices into a the output format."""
-
     # path.glob(*)
 
     tp_dir = [x for x in matrix_dir.iterdir() if x.is_dir()]
@@ -53,7 +51,7 @@ def process_matrices(
         # sort matrices
         matrix_paths = glob.glob(str(matrix_dir / dir / "*.csv"))
         print(f"{len(matrix_paths)} matrices found")
-        sorted_matrices = collections.defaultdict(lambda: [])
+        sorted_matrices = collections.defaultdict(list)
         for path in matrix_paths:
             matrix = pd.read_csv(path, index_col=0)
             name: str = pathlib.Path(path).stem
@@ -66,7 +64,7 @@ def process_matrices(
                     print(f"Adding {name} to combined matrices")
                     sorted_matrices[seg].append(matrix)
                     continue
-                elif seg.lower() in name.lower():
+                if seg.lower() in name.lower():
                     sorted_matrices[seg].append(matrix)
 
         # sum matrices
@@ -79,7 +77,7 @@ def process_matrices(
             if len(matrices) == 0:
                 raise ValueError(f"no matrices in segment {seg_name}")
 
-            elif len(matrices) == 1:
+            if len(matrices) == 1:
                 collated_matrices[seg_name] = matrices[0]
 
             else:

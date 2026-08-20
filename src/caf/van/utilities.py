@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Set of utilities for use in the freight tool
 """
@@ -12,7 +11,6 @@ import json
 import re
 from itertools import islice
 from pathlib import Path
-from typing import Dict, Union
 
 # Third Party
 import pandas as pd
@@ -97,29 +95,32 @@ class Parameters:
         Initiate the parameters class by reading file if given, using parameters if given
         or with defaults.
 
-        Parameters:
+        Parameters
+        ----------
             path: str, optional
                 Path to parameters file.
             params: dict, optional
                 Dictionary containing parameters.
         """
-        if not path is None:
+        if path is not None:
             self.params = self.read(path)
-        elif not params is None:
+        elif params is not None:
             self.params = dict(params)
         else:
             self.params = self.DEFAULT_PARAMETERS
-        return
 
     @classmethod
     def read(cls, path):
         """
         Read the paramters file given, using json.
 
-        Parameters:
+        Parameters
+        ----------
             path: str
                 Path to the parameters file.
-        Returns:
+
+        Returns
+        -------
             params: dict
                 Dictionary containing all the parameters read.
         """
@@ -133,7 +134,8 @@ class Parameters:
         """
         Creates json string.
 
-        Parameters:
+        Parameters
+        ----------
             None
         Returns:
             params: str
@@ -145,23 +147,26 @@ class Parameters:
         """
         Write parameters to file.
 
-        Parameters:
+        Parameters
+        ----------
             path: str
                 Path to write parameter file to.
-        Returns:
+
+        Returns
+        -------
             None
         """
         # Write parameters to file
         with open(path, "wt") as f:
             json.dump(self.params, f, indent=self._INDENT)
-        return
 
     @staticmethod
     def check_params(parameters, expected, name):
         """
         Checks if parameters contain expected.
 
-        Parameters:
+        Parameters
+        ----------
             parameters: dict
                 Dictionary containing parameters.
             expected: iterable
@@ -169,10 +174,14 @@ class Parameters:
                 keys in the dictionary.
             name: str
                 Name of the parameter group being checked.
-        Returns:
+
+        Returns
+        -------
             params: dict
                 Dictionary containing only the expected parameters.
-        Raises:
+
+        Raises
+        ------
             MissingParameterError: If any of the expected parameters
             are not in the dictionary.
         """
@@ -180,9 +189,8 @@ class Parameters:
         for i in expected:
             if i not in parameters.keys():
                 raise MissingParameterError(i, name)
-            else:
-                # Only keep required values
-                params[i] = parameters[i]
+            # Only keep required values
+            params[i] = parameters[i]
 
         return params
 
@@ -213,7 +221,7 @@ class DataPaths:
 
 def check_file_path(
     path: Path, name: str, *extensions: str, return_path: bool = False
-) -> Union[bool, Path]:
+) -> bool | Path:
     """Check that the given `path` is an existing file.
 
     Also checks if the file contains the correct file
@@ -301,7 +309,7 @@ def check_folder(path: Path, name: str, create: bool = False) -> True:
     raise FileNotFoundError(f"{name} folder does not exist: {path}")
 
 
-def read_csv(path: Path, name: str = None, columns: Dict = None, **kwargs) -> pd.DataFrame:
+def read_csv(path: Path, name: str = None, columns: dict = None, **kwargs) -> pd.DataFrame:
     """Wrapper function for `pandas.read_csv` to perform additional checks.
 
     Checks what delimiter the file uses before reading and provides more
@@ -340,7 +348,7 @@ def read_csv(path: Path, name: str = None, columns: Dict = None, **kwargs) -> pd
     if name is None:
         name = path.stem
     check_file_path(path, name, ".txt", ".csv")
-    if "sep" not in kwargs.keys() and "delimiter" not in kwargs.keys():
+    if "sep" not in kwargs and "delimiter" not in kwargs:
         # Don't try to figure out delimiter if it is already given
         # Read in the second line of the file to determine the delimiter
         with open(path, "r") as csv_file:
@@ -378,7 +386,7 @@ def read_csv(path: Path, name: str = None, columns: Dict = None, **kwargs) -> pd
 
 
 def read_excel(
-    path: Path, name: str | None = None, columns: Dict | None = None, **kwargs
+    path: Path, name: str | None = None, columns: dict | None = None, **kwargs
 ) -> pd.DataFrame:
     """Wrapper function for `pandas.read_excel` to perform additional checks.
 
@@ -414,7 +422,6 @@ def read_excel(
         If any of the columns cannot be converted to the
         given data type.
     """
-
     path = Path(path)
     if name is None:
         name = path.stem
@@ -453,7 +460,7 @@ def read_excel(
     return df
 
 
-def read_multi_sheets(path: Path, sheets: Dict, **kwargs):
+def read_multi_sheets(path: Path, sheets: dict, **kwargs):
     """Function to read in multiple excel sheets.
 
     Reads all sheets into a dictonary and provides detailed error messages

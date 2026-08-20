@@ -37,7 +37,6 @@ def create_plot(
     geom_id_col : str
         Column name for the ID of the zone in geometry.
     """
-
     data_cols = data.select_dtypes(include=[np.number]).columns.to_list()
 
     geo_data_df = geometry.merge(data, left_on=geom_id_col, right_on=data_id_col)
@@ -82,7 +81,6 @@ def summarise_trip_ends(
     output_path : pathlib.Path
         Output path for the plots.
     """
-
     trip_end_paths = glob.glob(str(data_dir / "*.csv"))
 
     translation = pd.read_csv(translation_path)

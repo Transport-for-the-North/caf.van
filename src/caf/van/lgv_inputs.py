@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Module containing functionality for reading and pre-processing
 the LGV inputs which are used for multiple segments.
@@ -12,8 +11,9 @@ from __future__ import annotations
 import datetime as dt
 import enum
 import logging
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Literal, Optional
+from typing import Any, Literal
 
 # Third Party
 import caf.base
@@ -102,9 +102,9 @@ class CommuteWarehousePaths:
 
     medium: types.FilePath
     """Path to the medium weighted warehouse data."""
-    low: Optional[types.FilePath] = None
+    low: types.FilePath | None = None
     """Path to the low weighted warehouse data."""
-    high: Optional[types.FilePath] = None
+    high: types.FilePath | None = None
     """Path to the high weighted warehouse data."""
 
 
@@ -117,7 +117,7 @@ class DwellingPaths:
     No specific segmentation is required as it is aggregated to total households by zone."""
     zc_path: types.FilePath
     """Path to the zone correspondence CSV."""
-    unoccupied: Optional[types.FilePath] = None
+    unoccupied: types.FilePath | None = None
     """Path to the unoccupied dwellings data DVector. 
     No specific segmentation is required as it is aggregated to total households by zone."""
 
@@ -246,7 +246,7 @@ class InfillMethod(enum.Enum):
 def household_projections(
     occupied_paths: Path,
     zone_lookup: Path,
-    unoccupied_paths: Optional[Path] = None,
+    unoccupied_paths: Path | None = None,
 ) -> pd.DataFrame:
     """Reads and aggregates the household DVectors and converts to model zone system.
 
@@ -269,7 +269,6 @@ def household_projections(
         Household projections in the model zone system with columns
         'Zone' and 'Households'.
     """
-
     zone_correspondence = pd.read_csv(zone_lookup)
 
     households = (
@@ -502,7 +501,7 @@ class GMInputs:
     """Starting (calibration)/run params for the cost function."""
     calibrate: bool
     """Whether to calibrate the cost function params (True) or run with given params (False)."""
-    cat_zone_correspondence_path: Optional[types.FilePath] = None
+    cat_zone_correspondence_path: types.FilePath | None = None
     """Correspondence between the categories in the TLD and the model zones."""
     furness_jacobian: bool = True
     """Whether to Furness the Jacobian matrix in the gravity model. Find your nearest demand modelling expert for more information."""
@@ -542,7 +541,8 @@ class GMInputs:
     @model_validator(mode="after")
     def _check_cost_params(self) -> GMInputs:
         """Check that the cost parameters passed are
-        in the correct format for the mode selected."""
+        in the correct format for the mode selected.
+        """
         multi_tld = True
 
         try:

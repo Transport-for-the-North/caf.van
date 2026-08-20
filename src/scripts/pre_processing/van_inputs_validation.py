@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Perform some validation and checking of the van model inputs."""
 
 ##### IMPORTS #####
@@ -233,13 +232,13 @@ def _check_zones(id_column: str, zoning: cb.ZoningSystem, lookup_zones: np.ndarr
 def _find_id_column(
     zone_name: str, lookup: pd.DataFrame, retry: bool = True
 ) -> tuple[str, str]:
-    id_pattern = re.compile(rf"^\s*({zone_name}.*)_id\s*$", re.I)
+    id_pattern = re.compile(rf"^\s*({zone_name}.*)_id\s*$", re.IGNORECASE)
 
     id_column = list(filter(lambda x: x is not None, map(id_pattern.match, lookup.columns)))
 
     if len(id_column) == 0 and retry:
         # Remove any numbers (year / version) from the end of the name
-        zone_name = re.sub(r"[_\d]+$", "", zone_name, flags=re.I)
+        zone_name = re.sub(r"[_\d]+$", "", zone_name, flags=re.IGNORECASE)
         return _find_id_column(zone_name, lookup, False)
 
     if len(id_column) != 1:
