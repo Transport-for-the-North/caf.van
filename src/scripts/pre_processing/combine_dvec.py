@@ -24,7 +24,7 @@ def concat_dvecs(dir_: pathlib.Path, out: pathlib.Path) -> None:
     print("combining")  # noqa: T201 review required
     data = pd.concat([d.data for d in dvecs], axis=1)
     data = data.fillna(0)
-    # data[segmentation.names] = data[segmentation.names].astype(int)  # noqa: ERA001 review required
+    # data[segmentation.names] = data[segmentation.names].astype(int)  # noqa: ERA001
     # data = data.groupby(segmentation.names).sum()  # noqa: ERA001 review required
     data = data.rename(columns=lsoa_zoning.name_to_id)
     print("creating dvec")  # noqa: T201 review required

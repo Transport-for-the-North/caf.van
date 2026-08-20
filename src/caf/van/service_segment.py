@@ -91,7 +91,7 @@ class ServiceTripEnds:
         """Checks the input files exist and are the expected type."""  # noqa: D401 review required
         plain_txt_extensions = (".csv", ".txt")
         dvec_extensions = (".dvec", ".hdf", ".h5")
-        # for nm, paths in (("BRES", employment_paths),):#TODO(kf) validate dwelling paths  # noqa: TD003, TD004 review required
+        # for nm, paths in (("BRES", employment_paths),):#TODO(kf) validate dwelling paths  # noqa: E501, TD003, TD004
         utilities.check_file_path(employment_paths.path, "employment data", *dvec_extensions)
         utilities.check_file_path(
             employment_paths.zc_path, "employment lookup", *plain_txt_extensions

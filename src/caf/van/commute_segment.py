@@ -150,7 +150,7 @@ class CommuteTripEnds:
             self.paths.parameters_path, sheets=self.COMMUTING_INPUTS_SHEET_HEADERS
         )
 
-        # TODO(MB) Create a pydantic dataclass to store / validate the parameters  # noqa: TD003, TD004 review required
+        # TODO(MB) Create a pydantic dataclass to store / validate the parameters  # noqa: E501, TD003, TD004
         self.params = utilities.to_dict(
             commute_tables["Parameters"], "Parameter", ("Value", float)
         )

@@ -57,7 +57,7 @@ def find_zoning_systems(folder: pathlib.Path) -> dict[str, pathlib.Path]:
     LOG.info('Searching for zone systems in "%s"', folder)
     systems = {}
     for path in folder.iterdir():
-        # TODO Allow zone systems to be loaded from zip archives  # noqa: TD002, TD003, TD004 review required
+        # TODO Allow zone systems to be loaded from zip archives  # noqa: E501, TD002, TD003, TD004
         if not path.is_dir():
             continue
 

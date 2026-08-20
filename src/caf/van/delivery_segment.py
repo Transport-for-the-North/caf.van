@@ -98,7 +98,7 @@ class DeliveryTripEnds:
         Full list of model zones.
     """  # noqa: E501 review required
 
-    EMPLOYMENT_AGGREGATION = {"Employees": list(range(1, 22))}  # A - U (1->21)
+    EMPLOYMENT_AGGREGATION = {"Employees": list(range(1, 22))}  # A - U (1->21)  # noqa: RUF012
     PARAMETERS_SHEET = "Delivery Segment Parameters"
     PARAMETERS_HEADER = {"Parameter": str, "Value": str}  # noqa: RUF012 review required
 

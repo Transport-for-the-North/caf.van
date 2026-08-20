@@ -137,7 +137,7 @@ class _GrowthFactorLinRegress:
 ##### FUNCTIONS #####
 def _load_planning_data(base_path: pathlib.Path, forecast_path: pathlib.Path):  # noqa: ANN202 review required
     """Calculate growth values for the TEMPro planning data for the forecast year."""
-    # TODO(MB) Load NTEM data directly from the databases, functionality for this  # noqa: TD003, TD004 review required
+    # TODO(MB) Load NTEM data directly from the databases, functionality for this  # noqa: E501, TD003, TD004
     # exists in NorMITs-Demand
     index_col = ["Area Description", "Name"]
     rename_columns = {
@@ -322,7 +322,7 @@ def grow_occupation_data(
         factor_col,
     )
 
-    # TODO Use more spatially disaggregate values for Scotland  # noqa: TD002, TD003, TD004 review required
+    # TODO Use more spatially disaggregate values for Scotland  # noqa: E501, TD002, TD003, TD004
     # Use single average growth factor for Scotland because they're datazones not LSOAs
     key = "SC"
     qs_data[key] = base_data[key]

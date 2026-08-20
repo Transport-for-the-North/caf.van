@@ -702,7 +702,7 @@ def run_gravity_model(
             output_folder / f"gravity_model_{name}_calibration_log.csv",
         )
 
-        # except Exception as e:  # pylint: disable = broad-exception-caught  # noqa: ERA001 review required
+        # except Exception as e:  # pylint: disable = broad-exception-caught  # noqa: E501, ERA001
         #    LOG.info("\t%s: %s", e.__class__.__name__, e)  # noqa: ERA001 review required
         #    continue  # noqa: ERA001 review required
 
