@@ -16,7 +16,7 @@ from collections.abc import Callable, Iterator
 from typing import Any
 
 # Third Party
-import caf.toolkit
+import caf.toolkit  # noqa: ICN001 review required
 import numpy as np
 import pandas as pd
 import pydantic
@@ -71,7 +71,7 @@ class NTEMGrowthData:
     workers_col: str = "workers"
 
     @pydantic.root_validator(skip_on_failure=True)
-    def _check_columns(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _check_columns(cls, values: dict[str, Any]) -> dict[str, Any]:  # noqa: N805 review required
         # pylint: disable=no-self-argument
         col_names = ["pop_col", "households_col", "jobs_col", "workers_col"]
         columns = [values[i] for i in col_names]
@@ -87,7 +87,7 @@ class NTEMGrowthData:
 
         return values
 
-    def __iter__(self) -> Iterator[tuple[str, pd.DataFrame]]:
+    def __iter__(self) -> Iterator[tuple[str, pd.DataFrame]]:  # noqa: D105 review required
         yield "lsoa", self.lsoa
         yield "msoa", self.msoa
         yield "lad", self.lad
@@ -107,10 +107,10 @@ class _GrowthFactorLinRegress:
         """Get forecast values."""
         return (self._results.slope * x) + self._results.intercept
 
-    def year_value(self, x: int):
+    def year_value(self, x: int):  # noqa: ANN202 review required
         """Value for a forecast year."""
         if x in self._data.index:
-            return self._data.at[x]
+            return self._data.at[x]  # noqa: PD008 review required
         return self.line(x)
 
     @property
@@ -135,9 +135,9 @@ class _GrowthFactorLinRegress:
 
 
 ##### FUNCTIONS #####
-def _load_planning_data(base_path: pathlib.Path, forecast_path: pathlib.Path):
+def _load_planning_data(base_path: pathlib.Path, forecast_path: pathlib.Path):  # noqa: ANN202 review required
     """Calculate growth values for the TEMPro planning data for the forecast year."""
-    # TODO(MB) Load NTEM data directly from the databases, functionality for this
+    # TODO(MB) Load NTEM data directly from the databases, functionality for this  # noqa: TD003, TD004 review required
     # exists in NorMITs-Demand
     index_col = ["Area Description", "Name"]
     rename_columns = {
@@ -194,7 +194,7 @@ def _merge_check(
     total = len(data)
     uniques = np.unique(data["_merge"], return_counts=True)
 
-    for loc, n in zip(*uniques):
+    for loc, n in zip(*uniques):  # noqa: B905 review required
         if loc == "both":
             dataset = "both datasets"
         else:
@@ -285,7 +285,7 @@ def grow_occupation_data(
     for key, path in (("EW", ew_path), ("SC", sc_path)):
         meta_rows[key] = ""
 
-        with open(path, "rt", encoding="utf-8") as file:
+        with open(path, "rt", encoding="utf-8") as file:  # noqa: PTH123 review required
             for _ in range(commute_segment.QS606_HEADER_FOOTER[key][0]):
                 line = file.readline()
                 if "Date" in line:
@@ -322,7 +322,7 @@ def grow_occupation_data(
         factor_col,
     )
 
-    # TODO Use more spatially disaggregate values for Scotland
+    # TODO Use more spatially disaggregate values for Scotland  # noqa: TD002, TD003, TD004 review required
     # Use single average growth factor for Scotland because they're datazones not LSOAs
     key = "SC"
     qs_data[key] = base_data[key]
@@ -342,11 +342,11 @@ def grow_occupation_data(
     comparisons = {}
     for key, data in qs_data.items():
         output_paths[key] = output_folder / f"QS606{key}_grown_{forecast_year}.csv"
-        data = data.drop(columns=[factor_col, "_merge"], errors="ignore")
+        data = data.drop(columns=[factor_col, "_merge"], errors="ignore")  # noqa: PLW2901 review required
 
         comparisons[key] = _compare_column_totals(base_data[key], data)
 
-        with open(output_paths[key], "wt", encoding="utf-8", newline="") as file:
+        with open(output_paths[key], "wt", encoding="utf-8", newline="") as file:  # noqa: PTH123 review required
             file.write(meta_rows[key])
             data.to_csv(file, index=False)
 
@@ -430,7 +430,7 @@ def _write_forecast_log(
 ) -> None:
     yaml = strictyaml.as_document(_recursive_apply(paths, str)).as_yaml()
 
-    with open(output_path, "wt", encoding="utf-8") as file:
+    with open(output_path, "wt", encoding="utf-8") as file:  # noqa: PTH123 review required
         file.write(
             f"# LGV model inputs grown from {base_year} to {forecast_year}, "
             f"produced at: {dt.datetime.now():%c}\n"
@@ -567,7 +567,7 @@ def _compare_column_totals(base: pd.DataFrame, forecast: pd.DataFrame) -> pd.Dat
 
 
 def main(params: ForecastInputsConfig) -> None:
-    """Main func."""
+    """Main func."""  # noqa: D401 review required
     output_folder = (
         params.output_folder / f"LGV Forecast Inputs {params.forecast_year} "
         f"- {dt.date.today():%Y%m%d}"

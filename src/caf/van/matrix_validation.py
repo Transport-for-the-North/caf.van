@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 # Built-Ins
-from pathlib import Path
+from pathlib import Path  # noqa: TC003 review required
 
 # Third Party
 import caf.toolkit as ctk
@@ -120,7 +120,7 @@ class MatrixReport:
         else:
             sheet_prefix = ""
 
-        if len(sheet_prefix) >= 22:
+        if len(sheet_prefix) >= 22:  # noqa: PLR2004 review required
             raise ValueError(
                 "label cannot be over 30 characters as the sheets names will"
                 " be truncated and will not be unique"
@@ -217,7 +217,7 @@ def matrix_describe(matrix: pd.DataFrame, almost_zero: float | None = None) -> p
     if almost_zero is None:
         almost_zero = 1 / matrix.size
 
-    info = matrix.stack().describe(percentiles=[0.05, 0.25, 0.5, 0.75, 0.95])
+    info = matrix.stack().describe(percentiles=[0.05, 0.25, 0.5, 0.75, 0.95])  # noqa: PD013 review required
 
     info["columns"] = len(matrix.columns)
     info["rows"] = len(matrix.index)

@@ -1,7 +1,7 @@
 """
 Module containing functionality for reading and pre-processing
 the LGV inputs which are used for multiple segments.
-"""
+"""  # noqa: D205 review required
 
 ##### IMPORTS #####
 
@@ -12,12 +12,12 @@ import datetime as dt
 import enum
 import logging
 from collections.abc import Callable
-from pathlib import Path
+from pathlib import Path  # noqa: TC003 review required
 from typing import Any, Literal
 
 # Third Party
-import caf.base
-import caf.toolkit
+import caf.base  # noqa: ICN001 review required
+import caf.toolkit  # noqa: ICN001 review required
 import numpy as np
 import pandas as pd
 import pydantic
@@ -238,7 +238,7 @@ class InfillMethod(enum.Enum):
         }
 
     def method(self) -> InfillFunction:
-        """Function to calculate infilling value."""
+        """Function to calculate infilling value."""  # noqa: D401 review required
         return self.method_lookup()[self]
 
 
@@ -268,7 +268,7 @@ def household_projections(
     pd.DataFrame
         Household projections in the model zone system with columns
         'Zone' and 'Households'.
-    """
+    """  # noqa: D401 review required
     zone_correspondence = pd.read_csv(zone_lookup)
 
     households = (
@@ -446,7 +446,7 @@ def read_study_area(path: Path) -> set:
 
     Any zones not given are assumed to be outside
     the study area.
-    """
+    """  # noqa: D401 review required
     columns = {"zone": str, "internal": int}
     df = utilities.read_csv(path, "Model Study Area CSV", columns)
     df.loc[:, "zone"] = pd.to_numeric(df["zone"], downcast="unsigned", errors="ignore")
@@ -497,11 +497,11 @@ class GMInputs:
     cost_function_params: tuple[float, float] | dict[int | str, tuple[float, float]]
     """Starting (calibration)/run params for the cost function."""
     calibrate: bool
-    """Whether to calibrate the cost function params (True) or run with given params (False)."""
+    """Whether to calibrate the cost function params (True) or run with given params (False)."""  # noqa: E501 review required
     cat_zone_correspondence_path: types.FilePath | None = None
     """Correspondence between the categories in the TLD and the model zones."""
     furness_jacobian: bool = True
-    """Whether to Furness the Jacobian matrix in the gravity model. Find your nearest demand modelling expert for more information."""
+    """Whether to Furness the Jacobian matrix in the gravity model. Find your nearest demand modelling expert for more information."""  # noqa: E501 review required
 
     @field_validator("cost_function_params", mode="before")
     @classmethod
@@ -519,7 +519,7 @@ class GMInputs:
         -------
         dict[str | int, tuple[float, ...]] | tuple[float, ...]
             unpacked cost function parameters.
-        """
+        """  # noqa: E501 review required
         if isinstance(params, str):
             return params.split(",")
 
@@ -539,7 +539,7 @@ class GMInputs:
     def _check_cost_params(self) -> GMInputs:
         """Check that the cost parameters passed are
         in the correct format for the mode selected.
-        """
+        """  # noqa: D205 review required
         multi_tld = True
 
         try:
@@ -569,7 +569,7 @@ class GMInputs:
                     "cat_zone_correspondence_path and trip_length_distribution_path"
                 )
         else:
-            assert isinstance(self.cost_function_params, dict)
+            assert isinstance(self.cost_function_params, dict)  # noqa: S101 review required
 
             correspondence_cats = set(
                 pd.read_csv(self.cat_zone_correspondence_path, usecols=["area"])

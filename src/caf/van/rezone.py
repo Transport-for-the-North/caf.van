@@ -19,7 +19,7 @@ class Rezone:
     """Class for rezoning a matrix when given a lookup with splitting factors."""
 
     @classmethod
-    def read(cls, path, columns):
+    def read(cls, path, columns):  # noqa: ANN001, ANN206 review required
         """Read the lookup file.
 
         Parameters
@@ -67,14 +67,14 @@ class Rezone:
         return df
 
     @staticmethod
-    def rezone(
-        df,
-        lookup,
-        df_col,
-        lookup_old="old",
-        lookup_new="new",
-        split_col="splitting_factor",
-        rezone_cols="trips",
+    def rezone(  # noqa: ANN205 review required
+        df,  # noqa: ANN001 review required
+        lookup,  # noqa: ANN001 review required
+        df_col,  # noqa: ANN001 review required
+        lookup_old="old",  # noqa: ANN001 review required
+        lookup_new="new",  # noqa: ANN001 review required
+        split_col="splitting_factor",  # noqa: ANN001 review required
+        rezone_cols="trips",  # noqa: ANN001 review required
     ):
         """Rezones a dataframe with a lookup dataframe, using splitting factors.
 
@@ -128,7 +128,7 @@ class Rezone:
         return merged[original_cols], missing
 
     @classmethod
-    def rezone_od(cls, df, lookup, df_cols=("origin", "destination"), **kwargs):
+    def rezone_od(cls, df, lookup, df_cols=("origin", "destination"), **kwargs):  # noqa: ANN001, ANN206 review required
         """Rezones the matrix on both the origin and destination columns.
 
         Uses the `rezone` method.

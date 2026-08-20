@@ -1,7 +1,7 @@
 """
 Module to calculate the productions and attractions for the LGV
 service segment in the model zone system.
-"""
+"""  # noqa: D205 review required
 
 ##### IMPORTS #####
 
@@ -43,11 +43,11 @@ class ServiceTripEnds:
         If `scale_factor` isn't a positive numeric value.
     """
 
-    EMPLOYMENT_AGGREGATION = {
+    EMPLOYMENT_AGGREGATION = {  # noqa: RUF012 review required
         "Office": list(range(9, 17)),  # I - P (9->16)
         "Other": list(range(1, 9)) + list(range(17, 22)),  # A - H (1->8)  # Q - U (17->21)
     }
-    SERVICE_TRIPS_HEADER = {"Segment": str, "Annual Service Trips": int}
+    SERVICE_TRIPS_HEADER = {"Segment": str, "Annual Service Trips": int}  # noqa: RUF012 review required
     SERVICE_TRIPS_SEGMENTS = ("Residential", "Office", "All Other")
     SERVICE_TRIPS_SHEET = "Annual Service Trips"
 
@@ -88,10 +88,10 @@ class ServiceTripEnds:
         employment_paths: lgv_inputs.EmploymentPaths,
         service_trips: Path,
     ) -> None:
-        """Checks the input files exist and are the expected type."""
+        """Checks the input files exist and are the expected type."""  # noqa: D401 review required
         plain_txt_extensions = (".csv", ".txt")
         dvec_extensions = (".dvec", ".hdf", ".h5")
-        # for nm, paths in (("BRES", employment_paths),):#TODO(kf) validate dwelling paths
+        # for nm, paths in (("BRES", employment_paths),):#TODO(kf) validate dwelling paths  # noqa: TD003, TD004 review required
         utilities.check_file_path(employment_paths.path, "employment data", *dvec_extensions)
         utilities.check_file_path(
             employment_paths.zc_path, "employment lookup", *plain_txt_extensions
@@ -173,7 +173,7 @@ class ServiceTripEnds:
         """pd.DataFrame : Proportion of input data for each zone, with
         zone number as index (Zone) and columns Households, Office
         (employees) and Other (employees). Each column sums to 1.
-        """
+        """  # noqa: D205 review required
         if self._trip_proportions is None:
             if self.households is None or self.employment is None:
                 raise ValueError(
@@ -188,7 +188,7 @@ class ServiceTripEnds:
     def trips(self) -> pd.DataFrame:
         """pd.DataFrame : Number of trips for each zone (index) and
         each of the segments (columns) Residential, Office and Other.
-        """
+        """  # noqa: D205 review required
         if self._trips is None:
             if self.total_trips is None:
                 raise ValueError(
@@ -197,18 +197,18 @@ class ServiceTripEnds:
                 )
             self._trips = self.trip_proportions.copy()
             self._trips = self._trips.rename(columns={"Households": "Residential"})
-            self._trips["Residential"] *= self.total_trips.at[
+            self._trips["Residential"] *= self.total_trips.at[  # noqa: PD008 review required
                 "Residential", "Annual Service Trips"
             ]
-            self._trips["Office"] *= self.total_trips.at["Office", "Annual Service Trips"]
-            self._trips["Other"] *= self.total_trips.at["All Other", "Annual Service Trips"]
+            self._trips["Office"] *= self.total_trips.at["Office", "Annual Service Trips"]  # noqa: PD008 review required
+            self._trips["Other"] *= self.total_trips.at["All Other", "Annual Service Trips"]  # noqa: PD008 review required
         return self._trips
 
     @property
     def trip_ends(self) -> pd.DataFrame:
         """pd.DataFrame : Productions and Attractions trip
         ends (columns) for all zones (index).
-        """
+        """  # noqa: D205 review required
         if self._trip_ends is None:
             # Aggregate trips together
             tot_trips = self.trips.sum(axis=1)

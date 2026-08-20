@@ -13,7 +13,7 @@ class BaseVanError(Exception):
 class MissingInputsError(BaseVanError):
     """Raised when one or multiple inputs are missing."""
 
-    def __init__(self, missing, *args, **kwargs) -> None:
+    def __init__(self, missing, *args, **kwargs) -> None:  # noqa: ANN001, ANN002 review required
         # Create message
         msg = "Missing input"
         if len(missing) > 1:
@@ -25,7 +25,7 @@ class MissingInputsError(BaseVanError):
 class MissingParameterError(BaseVanError):
     """Raised when a parameter is missing from the input."""
 
-    def __init__(self, missing, parameterNm, *args, **kwargs) -> None:
+    def __init__(self, missing, parameterNm, *args, **kwargs) -> None:  # noqa: ANN001, ANN002, N803 review required
         # Create message
         msg = f"'{missing}' is missing from input '{parameterNm}'."
         super().__init__(msg, *args, **kwargs)
@@ -34,7 +34,7 @@ class MissingParameterError(BaseVanError):
 class IncorrectParameterError(BaseVanError):
     """Raised when parameter given is an unaccepted value."""
 
-    def __init__(self, value, parameter=None, expected=None, *args, **kwargs) -> None:
+    def __init__(self, value, parameter=None, expected=None, *args, **kwargs) -> None:  # noqa: ANN001, ANN002 review required
         msg = f"Incorrect value(s) of {value!r}"
         if parameter is not None:
             msg += f" for parameter {parameter}"
@@ -46,7 +46,7 @@ class IncorrectParameterError(BaseVanError):
 class MissingLookupValuesError(BaseVanError):
     """Raised when there are zones missing from the lookup DataFrame."""
 
-    def __init__(self, missing, column="", *args, **kwargs) -> None:
+    def __init__(self, missing, column="", *args, **kwargs) -> None:  # noqa: ANN001, ANN002 review required
         # Create message
         msg = (
             f"There are {len(missing)} zones missing from the {column} lookup: {list(missing)}"
@@ -57,7 +57,7 @@ class MissingLookupValuesError(BaseVanError):
 class MissingWorksheetError(BaseVanError):
     """Raised when worksheet is missing from input spreadsheet."""
 
-    def __init__(self, workbook: str, worksheet: str, *args, **kwargs) -> None:
+    def __init__(self, workbook: str, worksheet: str, *args, **kwargs) -> None:  # noqa: ANN002 review required
         msg = f"Worksheet '{worksheet}' missing from '{workbook}' spreadsheet"
         super().__init__(msg, *args, *kwargs)
 
@@ -65,7 +65,7 @@ class MissingWorksheetError(BaseVanError):
 class MissingColumnsError(BaseVanError):
     """Raised when columns are missing from input CSV or spreadsheet."""
 
-    def __init__(self, name: str, columns: list, *args, **kwargs) -> None:
+    def __init__(self, name: str, columns: list, *args, **kwargs) -> None:  # noqa: ANN002 review required
         self.columns = columns
         cols = " and".join(", ".join(f"'{s}'" for s in columns).rsplit(",", 1))
         msg = f"Columns missing from {name}: {cols}"
@@ -75,7 +75,7 @@ class MissingColumnsError(BaseVanError):
 class MissingDataError(BaseVanError):
     """Raised when data is missing from an input file."""
 
-    def __init__(self, name: str, missing: list | str, *args, **kwargs) -> None:
+    def __init__(self, name: str, missing: list | str, *args, **kwargs) -> None:  # noqa: ANN002 review required
         self.name = name
         self.missing = missing
         if isinstance(missing, str):
@@ -89,7 +89,7 @@ class MissingDataError(BaseVanError):
 class NonNumericDataError(BaseVanError):
     """Raised when non-numeric data, which should be numeric, is found in an input file."""
 
-    def __init__(self, name: str, non_numeric: list | str, *args, **kwargs) -> None:
+    def __init__(self, name: str, non_numeric: list | str, *args, **kwargs) -> None:  # noqa: ANN002 review required
         if isinstance(non_numeric, str):
             nan = non_numeric
         else:

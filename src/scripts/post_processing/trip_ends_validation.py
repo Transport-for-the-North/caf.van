@@ -79,7 +79,7 @@ def summarise_trip_ends(
     output_path : pathlib.Path
         Output path for the plots.
     """
-    trip_end_paths = glob.glob(str(data_dir / "*.csv"))
+    trip_end_paths = glob.glob(str(data_dir / "*.csv"))  # noqa: PTH207 review required
 
     translation = pd.read_csv(translation_path)
 
@@ -107,13 +107,13 @@ def summarise_trip_ends(
 
 summarise_trip_ends(
     pathlib.Path(
-        r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\development_outputs\CAF.Van Model Outputs - 2024-10-02 20.51.43\trip ends"
+        r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\development_outputs\CAF.Van Model Outputs - 2024-10-02 20.51.43\trip ends"  # noqa: E501 review required
     ),
     pathlib.Path(
-        r"Y:\Data Strategy\GIS Shapefiles\Local_Authority_District_LAD\LAD_2021\LAD_MAY_2021_UK_BFE_V2.shp"
+        r"Y:\Data Strategy\GIS Shapefiles\Local_Authority_District_LAD\LAD_2021\LAD_MAY_2021_UK_BFE_V2.shp"  # noqa: E501 review required
     ),
     pathlib.Path(
-        r"U:\Lot3_LFT\2.LGV Model\LGV Model Inputs\0.Lookups\NTEM model run Lookups\LAD_NTEM_spatial_missing_zones_added.csv"
+        r"U:\Lot3_LFT\2.LGV Model\LGV Model Inputs\0.Lookups\NTEM model run Lookups\LAD_NTEM_spatial_missing_zones_added.csv"  # noqa: E501 review required
     ),
     pathlib.Path(r"F:\CAF_VAN_TEST\trip_end_plots"),
 )

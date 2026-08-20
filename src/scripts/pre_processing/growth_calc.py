@@ -1,4 +1,4 @@
-"""this is how we calculated the growth factors, feel free to use different data/methods to do your own, or don't."""
+"""this is how we calculated the growth factors, feel free to use different data/methods to do your own, or don't."""  # noqa: D404, E501 review required
 
 # Built-Ins
 import pathlib
@@ -26,7 +26,7 @@ BUSINESS_FLOORSPACE_REMOVE_ROWS = ["K", "E9", "W9", "E1"]
 
 SCOT_WALES_DWELLINGS = {
     "path": pathlib.Path(
-        r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\inputs\land-use\scotland_wales_dwellings_2023.csv"
+        r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\inputs\land-use\scotland_wales_dwellings_2023.csv"  # noqa: E501 review required
     ),
     "zc": pathlib.Path(
         r"I:\Data\Zone Translations\cache\LAD19_normits_v3_3\LAD19_to_normits_v3_3_spatial.csv"
@@ -34,7 +34,7 @@ SCOT_WALES_DWELLINGS = {
 }
 ENGLAND_DWELLINGS = {
     "path": pathlib.Path(
-        r"U:\Lot3_LFT\2.LGV Model\LGV Model Inputs\6.Dwellings Data\Live_table_123_2022_23_infilled.xlsx"
+        r"U:\Lot3_LFT\2.LGV Model\LGV Model Inputs\6.Dwellings Data\Live_table_123_2022_23_infilled.xlsx"  # noqa: E501 review required
     ),
     "zc": pathlib.Path(
         r"I:\Data\Zone Translations\cache\LAD18_normits_v3_3\LAD18_to_normits_v3_3_spatial.csv"
@@ -42,7 +42,7 @@ ENGLAND_DWELLINGS = {
 }
 NDR_FLOORSPACE = {
     "path": pathlib.Path(
-        r"U:\Lot3_LFT\2.LGV Model\LGV Model Inputs\7.Business Floorspace\NDR_business_floorspace_2023.csv"
+        r"U:\Lot3_LFT\2.LGV Model\LGV Model Inputs\7.Business Floorspace\NDR_business_floorspace_2023.csv"  # noqa: E501 review required
     ),
     "zc": pathlib.Path(
         r"I:\Data\Zone Translations\cache\LAD18_normits_v3_3\LAD18_to_normits_v3_3_spatial.csv"
@@ -211,7 +211,7 @@ def read_english_dwellings(
         except ValueError as err:
             match = re.match(r"could not convert \w+ to float", str(err), re.IGNORECASE)
             if match:
-                raise errors.NonNumericDataError(
+                raise errors.NonNumericDataError(  # noqa: B904 review required
                     name=f"{path.stem} column", non_numeric=str(col)
                 )
             raise
