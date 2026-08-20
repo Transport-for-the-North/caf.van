@@ -2,6 +2,7 @@
 """
 Module for running the LGV model.
 """
+
 from __future__ import annotations
 
 # Built-Ins

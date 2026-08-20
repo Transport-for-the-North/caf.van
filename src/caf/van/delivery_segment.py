@@ -2,6 +2,7 @@
 """
 Module to calculate the delivery trips for the LGV model.
 """
+
 from __future__ import annotations
 
 # Built-Ins
