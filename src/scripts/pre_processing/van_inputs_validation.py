@@ -216,7 +216,7 @@ def _check_zones(id_column: str, zoning: cb.ZoningSystem, lookup_zones: np.ndarr
 
     if len(missing) > 0:
         warnings.warn(
-            f"{len(missing)} zones missing from {id_column}" " column in zone correspondence"
+            f"{len(missing)} zones missing from {id_column} column in zone correspondence"
         )
     else:
         LOG.info("No zones missing from %s column in zone correspondence", id_column)

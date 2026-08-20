@@ -16,7 +16,6 @@ def concat_dvecs(dir_: pathlib.Path, out: pathlib.Path) -> None:
     paths = glob.glob(str(dir_))
     dvecs: list[caf.base.DVector] = []
     for path in paths:
-
         print(f"reading {path}")
         dvecs.append(caf.base.DVector.load(pathlib.Path(path)).aggregate(["accom_h"]))
 

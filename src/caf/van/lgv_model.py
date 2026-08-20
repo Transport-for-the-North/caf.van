@@ -615,7 +615,6 @@ def _gravity_model(
         )
 
     else:
-
         gravity_model_results = calib_gm.run(cost_distributions, csv_logging_path)
 
         results = VanGravityModelResults(
@@ -648,7 +647,6 @@ def extract_cost_func_params(
         If the cost function name is not recognised.
     """
     if cost_func_name == "log_normal":
-
         func_params = {
             "mu": cost_funct_params[0],
             "sigma": cost_funct_params[1],
@@ -693,7 +691,6 @@ def run_gravity_model(
     # therefore we try to convert to ints
 
     for name, te in trip_ends.asdict().items():
-
         if name == "zones":
             continue
 
@@ -1074,7 +1071,7 @@ def lgv_arg_parser() -> argparse.ArgumentParser:
         "-e",
         "--example",
         action="store_true",
-        help="If given will write an example config " "file to the current working directory",
+        help="If given will write an example config file to the current working directory",
     )
     return parser
 

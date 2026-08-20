@@ -454,9 +454,9 @@ class CommuteTripEnds:
         (
             trip_attractions["Drivers"],
             trip_attractions["Skilled trades"],
-        ) = trip_attractions[
-            "Drivers"
-        ].align(trip_attractions["Skilled trades"], join="outer", fill_value=0)
+        ) = trip_attractions["Drivers"].align(
+            trip_attractions["Skilled trades"], join="outer", fill_value=0
+        )
 
         self.trip_attractions = sum(trip_attractions.values()).rename(
             columns={"trips": "Total"}

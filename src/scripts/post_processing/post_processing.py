@@ -44,7 +44,6 @@ def process_matrices(
     print(f"{len(tp_dir)} tps found")
 
     for dir in tp_dir:
-
         print(f"processing {dir}")
 
         tp_output_dir = output_path / dir.stem

@@ -52,8 +52,7 @@ class MissingLookupValuesError(BaseVanError):
     def __init__(self, missing, column="", *args, **kwargs):
         # Create message
         msg = (
-            f"There are {len(missing)} zones missing from "
-            f"the {column} lookup: {list(missing)}"
+            f"There are {len(missing)} zones missing from the {column} lookup: {list(missing)}"
         )
         super().__init__(msg, *args, **kwargs)
 

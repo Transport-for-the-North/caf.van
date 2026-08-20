@@ -371,8 +371,7 @@ def read_csv(path: Path, name: str = None, columns: Dict = None, **kwargs) -> pd
                     df[c].astype(t)
                 except ValueError:
                     raise ValueError(
-                        f"Column '{c}' in {name} has values "
-                        f"which cannot be converted to {t}"
+                        f"Column '{c}' in {name} has values which cannot be converted to {t}"
                     ) from err
         raise
     return df
@@ -447,8 +446,7 @@ def read_excel(
                     df[c].astype(t)
                 except ValueError:
                     raise ValueError(
-                        f"Column '{c}' in {name} has values "
-                        f"which cannot be converted to {t}"
+                        f"Column '{c}' in {name} has values which cannot be converted to {t}"
                     ) from err
         raise
 

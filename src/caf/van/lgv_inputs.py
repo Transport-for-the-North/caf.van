@@ -572,7 +572,6 @@ class GMInputs:
                     "cat_zone_correspondence_path and trip_length_distribution_path"
                 )
         else:
-
             assert isinstance(self.cost_function_params, dict)
 
             correspondence_cats = set(

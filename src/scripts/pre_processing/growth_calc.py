@@ -143,7 +143,7 @@ def read_ndr_floorspace(
 
     data_columns = {}
     for column_start in [
-        f"Floorspace_{model_year-1}-{str(model_year)[2:]}_",
+        f"Floorspace_{model_year - 1}-{str(model_year)[2:]}_",
         f"Floorspace_{model_year}-{str(model_year + 1)[2:]}_",
     ]:
         for category in BUSINESS_CATEGORIES:

@@ -124,7 +124,7 @@ class DeliveryTripEnds:
         yr_range = (2000, 2100)
         if self._year < min(yr_range) or self._year > max(yr_range):
             raise ValueError(
-                f"`year` should be between {min(yr_range)} " f"and {max(yr_range)} not {year}"
+                f"`year` should be between {min(yr_range)} and {max(yr_range)} not {year}"
             )
         # Initialise instance variables
         self.depots = None
@@ -222,8 +222,7 @@ class DeliveryTripEnds:
         if already_zones:
             # TODO(MB) Add logging to LFT
             LOG.info(
-                "%s zones already have non-zero values"
-                " in warehouse data so won't be infilled",
+                "%s zones already have non-zero values in warehouse data so won't be infilled",
                 len(already_zones),
             )
 
