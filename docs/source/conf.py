@@ -46,6 +46,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.linkcode",
     "sphinx.ext.todo",
+    "sphinxarg.ext",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -55,13 +56,6 @@ templates_path = ["_templates", "_templates/autosummary"]
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
-
-rst_prolog = """
-.. attention::
-    This documentation is currently work-in-progress and is not necessarily up to
-    date with the current methodolgy and functionality of CAF.van.
-"""
-
 
 # -- Options for API summary -------------------------------------------------
 napoleon_google_docstring = False

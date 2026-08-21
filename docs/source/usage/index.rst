@@ -1,11 +1,11 @@
 Tool Usage
 ==========
 
-.. attention::
-    The tool usage docs pages are currently work-in-progress, if you have any suggestions
-    for specific please consider raising an issue on
-    `GitHub <https://github.com/transport-for-the-north/caf.van/issues>`__.
+CAF.van is a transport demand model focussing on modelling van trips, the following sections
+detail the inputs and outputs for the model and give an overview of the modelling methodology.
 
+.. seealso::
+    :ref:`start-usage` for details on the CLI usage and arguments.
 
 .. toctree::
    :maxdepth: 2
@@ -13,16 +13,3 @@ Tool Usage
    inputs
    outputs
    methodology
-
-
-Graphical User Interface
-------------------------
-
-.. todo::
-    Does CAF.van have a GUI?
-
-Command-Line Interface
-----------------------
-
-.. todo::
-    Does CAF.van have a CLI?

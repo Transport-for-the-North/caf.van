@@ -1,6 +1,9 @@
 Methodology
 ===========
 
+.. todo::
+   Review methodology and update to align with current tool.
+
 The van model is split into six model segments for different types of
 van trips, these are the following:
 

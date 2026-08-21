@@ -11,8 +11,6 @@ permissions:
 
 jobs:
   documentation-links:
-    # Disabled until Read the Docs is setup
-    if: false
     timeout-minutes: 3
     runs-on: ubuntu-latest
     steps:
