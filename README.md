@@ -1,7 +1,18 @@
-![Transport for the North Logo](https://github.com/transport-for-the-north/caf.van/blob/main/docs/TFN_Landscape_Colour_CMYK.png)
+<div align="center">
+<a href="https://www.transportforthenorth.com/">
+<img
+    src="https://raw.githubusercontent.com/Transport-for-the-North/.github/refs/heads/main/profile/tfn-banner.svg"
+    alt="Transport for the North logo">
+</a>
+</div>
 
-<h1 align="center">caf.van</h1>
+<h1 align="center">CAF.van</h1>
 
+<p align="center">
+<a href="https://transport-for-the-north.github.io/CAF-Handbook/python_tools/framework.html">
+  <img alt="CAF Status - Release" src="https://img.shields.io/badge/CAF%20Status-Release-green">
+</a>
+</p>
 <p align="center">
 <a href="https://pypi.org/project/caf.van/">
   <img alt="Supported Python versions" src="https://img.shields.io/pypi/pyversions/caf.van.svg?style=flat-square">
@@ -12,92 +23,155 @@
 <a href="https://anaconda.org/conda-forge/caf.van">
   <img alt="Conda" src="https://img.shields.io/conda/v/conda-forge/caf.van?style=flat-square&logo=condaforge">
 </a>
-<a href="https://app.codecov.io/gh/transport-for-the-north/caf.van">
-  <img alt="Coverage" src="https://img.shields.io/codecov/c/github/transport-for-the-north/caf.van.svg?branch=main&style=flat-square&logo=CodeCov">
-</a>
+</p>
+<p align="center">
 <a href="https://github.com/transport-for-the-north/caf.van/actions?query=event%3Apush">
   <img alt="Testing Badge" src="https://img.shields.io/github/actions/workflow/status/transport-for-the-north/caf.van/tests.yml?style=flat-square&logo=GitHub&label=Tests">
 </a>
-<a href='https://cafvan.readthedocs.io/en/stable/?badge=stable'>
-  <img alt='Documentation Status' src="https://img.shields.io/readthedocs/cafvan?style=flat-square&logo=readthedocs">
+<a href="https://app.codecov.io/gh/transport-for-the-north/caf.van">
+  <img alt="Coverage" src="https://img.shields.io/codecov/c/github/transport-for-the-north/caf.van.svg?branch=main&style=flat-square&logo=CodeCov">
 </a>
-</p>
-<p align="center">
-<a href="https://github.com/psf/black">
-  <img alt="code style: black" src="https://img.shields.io/badge/code%20format-black-000000.svg">
+<a href='https://cafvan.readthedocs.io/en/stable/'>
+  <img alt='Documentation Status' src="https://img.shields.io/readthedocs/cafvan?style=flat-square&logo=readthedocs">
 </a>
 </p>
 
 Transport demand model to produce van travel matrices.
 
-## Common Analytical Framework
+> [!TIP]
+> For more detailed information including a user guide, tutorials and API reference see the full
+> [caf.van documentation](https://cafvan.readthedocs.io/en/stable/)
 
-This package is sits within the [Common Analytical Framework (CAF)](https://transport-for-the-north.github.io/caf_homepage/intro.html),
-which is a collaboration between transport bodies in the UK to develop and maintain commonly use
-transport analytics and appraisal tools.
 
-## Maintainers
+## Table of Contents
 
-- Matt Buckley (@MattBuckley-TfN)
-- Kieran Fishwick (@Kieran-Fishwick-TfN)
+- [Table of Contents](#table-of-contents)
+- [Overview](#overview)
+  - [What does it do?](#what-does-it-do)
+  - [Main Features](#main-features)
+    - [Work-in-Progress](#work-in-progress)
+  - [Who is it for?](#who-is-it-for)
+- [Where to get it](#where-to-get-it)
+  - [Installation from GitHub](#installation-from-github)
+- [Usage](#usage)
+  - [Command Line](#command-line)
+- [Documentation](#documentation)
+- [What is CAF?](#what-is-caf)
+- [Contribution](#contribution)
+- [Contact Us](#contact-us)
 
-## Contributing
+## Overview
 
-caf.van happily accepts contributions.
+### What does it do?
 
-The best way to contribute to this project is to go to the [issues tab](https://github.com/transport-for-the-north/caf.van/issues)
-and report bugs or submit a feature request. This helps caf.van become more
-stable and full-featured. Please check the closed bugs before submitting a bug report to see if your
-question has already been answered.
+> [!IMPORTANT]
+> This section of the README hasn't been written yet, but it will contain a brief
+> description of what the tool is intended to do.
 
-Please see [CONTRIBUTING.rst](contributing.rst) for details on contributing to the codebase or
-documentation.
+### Main Features
+
+> [!IMPORTANT]
+> This section of the README hasn't been written yet.
+
+- **Feature 1** - description
+
+#### Work-in-Progress
+
+- **Work in progress feature** - description of feature not yet release.
+
+> [!WARNING]
+> These features are work-in-progress and are not available in a released version of caf.van, to
+> access these features a specific branch of caf.van should be installed, see [Installation from GitHub](#installation-from-github).
+
+### Who is it for?
+
+- **Target audience:** *TODO*
+- **CAF Analytical Stage:** *TODO*
+
+![CAF Analytical Process Diagram](https://github.com/Transport-for-the-North/.github/blob/21a428e81880639839e221940881572cdee24d5a/profile/ProcessDiagram.png?raw=true)
+
+For more details on CAF Analytical Stages see the [description within TfN's GitHub homepage](https://github.com/Transport-for-the-North)
+
+## Where to get it
+
+> [!IMPORTANT]
+> caf.van has not been published yet so cannot be installed from
+> conda-forge or PyPI, see [Installation from GitHub](#installation-from-github).
+
+The latest released version are available at the [Python
+Package Index (PyPI)](https://pypi.org/project/caf.van) and on [Conda](https://anaconda.org/conda-forge/caf.van).
+
+```sh
+conda install -c conda-forge caf.van
+```
+
+```sh
+pip install caf.van
+```
+
+> [!TIP]
+>
+> - See the [Quick Start Guide](https://cafvan.readthedocs.io/en/stable/start.html#quick-start) for more detailed instructions.
+> - See the [requirements.txt](requirements.txt) for the full list of package dependencies.
+
+### Installation from GitHub
+
+> [!WARNING]
+> Unreleased GitHub versions should **not** be considered stable.
+
+The latest, unreleased, version can be installed directly from GitHub using:
+
+```sh
+pip install "git+https://github.com/transport-for-the-north/caf.van"
+```
+
+> [!TIP]
+> `pip install` can install a specific tag, or branch, using `@{tag-name}`
+> after the git URL.
+
+## Usage
+
+caf.van provides and Command-line (CLI) and graphical interface (GUI) to use many of it's
+features without the need to write any Python code, see the [Tool Usage section](https://cafvan.readthedocs.io/en/stable/usage/index.html)
+of the user guide for more details.
+
+### Command Line
+
+The tool can be run from command line, with the command:
+
+```sh
+caf.van
+```
+
+See [Command-Line Interface (User Guide)](https://cafvan.readthedocs.io/en/stable/usage/cli.html)
+for full explanations of the parameters.
 
 ## Documentation
 
-Documentation is created using [Sphinx](https://www.sphinx-doc.org/en/master/index.html) and is hosted online at
-[cafvan.readthedocs](https://cafvan.readthedocs.io/en/stable/).
+The code documentation is hosted at <https://cafvan.readthedocs.io/en/stable/>.
 
-The documentation can be built locally once all the docs requirements
-([`docs/requirements.txt`](docs/requirements.txt)) are installed into your Python environment.
 
-The provided make batch file, (inside the docs folder), allow for building the documentation in
-various target formats. The command for building the documentation is `make {target}`
-(called from within docs/), where `{target}` is the type of documentation format to build. A full
-list of all available target formats can be seen by running the `make` command without any
-arguments but the two most common are detailed below.
+## What is CAF?
 
-### HTML
+This tool is part of TfN's [Common Analytical Framework (CAF)](https://github.com/Transport-for-the-North#common-analytical-framework-caf).
+CAF is Transport for the North's structured suite of analytical tools designed to support transport
+modelling, appraisal, and strategic decision-making.
 
-The HTML documentation (seen on Read the Docs) can be built using the `make html` command, this
-will build the web-based documentation and provide an index.html file as the homepage,
-[`docs/build/html/index.html`](docs/build/html/index.html).
+More information on CAF and details on other CAF tools can be found on [TfN's GitHub Homepage](https://github.com/Transport-for-the-North).
 
-### PDF
+## Contribution
 
-The PDF documentation has some other requirements before it can be built as Sphinx will first
-build a [LaTeX](https://www.latex-project.org/) version of the documentation and then use an
-installed TeX distribution to build the PDF from those. If you already have a TeX distribution
-setup then you can build the PDF with `make latexpdf`, otherwise follow the instructions below.
+We encourage use of, and contributions to, the repositories within this organisation, licenses are provided within
+the repositories and the [organisation contribution guide](https://github.com/Transport-for-the-North/.github/blob/main/CONTRIBUTING.rst)
+provides details for contributions.
 
-Installing LaTeX on Windows is best done using [MiKTeX](https://miktex.org/), as this provides a
-simple way of handling any additional TeX packages. Details of other operating systems and TeX
-distributions can be found on the [Getting LaTeX](https://www.latex-project.org/get/) page on
-LaTeX's website.
+---
 
-MiKTeX provides an installer on its website [miktex.org/download](https://miktex.org/download),
-which will run through the process of getting it installed and setup. In addition to MiKTeX
-the specific process Sphinx uses for building PDFs is [Latexmk](https://mg.readthedocs.io/latexmk.html),
-which is a Perl script and so requires Perl to be installed on your machine, this can be done with an
-installer provided by [Strawberry Perl](https://strawberryperl.com/).
+## Contact Us
 
-Once MiKTex and Perl are installed you are able to build the PDF from the LaTeX files, Sphinx
-provides a target (latexpdf) which builds the LaTeX files then immediately builds the PDF. When
-running `make latexpdf` MiKTeX may ask for permission to installed some required TeX packages.
-Once the command has finished the PDF will be located at
-[`docs/build/latex/cafvan.pdf`](docs/build/latex/cafvan.pdf).
+For further information about using this tool or CAF tools in your projects and work contact Transport for the North - <TfNOffer@transportforthenorth.com>
 
-## Credits
+---
 
-CAF.van was initially created by taking the LGV model sub-package from
-[caf-freight-tools Local Freight Tool v2.1.0](https://github.com/Transport-for-the-North/caf-freight-tools/tree/v2.1.0).
+
+[Go to Top](#table-of-contents)

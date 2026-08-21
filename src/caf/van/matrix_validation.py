@@ -1,12 +1,9 @@
-"""
-Contains functions that perform checks and provide high level statistics.
-"""
+"""Contains functions that perform checks and provide high level statistics."""
 
 from __future__ import annotations
 
 # Built-Ins
-from pathlib import Path
-from typing import Optional
+from pathlib import Path  # noqa: TC003 review required
 
 # Third Party
 import caf.toolkit as ctk
@@ -52,11 +49,11 @@ class MatrixReport:
     def __init__(
         self,
         matrix: pd.DataFrame,
-        translation: Optional[pd.DataFrame] = None,
-        translation_from_col: Optional[str] = None,
-        translation_to_col: Optional[str] = None,
-        translation_factors_col: Optional[str] = None,
-    ):
+        translation: pd.DataFrame | None = None,
+        translation_from_col: str | None = None,
+        translation_to_col: str | None = None,
+        translation_factors_col: str | None = None,
+    ) -> None:
 
         self.describe = pd.DataFrame()
 
@@ -101,7 +98,7 @@ class MatrixReport:
         self.describe[translated_describe_label] = matrix_describe(matrix)
 
     def write_to_excel(
-        self, writer: pd.ExcelWriter, label: Optional[str] = None, output_matrix: bool = False
+        self, writer: pd.ExcelWriter, label: str | None = None, output_matrix: bool = False
     ) -> None:
         """Write matrix report to multiple sheets in an Excel file.
 
@@ -123,7 +120,7 @@ class MatrixReport:
         else:
             sheet_prefix = ""
 
-        if len(sheet_prefix) >= 22:
+        if len(sheet_prefix) >= 22:  # noqa: PLR2004 review required
             raise ValueError(
                 "label cannot be over 30 characters as the sheets names will"
                 " be truncated and will not be unique"
@@ -155,10 +152,10 @@ class MatrixReport:
     def from_file(
         cls,
         path: Path,
-        translation_path: Optional[Path] = None,
-        translation_from_col: Optional[str] = None,
-        translation_to_col: Optional[str] = None,
-        translation_factors_col: Optional[str] = None,
+        translation_path: Path | None = None,
+        translation_from_col: str | None = None,
+        translation_to_col: str | None = None,
+        translation_factors_col: str | None = None,
     ) -> MatrixReport:
         """Create an instance of MatrixReport from file paths.
 
@@ -199,7 +196,7 @@ class MatrixReport:
         )
 
 
-def matrix_describe(matrix: pd.DataFrame, almost_zero: Optional[float] = None) -> pd.Series:
+def matrix_describe(matrix: pd.DataFrame, almost_zero: float | None = None) -> pd.Series:
     """Provide descriptive statistics of `matrix`.
 
     Parameters
@@ -220,7 +217,7 @@ def matrix_describe(matrix: pd.DataFrame, almost_zero: Optional[float] = None) -
     if almost_zero is None:
         almost_zero = 1 / matrix.size
 
-    info = matrix.stack().describe(percentiles=[0.05, 0.25, 0.5, 0.75, 0.95])
+    info = matrix.stack().describe(percentiles=[0.05, 0.25, 0.5, 0.75, 0.95])  # noqa: PD013 review required
 
     info["columns"] = len(matrix.columns)
     info["rows"] = len(matrix.index)

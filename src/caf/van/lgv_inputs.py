@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
 """
 Module containing functionality for reading and pre-processing
 the LGV inputs which are used for multiple segments.
-"""
+"""  # noqa: D205 review required
 
 ##### IMPORTS #####
 
@@ -12,12 +11,13 @@ from __future__ import annotations
 import datetime as dt
 import enum
 import logging
-from pathlib import Path
-from typing import Any, Callable, Literal, Optional
+from collections.abc import Callable
+from pathlib import Path  # noqa: TC003 review required
+from typing import Any, Literal
 
 # Third Party
-import caf.base
-import caf.toolkit
+import caf.base  # noqa: ICN001 review required
+import caf.toolkit  # noqa: ICN001 review required
 import numpy as np
 import pandas as pd
 import pydantic
@@ -102,9 +102,9 @@ class CommuteWarehousePaths:
 
     medium: types.FilePath
     """Path to the medium weighted warehouse data."""
-    low: Optional[types.FilePath] = None
+    low: types.FilePath | None = None
     """Path to the low weighted warehouse data."""
-    high: Optional[types.FilePath] = None
+    high: types.FilePath | None = None
     """Path to the high weighted warehouse data."""
 
 
@@ -117,8 +117,8 @@ class DwellingPaths:
     No specific segmentation is required as it is aggregated to total households by zone."""
     zc_path: types.FilePath
     """Path to the zone correspondence CSV."""
-    unoccupied: Optional[types.FilePath] = None
-    """Path to the unoccupied dwellings data DVector. 
+    unoccupied: types.FilePath | None = None
+    """Path to the unoccupied dwellings data DVector.
     No specific segmentation is required as it is aggregated to total households by zone."""
 
 
@@ -238,7 +238,7 @@ class InfillMethod(enum.Enum):
         }
 
     def method(self) -> InfillFunction:
-        """Function to calculate infilling value."""
+        """Function to calculate infilling value."""  # noqa: D401 review required
         return self.method_lookup()[self]
 
 
@@ -246,7 +246,7 @@ class InfillMethod(enum.Enum):
 def household_projections(
     occupied_paths: Path,
     zone_lookup: Path,
-    unoccupied_paths: Optional[Path] = None,
+    unoccupied_paths: Path | None = None,
 ) -> pd.DataFrame:
     """Reads and aggregates the household DVectors and converts to model zone system.
 
@@ -268,8 +268,7 @@ def household_projections(
     pd.DataFrame
         Household projections in the model zone system with columns
         'Zone' and 'Households'.
-    """
-
+    """  # noqa: D401 review required
     zone_correspondence = pd.read_csv(zone_lookup)
 
     households = (
@@ -346,9 +345,7 @@ def filtered_employment(
 
     cat_emp_data = cat_emp_data.groupby("sic_1_digit").sum()
 
-    filtered_employment_data = cat_emp_data.transpose(copy=True)
-
-    return filtered_employment_data
+    return cat_emp_data.transpose(copy=True)
 
 
 def load_warehouse_floorspace(
@@ -379,11 +376,10 @@ def load_warehouse_floorspace(
     lookup = Rezone.read(zone_lookup, None)
 
     rezoned, _ = Rezone.rezone(floorspace, lookup, lsoa_column, rezone_cols=area_column)
-    rezoned.rename(columns={lsoa_column: "Zone"}, inplace=True)
+    rezoned = rezoned.rename(columns={lsoa_column: "Zone"})
     grouped = rezoned.groupby("Zone").sum()
 
-    grouped = grouped.reindex(lookup["new"].unique())
-    return grouped
+    return grouped.reindex(lookup["new"].unique())
 
 
 def lgv_parameters(path: Path) -> dict[str, Any]:
@@ -450,7 +446,7 @@ def read_study_area(path: Path) -> set:
 
     Any zones not given are assumed to be outside
     the study area.
-    """
+    """  # noqa: D401 review required
     columns = {"zone": str, "internal": int}
     df = utilities.read_csv(path, "Model Study Area CSV", columns)
     df.loc[:, "zone"] = pd.to_numeric(df["zone"], downcast="unsigned", errors="ignore")
@@ -486,7 +482,7 @@ def read_time_factors(path: Path) -> dict[str, dict[str, float]]:
         index_col=0,
     )
     rename = {v[0]: k for k, v in TIME_PERIOD_COLUMNS.items()}
-    df.rename(columns=rename, inplace=True)
+    df = df.rename(columns=rename)
     return df.to_dict(orient="index")
 
 
@@ -501,11 +497,11 @@ class GMInputs:
     cost_function_params: tuple[float, float] | dict[int | str, tuple[float, float]]
     """Starting (calibration)/run params for the cost function."""
     calibrate: bool
-    """Whether to calibrate the cost function params (True) or run with given params (False)."""
-    cat_zone_correspondence_path: Optional[types.FilePath] = None
+    """Whether to calibrate the cost function params (True) or run with given params (False)."""  # noqa: E501 review required
+    cat_zone_correspondence_path: types.FilePath | None = None
     """Correspondence between the categories in the TLD and the model zones."""
     furness_jacobian: bool = True
-    """Whether to Furness the Jacobian matrix in the gravity model. Find your nearest demand modelling expert for more information."""
+    """Whether to Furness the Jacobian matrix in the gravity model. Find your nearest demand modelling expert for more information."""  # noqa: E501 review required
 
     @field_validator("cost_function_params", mode="before")
     @classmethod
@@ -523,7 +519,7 @@ class GMInputs:
         -------
         dict[str | int, tuple[float, ...]] | tuple[float, ...]
             unpacked cost function parameters.
-        """
+        """  # noqa: E501 review required
         if isinstance(params, str):
             return params.split(",")
 
@@ -542,7 +538,8 @@ class GMInputs:
     @model_validator(mode="after")
     def _check_cost_params(self) -> GMInputs:
         """Check that the cost parameters passed are
-        in the correct format for the mode selected."""
+        in the correct format for the mode selected.
+        """  # noqa: D205 review required
         multi_tld = True
 
         try:
@@ -572,8 +569,7 @@ class GMInputs:
                     "cat_zone_correspondence_path and trip_length_distribution_path"
                 )
         else:
-
-            assert isinstance(self.cost_function_params, dict)
+            assert isinstance(self.cost_function_params, dict)  # noqa: S101 review required
 
             correspondence_cats = set(
                 pd.read_csv(self.cat_zone_correspondence_path, usecols=["area"])

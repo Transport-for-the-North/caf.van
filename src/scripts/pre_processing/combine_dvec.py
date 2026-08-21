@@ -1,11 +1,11 @@
-"""script to combine, aggregate and rezone dvectors"""
+"""script to combine, aggregate and rezone dvectors."""
 
 # Built-Ins
 import glob
 import pathlib
 
 # Third Party
-import caf.base
+import caf.base  # noqa: ICN001 review required
 import pandas as pd
 
 
@@ -13,39 +13,37 @@ def concat_dvecs(dir_: pathlib.Path, out: pathlib.Path) -> None:
     """Concatinate multiple dvectors into one dvector."""
     lsoa_zoning = caf.base.ZoningSystem.get_zoning("lsoa_2021")
 
-    paths = glob.glob(str(dir_))
+    paths = glob.glob(str(dir_))  # noqa: PTH207 review required
     dvecs: list[caf.base.DVector] = []
     for path in paths:
-
-        print(f"reading {path}")
+        print(f"reading {path}")  # noqa: T201 review required
         dvecs.append(caf.base.DVector.load(pathlib.Path(path)).aggregate(["accom_h"]))
 
     segmentation = dvecs[0].segmentation
 
-    print("combining")
+    print("combining")  # noqa: T201 review required
     data = pd.concat([d.data for d in dvecs], axis=1)
     data = data.fillna(0)
-    # data[segmentation.names] = data[segmentation.names].astype(int)
-    # data = data.groupby(segmentation.names).sum()
+    # data[segmentation.names] = data[segmentation.names].astype(int)  # noqa: ERA001
+    # data = data.groupby(segmentation.names).sum()  # noqa: ERA001 review required
     data = data.rename(columns=lsoa_zoning.name_to_id)
-    print("creating dvec")
+    print("creating dvec")  # noqa: T201 review required
     final_dvec = caf.base.DVector(
         import_data=data,
         segmentation=segmentation,
         zoning_system=lsoa_zoning,
     )
-    print("saving")
+    print("saving")  # noqa: T201 review required
     final_dvec.save(out_path=out)
 
 
 def zone_dvec(in_path: str, out_path: str) -> None:
     """Change the Dvector zoning name."""
-
     dvec = caf.base.DVector.load(pathlib.Path(in_path))
 
     data = dvec.data
     segmentation = dvec.segmentation
-    # data = data.rename(columns = lsoa_zoning.name_to_id)
+    # data = data.rename(columns = lsoa_zoning.name_to_id)  # noqa: ERA001 review required
     caf.base.DVector(
         import_data=data,
         segmentation=segmentation,
@@ -54,8 +52,8 @@ def zone_dvec(in_path: str, out_path: str) -> None:
 
 
 zone_dvec(
-    r"F:\Working\Land-Use\OUTPUTS_base_employment_bres_approach_a_weighting_2_level_check\02_Final Outputs\Output E6.hdf",
-    r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\inputs\TfN-Land-Use-Pop\jobs-26-11-24.dvec",
+    r"F:\Working\Land-Use\OUTPUTS_base_employment_bres_approach_a_weighting_2_level_check\02_Final Outputs\Output E6.hdf",  # noqa: E501 review required
+    r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\inputs\TfN-Land-Use-Pop\jobs-26-11-24.dvec",  # noqa: E501 review required
 )
 
 
@@ -64,7 +62,7 @@ concat_dvecs(
         r"F:\Deliverables\Land-Use\241123_Population rebase\02_Final Outputs\*P11.1*.hdf"
     ),
     pathlib.Path(
-        r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\inputs\TfN-Land-Use-Pop\occupied_dwellings_26-11-24.dvec"
+        r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\inputs\TfN-Land-Use-Pop\occupied_dwellings_26-11-24.dvec"  # noqa: E501 review required
     ),
 )
 concat_dvecs(
@@ -72,6 +70,6 @@ concat_dvecs(
         r"F:\Deliverables\Land-Use\241123_Population rebase\01_Intermediate Files\*P11.2*.hdf"
     ),
     pathlib.Path(
-        r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\inputs\TfN-Land-Use-Pop\unoccupied_dwellings_26-11-24.dvec"
+        r"U:\Lot3_LFT\2.LGV Model\2024 - LGVN Rebase to 2023\inputs\TfN-Land-Use-Pop\unoccupied_dwellings_26-11-24.dvec"  # noqa: E501 review required
     ),
 )

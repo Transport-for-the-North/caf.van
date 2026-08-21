@@ -1,14 +1,10 @@
-# -*- coding: utf-8 -*-
-"""
-Module to calculate the delivery trips for the LGV model.
-"""
+"""Module to calculate the delivery trips for the LGV model."""
 
 from __future__ import annotations
 
 # Built-Ins
 import logging
-from pathlib import Path
-from typing import Union
+from pathlib import Path  # noqa: TC003 review required
 
 # Third Party
 import numpy as np
@@ -41,7 +37,7 @@ def zone_list(value: str) -> list[int]:
     ValueError
         If any of the items in the list cannot be
         converted to integers.
-    """
+    """  # noqa: D401 review required
     if value is None:
         return None
     if isinstance(value, float):
@@ -67,12 +63,12 @@ class DeliveryParameters(pydantic.BaseModel):
     trips_grocery: float = pydantic.Field(alias="Annual Trips - Grocery Bush", ge=0)
     growth_factor: float = pydantic.Field(alias="Delivery Growth Factor", ge=0)
     b2c: float = pydantic.Field(alias="B2C vs B2B Weighting", ge=0, le=1)
-    depots_infill: list[Union[int, str]] = pydantic.Field(
+    depots_infill: list[int | str] = pydantic.Field(
         alias="Depots Infill Zones", default_factory=list, Set=True
     )
 
     @pydantic.validator("depots_infill", pre=True)
-    def _split_str(cls, value: str) -> list:  # pylint: disable=no-self-argument
+    def _split_str(cls, value: str) -> list:  # pylint: disable=no-self-argument  # noqa: N805 review required
         return value.split(",")
 
 
@@ -100,11 +96,11 @@ class DeliveryTripEnds:
         Model year, should be between 2000 and 2100.
     model_zones : pd.Series
         Full list of model zones.
-    """
+    """  # noqa: E501 review required
 
-    EMPLOYMENT_AGGREGATION = {"Employees": list(range(1, 22))}  # A - U (1->21)
+    EMPLOYMENT_AGGREGATION = {"Employees": list(range(1, 22))}  # A - U (1->21)  # noqa: RUF012
     PARAMETERS_SHEET = "Delivery Segment Parameters"
-    PARAMETERS_HEADER = {"Parameter": str, "Value": str}
+    PARAMETERS_HEADER = {"Parameter": str, "Value": str}  # noqa: RUF012 review required
 
     def __init__(
         self,
@@ -114,7 +110,7 @@ class DeliveryTripEnds:
         parameters_path: Path,
         year: int,
         model_zones: pd.Series,
-    ):
+    ) -> None:
         """Initialise class by checking inputs files exist and are expected type."""
         self._check_paths(warehouse_paths, employment_paths, household_paths, parameters_path)
         try:
@@ -124,7 +120,7 @@ class DeliveryTripEnds:
         yr_range = (2000, 2100)
         if self._year < min(yr_range) or self._year > max(yr_range):
             raise ValueError(
-                f"`year` should be between {min(yr_range)} " f"and {max(yr_range)} not {year}"
+                f"`year` should be between {min(yr_range)} and {max(yr_range)} not {year}"
             )
         # Initialise instance variables
         self.depots = None
@@ -144,8 +140,8 @@ class DeliveryTripEnds:
         employment_paths: lgv_inputs.EmploymentPaths,
         household_paths: lgv_inputs.DwellingPaths,
         parameters_path: Path,
-    ):
-        """Checks the input files exist and are the expected type."""
+    ) -> None:
+        """Checks the input files exist and are the expected type."""  # noqa: D401 review required
         plain_text_extensions = (".csv", ".txt")
         dvec_extensions = (".dvec", ".hdf", ".h5")
 
@@ -214,16 +210,15 @@ class DeliveryTripEnds:
         already_zones = []
         update_zones = []
         for zone in self.parameters.depots_infill:
-            if zone not in depots.index or np.isnan(depots.at[zone, "Depots"]):
+            if zone not in depots.index or np.isnan(depots.at[zone, "Depots"]):  # noqa: PD008 review required
                 update_zones.append(zone)
             else:
                 already_zones.append(zone)
 
         if already_zones:
-            # TODO(MB) Add logging to LFT
+            # TODO(MB) Add logging to LFT  # noqa: TD003, TD004 review required
             LOG.info(
-                "%s zones already have non-zero values"
-                " in warehouse data so won't be infilled",
+                "%s zones already have non-zero values in warehouse data so won't be infilled",
                 len(already_zones),
             )
 
@@ -245,7 +240,7 @@ class DeliveryTripEnds:
         depots = pd.concat([depots.drop(new_depots.index, errors="ignore"), new_depots])
         return depots.fillna(0)
 
-    def read(self):
+    def read(self) -> None:
         """Read the input data and perform any necessary conversions.
 
         See Also
@@ -320,7 +315,7 @@ class DeliveryTripEnds:
         """pd.DataFrame : Proportion of input data for each zone, with
         zone number as index (Zone) and columns Depots, Households and
         Employees. Each column sums to 1.
-        """
+        """  # noqa: D205 review required
         if self._trip_proportions is None:
             if self.depots is None or self.households is None or self.employment is None:
                 raise ValueError(
@@ -329,7 +324,7 @@ class DeliveryTripEnds:
                 )
             trip_data = pd.concat([self.depots, self.households, self.employment], axis=1)
             self._trip_proportions = trip_data / trip_data.sum(axis=0)
-            self._trip_proportions.fillna(0, inplace=True)
+            self._trip_proportions = self._trip_proportions.fillna(0)
         return self._trip_proportions.copy()
 
     @property
@@ -339,7 +334,7 @@ class DeliveryTripEnds:
         and Employees proportions. The business-to-customer parameter
         is used as the weighting and the final proportions are
         normalised.
-        """
+        """  # noqa: D205 review required
         if self._parcel_proportions is None:
             # Use the business-to-customer weighting when adding the proportions
             customer = self.trip_proportions["Households"] * self.parameters.b2c
@@ -350,7 +345,7 @@ class DeliveryTripEnds:
         return self._parcel_proportions.copy()
 
     def _check_parameters(self) -> None:
-        """Raises `ValueError` if `parameters` instance variable is None."""
+        """Raises `ValueError` if `parameters` instance variable is None."""  # noqa: D401 review required
         if self.parameters is None:
             raise ValueError(
                 "cannot calculate trip ends until input data "
@@ -361,7 +356,7 @@ class DeliveryTripEnds:
     def parcel_stem_trip_ends(self) -> pd.DataFrame:
         """pd.DataFrame : Trip ends for the parcel stem segment, contains
         Productions and Attractions (columns) for each Zone (index).
-        """
+        """  # noqa: D205 review required
         if self._parcel_stem_trip_ends is None:
             self._check_parameters()
             trip_ends = []
@@ -374,7 +369,7 @@ class DeliveryTripEnds:
                     trip_ends[-1] = trip_ends[-1].squeeze()
                 trip_ends[-1].name = name
             self._parcel_stem_trip_ends = pd.concat(trip_ends, axis=1)
-            self._parcel_stem_trip_ends.fillna(0, inplace=True)
+            self._parcel_stem_trip_ends = self._parcel_stem_trip_ends.fillna(0)
 
             self._parcel_stem_trip_ends = self._parcel_stem_trip_ends.reindex(
                 index=pd.Index(self.model_zones), fill_value=0
@@ -386,7 +381,7 @@ class DeliveryTripEnds:
     def parcel_bush_trip_ends(self) -> pd.DataFrame:
         """pd.DataFrame : Trip ends for the parcel bush segment, contains
         Origins and Destinations (columns) for each Zone (index).
-        """
+        """  # noqa: D205 review required
         if self._parcel_bush_trip_ends is None:
             self._check_parameters()
             trips = self.parameters.trips_parcel_bush * self.parcel_proportions
@@ -404,7 +399,7 @@ class DeliveryTripEnds:
     def grocery_bush_trip_ends(self) -> pd.DataFrame:
         """pd.DataFrame : Trip ends for the grocery bush segment, contains
         Origins and Destinations (columns) for each Zone (index).
-        """
+        """  # noqa: D205 review required
         if self._grocery_bush_trip_ends is None:
             self._check_parameters()
             trips = self.parameters.trips_grocery * self.trip_proportions["Households"]

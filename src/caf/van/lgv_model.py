@@ -1,7 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
-Module for running the LGV model.
-"""
+"""Module for running the LGV model."""
 
 from __future__ import annotations
 
@@ -13,7 +10,7 @@ import pprint
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal
 
 # Third Party
 import caf.toolkit as ctk
@@ -117,7 +114,7 @@ class LGVTripEnds:
     zones: np.ndarray = field(init=False)
     """Array of all zones, used as index for all trip end dataframes."""
 
-    def __post_init__(self):
+    def __post_init__(self):  # noqa: ANN204 review required
         """Reindex all trip end dataframes to contain all zones."""
         dataframes = (
             "service",
@@ -130,11 +127,11 @@ class LGVTripEnds:
         index = pd.Index([], dtype=int)
         for nm in dataframes:
             index = index.union(getattr(self, nm).index)
-        self.zones = index.values
+        self.zones = index.values  # noqa: PD011 review required
         for nm in dataframes:
             df = getattr(self, nm).reindex(index, fill_value=0)
             # Fill any other NaNs with 0s
-            df.fillna(0, inplace=True)
+            df = df.fillna(0)
             setattr(self, nm, df)
 
     def asdict(self) -> dict[str, pd.DataFrame]:
@@ -150,7 +147,7 @@ class LGVTripEnds:
         )
         return {a: getattr(self, a).copy() for a in attrs}
 
-    def __str__(self) -> str:
+    def __str__(self) -> str:  # noqa: D105 review required
         msg = [f"{self.__class__.__name__}("]
         for attr in self.asdict():
             if attr == "zones":
@@ -162,7 +159,7 @@ class LGVTripEnds:
             msg.append(f"{attr}=" + buf.getvalue().replace("\n", "\n\t\t").strip())
         return "\n\t".join(msg) + "\n)"
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> str:  # noqa: D105 review required
         return str(self)
 
 
@@ -203,7 +200,7 @@ class LGVMatrices:
     zones: np.ndarray = field(init=False)
     """Array of all zones, used as index for all trip end dataframes."""
 
-    def __post_init__(self):
+    def __post_init__(self):  # noqa: ANN204 review required
         """Reindex all trip end dataframes to contain all zones.
 
         Sum individual matrices together to get `combined` matrix.
@@ -222,12 +219,12 @@ class LGVMatrices:
         for nm in dataframes:
             index = index.union(getattr(self, nm).index)
             index = index.union(getattr(self, nm).columns)
-        self.zones = index.values
+        self.zones = index.values  # noqa: PD011 review required
         for nm in dataframes:
             df = getattr(self, nm).reindex(index, fill_value=0)
             df = df.reindex(index, axis=1, fill_value=0)
             # Fill any other NaNs with 0s
-            df.fillna(0, inplace=True)
+            df = df.fillna(0)
             setattr(self, nm, df)
         self.combined = (
             self.service
@@ -253,11 +250,11 @@ class LGVMatrices:
             "zones",
         )
         if self.personal is not None:
-            attrs = attrs + ("personal",)
+            attrs = (*attrs, "personal")
 
         return {a: getattr(self, a).copy() for a in attrs}
 
-    def __str__(self) -> str:
+    def __str__(self) -> str:  # noqa: D105 review required
         msg = f"{self.__class__.__name__}("
         ls = []
         for nm, df in self.asdict().items():
@@ -266,7 +263,7 @@ class LGVMatrices:
         msg += ")"
         return msg
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> str:  # noqa: D105 review required
         return str(self)
 
 
@@ -300,7 +297,7 @@ def calculate_trip_ends(
     .service_segment.ServiceTripEnds: Calculates service trip ends.
     .delivery_segment.DeliveryTripEnds: Calculates delivery trip ends.
     LGVTripEnds: Stores all trip end DataFrames.
-    """
+    """  # noqa: D401 review required
     output_folder.mkdir(exist_ok=True)
 
     model_zones: pd.Series = pd.read_csv(input_paths.model_zones, usecols=["zone"])["zone"]
@@ -354,7 +351,7 @@ def calculate_trip_ends(
         regions["area"] = DUMMY_CAT
 
     # To avoid MyPy whinging
-    assert isinstance(regions, pd.DataFrame)
+    assert isinstance(regions, pd.DataFrame)  # noqa: S101 review required
 
     LOG.info("Balancing Trip Ends")
     service_te = balance_trip_ends(
@@ -422,7 +419,6 @@ def balance_trip_ends(
     name: str,
 ) -> pd.DataFrame:
     """Balance variable column to control column within the regions."""
-
     # Create a copy so we don't change anything out of function scope
     balanced_trip_ends = trip_ends.copy()
 
@@ -432,7 +428,7 @@ def balance_trip_ends(
             "Trip Ends Balancing Regions have zones missing when compared to trip ends"
         )
 
-    # iterate through unique areas (we dont care what the areas are, just want the zones within each)
+    # iterate through unique areas (we dont care what the areas are, just want the zones within each)  # noqa: E501 review required
     for r in regions["area"].sort_values().unique():
         # Get the zones we want to balance
         zones = regions.loc[regions["area"] == r, "zone_id"]
@@ -454,7 +450,8 @@ def balance_trip_ends(
             warnings.warn(
                 f"{control_col} and {variable_col} are imbalanced in for"
                 f" {name} region {r} (difference= {trip_end_difference})."
-                f" Factoring {variable_col} to {control_col} (factor = {factor})"
+                f" Factoring {variable_col} to {control_col} (factor = {factor})",
+                stacklevel=2,
             )
 
         else:
@@ -498,7 +495,7 @@ class VanGravityModelResults:
         distribution: np.ndarray,
         zones: np.ndarray,
         info: dict[str | int, gravity_model.GravityModelResults],
-    ):
+    ) -> None:
 
         self.distribution = pd.DataFrame(distribution, index=zones, columns=zones)
         self.zones = zones
@@ -511,7 +508,7 @@ class VanGravityModelResults:
         self.summary = pd.DataFrame(summary_build).transpose()
 
 
-def _gravity_model(
+def _gravity_model(  # noqa: PLR0912 review required
     trip_ends: pd.DataFrame,
     name: str,
     gm_data: GMInputs,
@@ -519,8 +516,7 @@ def _gravity_model(
     calibrate: bool,
     csv_logging_path: Path,
 ) -> VanGravityModelResults:
-    """Internal function used in `run_gravity_model` for running the GM with calibration."""
-
+    """Internal function used in `run_gravity_model` for running the GM with calibration."""  # noqa: D401 review required
     trip_ends = trip_ends.rename(
         columns={
             **dict.fromkeys(("Productions", "Origins"), "row_targets"),
@@ -550,7 +546,7 @@ def _gravity_model(
             gm_data.cat_zone_correspondence_path, usecols=["area", "zone_id"]
         )
     else:
-        # If not, create a correspondence for all zones to one area i.e. run a single TLD gravity model.
+        # If not, create a correspondence for all zones to one area i.e. run a single TLD gravity model.  # noqa: E501 review required
         if "area" in tld.columns:
             raise KeyError(
                 "'area' column in tlds but cat_zone_correspondence has not been given."
@@ -566,7 +562,7 @@ def _gravity_model(
         cost_function = cost_functions.BuiltInCostFunction.TANNER.get_cost_function()
     else:
         raise NotImplementedError(
-            f"cost function {gm_data.cost_function} is not implemented, please use either log_normal "
+            f"cost function {gm_data.cost_function} is not implemented, please use either log_normal "  # noqa: E501 review required
             "(mu, sigma) or tanner (alpha, beta)"
         )
 
@@ -615,7 +611,6 @@ def _gravity_model(
         )
 
     else:
-
         gravity_model_results = calib_gm.run(cost_distributions, csv_logging_path)
 
         results = VanGravityModelResults(
@@ -646,9 +641,8 @@ def extract_cost_func_params(
     ------
     ValueError
         If the cost function name is not recognised.
-    """
+    """  # noqa: D401 review required
     if cost_func_name == "log_normal":
-
         func_params = {
             "mu": cost_funct_params[0],
             "sigma": cost_funct_params[1],
@@ -689,11 +683,10 @@ def run_gravity_model(
     output_folder.mkdir(exist_ok=True)
 
     cost_matrix = ctk.io.read_csv_matrix(input_paths.cost_matrix_path, format_="square")
-    # Pandas casts column names to str, even if they're numerical (I can't find a parameter to change this)
+    # Pandas casts column names to str, even if they're numerical (I can't find a parameter to change this)  # noqa: E501 review required
     # therefore we try to convert to ints
 
     for name, te in trip_ends.asdict().items():
-
         if name == "zones":
             continue
 
@@ -709,9 +702,9 @@ def run_gravity_model(
             output_folder / f"gravity_model_{name}_calibration_log.csv",
         )
 
-        # except Exception as e:  # pylint: disable = broad-exception-caught
-        #    LOG.info("\t%s: %s", e.__class__.__name__, e)
-        #    continue
+        # except Exception as e:  # pylint: disable = broad-exception-caught  # noqa: E501, ERA001
+        #    LOG.info("\t%s: %s", e.__class__.__name__, e)  # noqa: ERA001 review required
+        #    continue  # noqa: ERA001 review required
 
         # Check if segment outputs a PA matrix which needs to be converted
         if name in PA_MATRICES:
@@ -744,7 +737,7 @@ def run_gravity_model(
         matrices[name].to_csv(path_or_buf=output_folder / (name + "-trip_matrix-OD.csv"))
 
         with pd.ExcelWriter(output_folder / (name + "-GM_log.xlsx")) as writer:
-            # TODO(kf) write out metadata
+            # TODO(kf) write out metadata  # noqa: TD003, TD004 review required
 
             summary = ctk.pandas_utils.MatrixReport(
                 matrices[name],
@@ -812,7 +805,7 @@ def matrix_time_periods(
     --------
     read_time_factors
         Function to read time period factors from `factors_path`.
-    """
+    """  # noqa: D401 review required
     factors = read_time_factors(factors_path)
     output_folder.mkdir(exist_ok=True)
     df = pd.DataFrame.from_dict(factors, orient="index")
@@ -825,7 +818,7 @@ def matrix_time_periods(
         for name, mat in matrices.asdict().items():
             if name in ("zones", "combined"):
                 continue
-            mat = mat * fac.get(name)
+            mat = mat * fac.get(name)  # noqa: PLW2901 review required
             mat.to_csv(folder / f"{tp}_{name}-trip_matrix.csv")
             tmp_matrices[name] = mat
         tp_matrices[tp] = LGVMatrices(**tmp_matrices)
@@ -871,7 +864,7 @@ def produce_personal_matrix(
         Annual LGV personal trip matrices in NTEM zoning with
         3 columns: origin, destination, and values
 
-    """
+    """  # noqa: D401 review required
     # creating an empty dataframe
     matrix_list: list[pd.DataFrame] = []
     # reading in and appending home based dataframes
@@ -904,13 +897,13 @@ def produce_personal_matrix(
     # concatenating all matrices from list
     matrix = pd.concat(matrix_list, axis=0).groupby(level=0).sum()
     # stacking matrices to long format and renaming columns
-    matrix = matrix.stack().reset_index()
+    matrix = matrix.stack().reset_index()  # noqa: PD013 review required
     matrix = matrix.rename(
         columns={"level_0": "origin", "level_1": "destination", 0: "values"}
     )
 
     # calling lookup
-    # TODO(kf) Add column names to stop errors coming up
+    # TODO(kf) Add column names to stop errors coming up  # noqa: TD003, TD004 review required
     lookup = Rezone.read(zone_translation, None)
     # rezoning matrix NoHAM to NTEM
     matrix = Rezone.rezone_od(
@@ -923,7 +916,7 @@ def produce_personal_matrix(
     # Apply personal LGV factor
     matrix["values"] = matrix["values"] * factor
     # Converting back to square matrices
-    matrix = matrix.pivot(index="origin", columns="destination", values="values")
+    matrix = matrix.pivot(index="origin", columns="destination", values="values")  # noqa: PD010 review required
 
     # converting OD to PA matrices
     matrix.to_csv(output_folder / "personal-trip_matrix-PA.csv")
@@ -935,12 +928,12 @@ def produce_personal_matrix(
     od_matrix = pd.DataFrame(od_matrix, index=matrix.index, columns=matrix.columns)
     od_matrix.to_csv(output_folder / "personal-trip_matrix-OD.csv")
 
-    # TODO(kf) Add more tests at some point
+    # TODO(kf) Add more tests at some point  # noqa: TD003, TD004 review required
     # negative and nans check
-    negatives = (od_matrix < 0).values
+    negatives = (od_matrix < 0).values  # noqa: PD011 review required
     if np.any(negatives):
         raise ValueError(f"{np.sum(negatives)} negative values in matrix")
-    nans = od_matrix.isna().values
+    nans = od_matrix.isna().values  # noqa: PD011 review required
     if np.any(nans):
         raise ValueError(f"{np.sum(nans)} nan values in matrix")
     return od_matrix
@@ -973,7 +966,7 @@ def produce_annual_matrices(
     -------
     LGVMatrices
         Annual LGV matrices.
-    """
+    """  # noqa: D401 review required
     LOG.info("Running gravity model to get annual matrices")
     matrices = run_gravity_model(
         input_paths,
@@ -996,25 +989,26 @@ def produce_annual_matrices(
             )
             LOG.info("Finished personal segment matrices")
 
-    except Exception as exc:  # pylint: disable = broad-exception-caught
+    except Exception as exc:  # pylint: disable = broad-exception-caught  # noqa: BLE001 review required
         personal_matrix = None
         warnings.warn(
             "Failed to produce personal matrix, this will not be included in the outputs."
             f" {exc.__class__.__name__}: {exc}",
             RuntimeWarning,
+            stacklevel=2,
         )
 
     return LGVMatrices(**matrices, personal=personal_matrix)
 
 
-def main(input_paths: LGVInputPaths):
+def main(input_paths: LGVInputPaths) -> None:
     """Runs the LGV model.
 
     Parameters
     ----------
     input_paths : LGVInputPaths
         Paths to all the input files for the LGV model.
-    """
+    """  # noqa: D401 review required
     LOG.info("Getting model parameters")
     parameters = lgv_parameters(input_paths.parameters_path)
     LOG.debug("Model parameters:\n%s", pprint.pformat(parameters, indent=2, width=100))
@@ -1055,9 +1049,9 @@ def lgv_arg_parser() -> argparse.ArgumentParser:
         ArgumentParser which accepts the path to the
         config file, a flag to create an example file
         or nothing.
-    """
+    """  # noqa: D401 review required
 
-    def file_path(path) -> Path:
+    def file_path(path) -> Path:  # noqa: ANN001 review required
         path = Path(path)
         if not path.is_file():
             raise ValueError("file doesn't exist")
@@ -1074,7 +1068,7 @@ def lgv_arg_parser() -> argparse.ArgumentParser:
         "-e",
         "--example",
         action="store_true",
-        help="If given will write an example config " "file to the current working directory",
+        help="If given will write an example config file to the current working directory",
     )
     return parser
 
@@ -1089,15 +1083,15 @@ def _check_gm_inputs(
     if calibration is not None:
         data.append(calibration.copy())
         names.append("calibration")
-    for nm, df in zip(names, data):
-        df.sort_index(axis=0, inplace=True)
+    for nm, df in zip(names, data):  # noqa: B905 review required
+        df = df.sort_index(axis=0)  # noqa: PLW2901 review required
         if df.index.has_duplicates:
             raise ValueError(f"duplicates not allowed in `{nm}` index")
         if df.columns.has_duplicates:
             raise ValueError(f"duplicates not allowed in `{nm}` columns")
         if nm == "trip_ends":
             continue
-        df.sort_index(axis=1, inplace=True)
+        df = df.sort_index(axis=1)  # noqa: PLW2901 review required
         if not (df.index.equals(data[0].index) and df.columns.equals(data[0].index)):
             raise ValueError(
                 f"`{nm}` must be a square matrix with same zones as "
@@ -1111,7 +1105,7 @@ def _check_gm_inputs(
 
 
 def calculate_vehicle_kms(
-    matrix: pd.DataFrame, distances: pd.DataFrame, internals: Optional[set[int]] = None
+    matrix: pd.DataFrame, distances: pd.DataFrame, internals: set[int] | None = None
 ) -> pd.DataFrame:
     """Summarise number of trips and vehicle kilometres by internal/external.
 
@@ -1158,13 +1152,13 @@ def calculate_vehicle_kms(
     if internals:
         for c in df.columns.get_level_values(0):
             df.loc[:, (c, "Percentage")] = df[(c, "Value")] / df.loc["All Trips", (c, "Value")]
-        df.sort_index(axis=1, level=0, sort_remaining=False, inplace=True)
+        df = df.sort_index(axis=1, level=0, sort_remaining=False)
     return df
 
 
-def _check_matrix(matrix: np.ndarray):
+def _check_matrix(matrix: np.ndarray) -> None:
     """Check given `matrix` is square."""
-    if matrix.ndim != 2:
+    if matrix.ndim != 2:  # noqa: PLR2004 review required
         raise ValueError(f"matrix should have 2 dimensions not: {matrix.ndim}")
     if matrix.shape[0] != matrix.shape[1]:
         raise ValueError(f"matrix should be a square not shape: {matrix.shape}")
@@ -1227,7 +1221,7 @@ def factor_totals(
     mean_tot = np.mean([np.sum(col_total), np.sum(row_total)])
     LOG.info("Factoring trip ends sum to mean total: %s", mean_tot)
     new_totals = []
-    for tot, arr in zip(totals, trip_ends):
+    for tot, arr in zip(totals, trip_ends):  # noqa: B905 review required
         new_totals.append(arr * mean_tot / tot)
     return tuple(new_totals)
 

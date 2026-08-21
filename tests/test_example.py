@@ -1,15 +1,7 @@
-# -*- coding: utf-8 -*-
-"""Tests for the {} module"""
+"""Tests for the {} module."""
 
-# Built-Ins
-from typing import Any
+# # # IMPORTS # # #
 
-# Third Party
-import pytest
-
-# pylint: disable=import-error,wrong-import-position
-
-# pylint: enable=import-error,wrong-import-position
 
 # # # CONSTANTS # # #
 
@@ -19,5 +11,8 @@ import pytest
 
 # # # TESTS # # #
 class TestFunctionName:
-    def test_something(self):
+    """Example test class."""
+
+    def test_something(self) -> None:
+        """Example unit test."""
         assert True

@@ -167,7 +167,9 @@ class TimePeriodParams:
 
 
 def calculate_time_period_factors(
-    day_time_profiles: dict, month_distribution: float, weeks_in_month
+    day_time_profiles: dict,
+    month_distribution: float,
+    weeks_in_month,  # noqa: ANN001 review required
 ) -> pd.DataFrame:
     """Calculate TP factors."""
     profiles = {}

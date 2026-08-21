@@ -1,16 +1,16 @@
 """
 Module to calculate the productions and attractions for the LGV
 commuting segment in the model zone system.
-"""
+"""  # noqa: D205 review required
 
 from __future__ import annotations
 
 # Built-Ins
 import logging
-import pathlib
+import pathlib  # noqa: TC003 review required
 import re
+from collections.abc import Callable  # noqa: TC003 review required
 from itertools import chain
-from typing import Callable, Optional, Union
 
 # Third Party
 import caf.toolkit as ctk
@@ -57,18 +57,18 @@ QS606_HEADER_FOOTER = {"EW": (8, 5), "SC": (7, 5)}
 class WarehouseParameters(pydantic.BaseModel):
     """Parameters for warehouse data used in commute segment."""
 
-    medium: Optional[float] = pydantic.Field(alias="Weighting - Medium")
-    high: Optional[float] = pydantic.Field(alias="Weighting - High")
-    low: Optional[float] = pydantic.Field(alias="Weighting - Low")
-    zone_infill: list[Union[int, str]] = pydantic.Field(
+    medium: float | None = pydantic.Field(alias="Weighting - Medium")
+    high: float | None = pydantic.Field(alias="Weighting - High")
+    low: float | None = pydantic.Field(alias="Weighting - Low")
+    zone_infill: list[int | str] = pydantic.Field(
         alias="Model Zone Infill", default_factory=list
     )
-    infill_method: Optional[lgv_inputs.InfillMethod] = pydantic.Field(
+    infill_method: lgv_inputs.InfillMethod | None = pydantic.Field(
         None, alias="Zone Infill Method"
     )
 
     @pydantic.validator("zone_infill", pre=True)
-    def _split_str(cls, value: str) -> list:  # pylint: disable=no-self-argument
+    def _split_str(cls, value: str) -> list:  # pylint: disable=no-self-argument  # noqa: N805 review required
         return value.split(",")
 
 
@@ -86,9 +86,9 @@ class CommuteTripEnds:
     See Also
     --------
     .lgv_inputs: Module with functions for reading some inputs.
-    """
+    """  # noqa: D205 review required
 
-    COMMUTING_INPUTS_SHEET_HEADERS = {
+    COMMUTING_INPUTS_SHEET_HEADERS = {  # noqa: RUF012 review required
         "Parameters": {"Parameter": str, "Value": float},
         "Commute trips by main usage": {"Main usage": str, "Trips": float},
         "Commute trips by land use": {"Land use at trip end": str, "Trips": float},
@@ -96,7 +96,7 @@ class CommuteTripEnds:
         "Delivery Segment Parameters": {"Parameter": str, "Value": str},
     }
 
-    EMPLOYMENT_AGGREGATION = {
+    EMPLOYMENT_AGGREGATION = {  # noqa: RUF012 review required
         "Non-Construction": list(
             chain(
                 range(1, 6),  # A - E (1-5)
@@ -105,12 +105,13 @@ class CommuteTripEnds:
         )
     }
 
-    HH_PROJECTIONS_HEADER = {"Area Description": str, "HHs": float, "Jobs": float}
-    HH_RENAME = {"Area Description": "zone", "HHs": "households", "Jobs": "jobs"}
+    HH_PROJECTIONS_HEADER = {"Area Description": str, "HHs": float, "Jobs": float}  # noqa: RUF012 review required
+    HH_RENAME = {"Area Description": "zone", "HHs": "households", "Jobs": "jobs"}  # noqa: RUF012 review required
 
-    def __init__(self, input_paths: lgv_inputs.LGVInputPaths, model_zones: pd.Series):
+    def __init__(self, input_paths: lgv_inputs.LGVInputPaths, model_zones: pd.Series) -> None:
         """Initialise class by checking all input paths are in input dict and
-        all input files exist"""
+        all input files exist.
+        """  # noqa: D205 review required
         self.paths = input_paths
         self.model_zones = model_zones
 
@@ -143,13 +144,13 @@ class CommuteTripEnds:
         """
         return pd.DataFrame.from_dict(self.paths.dict(), orient="index", columns=["Path"])
 
-    def _read_commute_tables(self):
+    def _read_commute_tables(self) -> None:
         """Read in commuting tables input XLSX."""
         commute_tables = utilities.read_multi_sheets(
             self.paths.parameters_path, sheets=self.COMMUTING_INPUTS_SHEET_HEADERS
         )
 
-        # TODO(MB) Create a pydantic dataclass to store / validate the parameters
+        # TODO(MB) Create a pydantic dataclass to store / validate the parameters  # noqa: E501, TD003, TD004
         self.params = utilities.to_dict(
             commute_tables["Parameters"], "Parameter", ("Value", float)
         )
@@ -187,16 +188,16 @@ class CommuteTripEnds:
         }
         LOG.info("Grown commute trips land use: %s", self.commute_trips_land_use)
 
-    def _read_zone_lookups(self):
+    def _read_zone_lookups(self) -> None:
         for key, value in self.paths.dict().items():
             if value is None:
                 continue
-            key = key.lower()
-            if key.endswith("lookup") or key.endswith("lookup_path"):
+            key = key.lower()  # noqa: PLW2901 review required
+            if key.endswith(("lookup", "lookup_path")):
                 name = re.sub(r"[\s_]+|path", " ", key).strip()
                 self.zone_lookups[name] = Rezone.read(value, None)
 
-    def _read_qs606(self):
+    def _read_qs606(self):  # noqa: ANN202 review required
         """Read in and rezone Census occupation data."""
         # If haven't yet read in parameters and zone lookups, read in
         if not self.params:
@@ -229,14 +230,14 @@ class CommuteTripEnds:
             rezone_cols=cols[1:],
         )
 
-    def _calc_construction_factors(self):
+    def _calc_construction_factors(self) -> None:
         """Calculates the total change in sqm in residential and business
-        floorspace and uses it to calculate construction attractor factors
+        floorspace and uses it to calculate construction attractor factors.
 
         We calculate total builds as net additional dwellings +
         2*demolitions as for net dwellings to be >= 0 each demolished
         building needs to be replaces (only true if additional dwellings >=0)
-        """
+        """  # noqa: D205, D401 review required
         # get residential floorspace
         construction = ctk.io.read_csv(
             self.paths.constructions_path,
@@ -257,7 +258,7 @@ class CommuteTripEnds:
 
         # we want to raise an error if
         # (additonal dwellings < 0) AND (|additonal dwelling| > demolished dwellings)
-        # which is equivelent below. We do this as otherwise we will end up with negative builds,
+        # which is equivelent below. We do this as otherwise we will end up with negative builds,  # noqa: E501 review required
         # which makes no sense
         if (
             (-construction["additional_dwellings"]) > construction["demolished_dwellings"]
@@ -292,11 +293,10 @@ class CommuteTripEnds:
             columns={"floorspace": "factor"}
         )
 
-    def _calc_residential_factors(self):
+    def _calc_residential_factors(self) -> None:
         """Calculates residential attractor factors from TEMPro households
         data.
-        """
-
+        """  # noqa: D205, D401 review required
         households = lgv_inputs.household_projections(
             self.paths.household_paths.occupied,
             self.paths.household_paths.zc_path,
@@ -305,8 +305,8 @@ class CommuteTripEnds:
         households["factor"] = households["Households"] / households["Households"].sum()
         self.attractor_factors["Residential"] = households[["factor"]]
 
-    def _calc_employment_factors(self):
-        """Calculates employment attractor factors from employment data"""
+    def _calc_employment_factors(self) -> None:
+        """Calculates employment attractor factors from employment data."""  # noqa: D401 review required
         if not self.zone_lookups:
             self._read_zone_lookups()
         employment = lgv_inputs.filtered_employment(
@@ -318,11 +318,12 @@ class CommuteTripEnds:
         )
         self.attractor_factors["Employment"] = employment[["factor"]]
 
-    def estimate_productions(self):
+    def estimate_productions(self) -> None:
         """Reads in files and estimates trip productions by zone and employment
-        segment"""
+        segment.
+        """  # noqa: D205, D401 review required
         qs606uk = self._read_qs606()
-        # TODO(MB) review calc to check for 1/3
+        # TODO(MB) review calc to check for 1/3  # noqa: TD003, TD004 review required
 
         # Calculate total occupation numbers for Skilled trades and Drivers
         totals = qs606uk.drop(axis=1, labels=["zone", "total"]).sum()
@@ -340,10 +341,10 @@ class CommuteTripEnds:
             )
 
         self.trip_productions.index = self.trip_productions["zone"]
-        self.trip_productions.drop(columns=["zone"], inplace=True)
+        self.trip_productions = self.trip_productions.drop(columns=["zone"])
         self.trip_productions["Total"] = self.trip_productions.sum(axis=1)
 
-    def _estimate_skilled_attractions(self):
+    def _estimate_skilled_attractions(self):  # noqa: ANN202 review required
         """Estimates trip attractions for skilled trades.
 
         Returns
@@ -372,14 +373,10 @@ class CommuteTripEnds:
                 self.commute_trips_land_use[key] * self.attractor_factors[key]
             )
 
-        skilled_attractions = sum(skilled_attractions.values()).rename(
-            columns={"factor": "trips"}
-        )
+        return sum(skilled_attractions.values()).rename(columns={"factor": "trips"})
 
-        return skilled_attractions
-
-    def _estimate_driver_attractions(self):
-        """Estimates trip attractions for Drivers
+    def _estimate_driver_attractions(self):  # noqa: ANN202 review required
+        """Estimates trip attractions for Drivers.
 
         Returns
         -------
@@ -415,7 +412,7 @@ class CommuteTripEnds:
 
         warehouse_floorspace = pd.concat(factored_data, axis=1)
 
-        # Sum will fill Nans with 0 but we need to keep Nan in rows which are all Nan for infilling
+        # Sum will fill Nans with 0 but we need to keep Nan in rows which are all Nan for infilling  # noqa: E501 review required
         all_nans: pd.Series = warehouse_floorspace.isna().all(axis=1)
         warehouse_floorspace: pd.Series = warehouse_floorspace.sum(axis=1, skipna=True)
         warehouse_floorspace.loc[all_nans] = np.nan
@@ -441,8 +438,8 @@ class CommuteTripEnds:
 
         return trips.to_frame("trips")
 
-    def estimate_attractions(self):
-        """Estimates trip attractions"""
+    def estimate_attractions(self) -> None:
+        """Estimates trip attractions."""
         if not self.commute_trips_main_usage:
             self._read_commute_tables()
 
@@ -454,9 +451,9 @@ class CommuteTripEnds:
         (
             trip_attractions["Drivers"],
             trip_attractions["Skilled trades"],
-        ) = trip_attractions[
-            "Drivers"
-        ].align(trip_attractions["Skilled trades"], join="outer", fill_value=0)
+        ) = trip_attractions["Drivers"].align(
+            trip_attractions["Skilled trades"], join="outer", fill_value=0
+        )
 
         self.trip_attractions = sum(trip_attractions.values()).rename(
             columns={"trips": "Total"}
@@ -464,12 +461,12 @@ class CommuteTripEnds:
         for col in trip_attractions:
             self.trip_attractions[col] = trip_attractions[col]["trips"]
 
-    def calc_trip_ends(self):
+    def calc_trip_ends(self) -> None:
         """Takes production and attraction dataframes with skilled trades and
         drivers as columns and zones as indices and creates skilled trade and
         driver trip dataframes with productions and attractions as columns and
         zones as indices.
-        """
+        """  # noqa: D205, D401 review required
         if self.trip_productions is None:
             self.estimate_productions()
         if self.trip_attractions is None:
@@ -491,8 +488,8 @@ class CommuteTripEnds:
     @property
     def productions(self) -> pd.DataFrame:
         """pd.DataFrame : Trip productions for each zone (index) and
-        with columns Total, Skilled trades and Drivers
-        """
+        with columns Total, Skilled trades and Drivers.
+        """  # noqa: D205 review required
         if self.trip_productions is None:
             self.estimate_productions()
         return self.trip_productions
@@ -500,8 +497,8 @@ class CommuteTripEnds:
     @property
     def attractions(self) -> pd.DataFrame:
         """pd.DataFrame : Trip productions for each zone (index) and
-        with columns Total, Skilled trades and Drivers
-        """
+        with columns Total, Skilled trades and Drivers.
+        """  # noqa: D205 review required
         if self.trip_attractions is None:
             self.estimate_attractions()
         return self.trip_attractions
@@ -510,7 +507,8 @@ class CommuteTripEnds:
     def trips(self) -> dict[str, pd.DataFrame]:
         """Dict[pd.DataFrame] : dictionary with keys Skilled trades and
         Drivers, with values being the trip dataframes, each with productions
-        and attractions as columns and zones as indices."""
+        and attractions as columns and zones as indices.
+        """  # noqa: D205 review required
         if not self.trip_ends:
             self.calc_trip_ends()
         return self.trip_ends
@@ -520,10 +518,10 @@ class CommuteTripEnds:
 def read_qs606(
     ew_path: pathlib.Path, sc_path: pathlib.Path, rename: bool = True
 ) -> dict[str, pd.DataFrame]:
-    """ "Read occupation data."""
+    """Read occupation data."""
 
     def rename_cols(name: str) -> str:
-        """Renames the occupation data columns"""
+        """Rename the occupation data columns."""
         match = re.match("^(5[1-3])|(82)[1]?", name)
         if match:
             return match.group(0)

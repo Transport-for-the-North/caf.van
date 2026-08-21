@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Script for growing the LGV model inputs to a forecast year.
 
@@ -13,10 +12,11 @@ import datetime as dt
 import logging
 import pathlib
 import sys
-from typing import Any, Callable, Iterator
+from collections.abc import Callable, Iterator
+from typing import Any
 
 # Third Party
-import caf.toolkit
+import caf.toolkit  # noqa: ICN001 review required
 import numpy as np
 import pandas as pd
 import pydantic
@@ -71,7 +71,7 @@ class NTEMGrowthData:
     workers_col: str = "workers"
 
     @pydantic.root_validator(skip_on_failure=True)
-    def _check_columns(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _check_columns(cls, values: dict[str, Any]) -> dict[str, Any]:  # noqa: N805 review required
         # pylint: disable=no-self-argument
         col_names = ["pop_col", "households_col", "jobs_col", "workers_col"]
         columns = [values[i] for i in col_names]
@@ -87,7 +87,7 @@ class NTEMGrowthData:
 
         return values
 
-    def __iter__(self) -> Iterator[tuple[str, pd.DataFrame]]:
+    def __iter__(self) -> Iterator[tuple[str, pd.DataFrame]]:  # noqa: D105 review required
         yield "lsoa", self.lsoa
         yield "msoa", self.msoa
         yield "lad", self.lad
@@ -107,12 +107,11 @@ class _GrowthFactorLinRegress:
         """Get forecast values."""
         return (self._results.slope * x) + self._results.intercept
 
-    def year_value(self, x: int):
+    def year_value(self, x: int):  # noqa: ANN202 review required
         """Value for a forecast year."""
         if x in self._data.index:
-            return self._data.at[x]
-        else:
-            return self.line(x)
+            return self._data.at[x]  # noqa: PD008 review required
+        return self.line(x)
 
     @property
     def data(self) -> pd.Series:
@@ -136,9 +135,9 @@ class _GrowthFactorLinRegress:
 
 
 ##### FUNCTIONS #####
-def _load_planning_data(base_path: pathlib.Path, forecast_path: pathlib.Path):
+def _load_planning_data(base_path: pathlib.Path, forecast_path: pathlib.Path):  # noqa: ANN202 review required
     """Calculate growth values for the TEMPro planning data for the forecast year."""
-    # TODO(MB) Load NTEM data directly from the databases, functionality for this
+    # TODO(MB) Load NTEM data directly from the databases, functionality for this  # noqa: E501, TD003, TD004
     # exists in NorMITs-Demand
     index_col = ["Area Description", "Name"]
     rename_columns = {
@@ -172,9 +171,7 @@ def _load_oa_lookup(path: pathlib.Path) -> pd.DataFrame:
 def _normalise_names(data: pd.Series) -> pd.Series:
     data = data.str.lower().str.strip()
     data = data.str.replace(r"[!\"#$%&'\()*+,-./:;<=>?@\][\\^_`{|}~]", "", regex=True)
-    data = data.str.replace(r"\s+", " ", regex=True)
-
-    return data
+    return data.str.replace(r"\s+", " ", regex=True)
 
 
 def _normalise_lad_names(data: pd.Series) -> pd.Series:
@@ -197,7 +194,7 @@ def _merge_check(
     total = len(data)
     uniques = np.unique(data["_merge"], return_counts=True)
 
-    for loc, n in zip(*uniques):
+    for loc, n in zip(*uniques):  # noqa: B905 review required
         if loc == "both":
             dataset = "both datasets"
         else:
@@ -288,7 +285,7 @@ def grow_occupation_data(
     for key, path in (("EW", ew_path), ("SC", sc_path)):
         meta_rows[key] = ""
 
-        with open(path, "rt", encoding="utf-8") as file:
+        with open(path, "rt", encoding="utf-8") as file:  # noqa: PTH123 review required
             for _ in range(commute_segment.QS606_HEADER_FOOTER[key][0]):
                 line = file.readline()
                 if "Date" in line:
@@ -303,7 +300,7 @@ def grow_occupation_data(
     qs_data["EW"] = base_data["EW"].merge(
         growth.lsoa[factor_col],
         how="left",
-        left_on=list(commute_segment.QS606_BASE_HEADERS.keys())[0],
+        left_on=next(iter(commute_segment.QS606_BASE_HEADERS.keys())),
         right_index=True,
         validate="1:1",
         indicator=True,
@@ -325,7 +322,7 @@ def grow_occupation_data(
         factor_col,
     )
 
-    # TODO Use more spatially disaggregate values for Scotland
+    # TODO Use more spatially disaggregate values for Scotland  # noqa: E501, TD002, TD003, TD004
     # Use single average growth factor for Scotland because they're datazones not LSOAs
     key = "SC"
     qs_data[key] = base_data[key]
@@ -345,11 +342,11 @@ def grow_occupation_data(
     comparisons = {}
     for key, data in qs_data.items():
         output_paths[key] = output_folder / f"QS606{key}_grown_{forecast_year}.csv"
-        data = data.drop(columns=[factor_col, "_merge"], errors="ignore")
+        data = data.drop(columns=[factor_col, "_merge"], errors="ignore")  # noqa: PLW2901 review required
 
         comparisons[key] = _compare_column_totals(base_data[key], data)
 
-        with open(output_paths[key], "wt", encoding="utf-8", newline="") as file:
+        with open(output_paths[key], "wt", encoding="utf-8", newline="") as file:  # noqa: PTH123 review required
             file.write(meta_rows[key])
             data.to_csv(file, index=False)
 
@@ -433,7 +430,7 @@ def _write_forecast_log(
 ) -> None:
     yaml = strictyaml.as_document(_recursive_apply(paths, str)).as_yaml()
 
-    with open(output_path, "wt", encoding="utf-8") as file:
+    with open(output_path, "wt", encoding="utf-8") as file:  # noqa: PTH123 review required
         file.write(
             f"# LGV model inputs grown from {base_year} to {forecast_year}, "
             f"produced at: {dt.datetime.now():%c}\n"
@@ -527,7 +524,7 @@ def _calculate_veh_km_growth_factor(
     )
     index_cols = ["Region", "Area type", "Vehicle Type"]
     rtf_veh_kms.loc[:, index_cols] = rtf_veh_kms[index_cols].fillna(method="ffill")
-    rtf_veh_kms.set_index(index_cols, inplace=True)
+    rtf_veh_kms = rtf_veh_kms.set_index(index_cols)
     rtf_veh_kms.columns = pd.to_numeric(rtf_veh_kms.columns, downcast="unsigned")
 
     data: pd.Series = rtf_veh_kms.loc["England", "All", "LGV"]
@@ -570,7 +567,7 @@ def _compare_column_totals(base: pd.DataFrame, forecast: pd.DataFrame) -> pd.Dat
 
 
 def main(params: ForecastInputsConfig) -> None:
-    """Main func."""
+    """Main func."""  # noqa: D401 review required
     output_folder = (
         params.output_folder / f"LGV Forecast Inputs {params.forecast_year} "
         f"- {dt.date.today():%Y%m%d}"
