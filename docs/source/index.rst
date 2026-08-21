@@ -1,15 +1,13 @@
-.. caf.van documentation master file.
+.. CAF.van documentation master file.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive. See the
    `reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
    documentation for details.
 
-Welcome to CAF.Van's documentation!
+Welcome to CAF.van's documentation!
 ===================================
 
-CAF.van is a transport demand model which includes calculating trip ends,
-using a gravity model to generate annual trip matrices and converting the annual
-matrices to time periods.
+Transport demand model to produce van travel matrices.
 
 CAF.van source code is available on `GitHub <https://github.com/transport-for-the-north/caf.van>`_.
 
@@ -17,10 +15,9 @@ CAF.van source code is available on `GitHub <https://github.com/transport-for-th
 Common Analytical Framework
 ---------------------------
 
-This package is sits within the `Common Analytical Framework (CAF) <https://transport-for-the-north.github.io/caf_homepage/intro.html>`_,
-which is a collaboration between transport bodies in the UK to develop and maintain commonly use
+This package sits within the `Common Analytical Framework (CAF) <https://github.com/Transport-for-the-North#common-analytical-framework-caf>`_,
+which is a collaboration between transport bodies in the UK to develop and maintain commonly used
 transport analytics and appraisal tools.
-
 
 Credits
 -------
@@ -31,17 +28,20 @@ CAF.van was initially created by taking the LGV model sub-package from
 
 Contents
 --------
-.. toctree::
-   :maxdepth: 2
 
+.. toctree::
+   :maxdepth: 3
+
+   start
    user_guide
    api
-   examples/index
 
 
 Indices and tables
-------------------
+==================
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+.. todolist::

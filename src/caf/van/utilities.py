@@ -1,7 +1,5 @@
-# -*- coding: utf-8 -*-
-"""
-Set of utilities for use in the freight tool
-"""
+"""Set of utilities for use in the freight tool."""
+
 ##### IMPORTS #####
 
 from __future__ import annotations
@@ -11,7 +9,6 @@ import json
 import re
 from itertools import islice
 from pathlib import Path
-from typing import Dict, Union
 
 # Third Party
 import pandas as pd
@@ -27,22 +24,20 @@ from caf.van.errors import (
 
 
 class Parameters:
-    """
-    Class for reading the parameters given and creating an empty parameter file for input.
-    """
+    """Class for reading the parameters given and creating an empty parameter file for input."""  # noqa: E501 review required
 
     # Class constants
     _INDENT = 4
 
     # Default parameters
-    _TIME_PERIODS = {
+    _TIME_PERIODS = {  # noqa: RUF012 review required
         "_comment": "Time period conversion factors.",
         "AM": None,
         "IP": None,
         "PM": None,
         "OP": None,
     }
-    _INPUT = {
+    _INPUT = {  # noqa: RUF012 review required
         "_comment": "Parameters for one run of the process",
         "TIME_PERIODS": _TIME_PERIODS,
         "FILEPATH": "",
@@ -54,30 +49,30 @@ class Parameters:
             "Trips": "Annual_PCU/Annual_Tonnage",
         },
     }
-    _LOOKUP = {
+    _LOOKUP = {  # noqa: RUF012 review required
         "FILEPATH": "",
         "INPUT_FORMAT": "TSV/CSV",
         "INPUT_COLUMNS": {"old": "", "new": "", "splitting_factor": ""},
     }
-    _ZONE_LOOKUP = {
+    _ZONE_LOOKUP = {  # noqa: RUF012 review required
         "_comment": "Parameters for the rezoning process, optional.",
         **_LOOKUP,
     }
-    _SECTOR_LOOKUP = {
+    _SECTOR_LOOKUP = {  # noqa: RUF012 review required
         "_comment": (
             "Parameters for the sector OD tables to be produced,"
             " for the input matrix, optional."
         ),
         **_LOOKUP,
     }
-    _REZONED_SECTOR_LOOKUP = {
+    _REZONED_SECTOR_LOOKUP = {  # noqa: RUF012 review required
         "_comment": (
             "Parameters for the sector OD tables to be produced,"
             " for the rezoned and output matrices, optional."
         ),
         **_LOOKUP,
     }
-    DEFAULT_PARAMETERS = {
+    DEFAULT_PARAMETERS = {  # noqa: RUF012 review required
         "_comment": (
             "Parameter file for NoHAM-FPT, can run process"
             " on multiple files at once by creating different "
@@ -91,76 +86,81 @@ class Parameters:
         "INPUT": _INPUT,
     }
 
-    def __init__(self, path=None, params=None):
+    def __init__(self, path=None, params=None) -> None:  # noqa: ANN001 review required
         """
         Initiate the parameters class by reading file if given, using parameters if given
         or with defaults.
 
-        Parameters:
+        Parameters
+        ----------
             path: str, optional
                 Path to parameters file.
             params: dict, optional
                 Dictionary containing parameters.
-        """
-        if not path is None:
+        """  # noqa: D205 review required
+        if path is not None:
             self.params = self.read(path)
-        elif not params is None:
+        elif params is not None:
             self.params = dict(params)
         else:
             self.params = self.DEFAULT_PARAMETERS
-        return
 
     @classmethod
-    def read(cls, path):
+    def read(cls, path):  # noqa: ANN001, ANN206 review required
         """
         Read the paramters file given, using json.
 
-        Parameters:
+        Parameters
+        ----------
             path: str
                 Path to the parameters file.
-        Returns:
+
+        Returns
+        -------
             params: dict
                 Dictionary containing all the parameters read.
         """
         # Read parameters
-        with open(path, "rt") as f:
-            params = json.load(f)
+        with open(path, "rt") as f:  # noqa: PTH123 review required
+            return json.load(f)
 
-        return params
-
-    def __str__(self):
+    def __str__(self) -> str:
         """
         Creates json string.
 
-        Parameters:
+        Parameters
+        ----------
             None
         Returns:
             params: str
                 Json str dump of parameters.
-        """
+        """  # noqa: D401 review required
         return json.dumps(self.params, indent=self._INDENT)
 
-    def write(self, path):
+    def write(self, path) -> None:  # noqa: ANN001 review required
         """
         Write parameters to file.
 
-        Parameters:
+        Parameters
+        ----------
             path: str
                 Path to write parameter file to.
-        Returns:
+
+        Returns
+        -------
             None
         """
         # Write parameters to file
-        with open(path, "wt") as f:
+        with open(path, "wt") as f:  # noqa: PTH123 review required
             json.dump(self.params, f, indent=self._INDENT)
-        return
 
     @staticmethod
-    def check_params(parameters, expected, name):
+    def check_params(parameters, expected, name):  # noqa: ANN001, ANN205 review required
         """
         Checks if parameters contain expected.
 
-        Parameters:
+        Parameters
+        ----------
             parameters: dict
                 Dictionary containing parameters.
             expected: iterable
@@ -168,20 +168,23 @@ class Parameters:
                 keys in the dictionary.
             name: str
                 Name of the parameter group being checked.
-        Returns:
+
+        Returns
+        -------
             params: dict
                 Dictionary containing only the expected parameters.
-        Raises:
+
+        Raises
+        ------
             MissingParameterError: If any of the expected parameters
             are not in the dictionary.
-        """
+        """  # noqa: D401 review required
         params = {}
         for i in expected:
-            if i not in parameters.keys():
+            if i not in parameters:
                 raise MissingParameterError(i, name)
-            else:
-                # Only keep required values
-                params[i] = parameters[i]
+            # Only keep required values
+            params[i] = parameters[i]
 
         return params
 
@@ -212,7 +215,7 @@ class DataPaths:
 
 def check_file_path(
     path: Path, name: str, *extensions: str, return_path: bool = False
-) -> Union[bool, Path]:
+) -> bool | Path:
     """Check that the given `path` is an existing file.
 
     Also checks if the file contains the correct file
@@ -288,7 +291,7 @@ def check_folder(path: Path, name: str, create: bool = False) -> True:
     FileNotFoundError
         If the folder doesn't exist and `create` is
         False.
-    """
+    """  # noqa: D401 review required
     path = Path(path)
     if path.is_dir():
         return True
@@ -300,7 +303,9 @@ def check_folder(path: Path, name: str, create: bool = False) -> True:
     raise FileNotFoundError(f"{name} folder does not exist: {path}")
 
 
-def read_csv(path: Path, name: str = None, columns: Dict = None, **kwargs) -> pd.DataFrame:
+def read_csv(
+    path: Path, name: str | None = None, columns: dict | None = None, **kwargs
+) -> pd.DataFrame:
     """Wrapper function for `pandas.read_csv` to perform additional checks.
 
     Checks what delimiter the file uses before reading and provides more
@@ -334,15 +339,15 @@ def read_csv(path: Path, name: str = None, columns: Dict = None, **kwargs) -> pd
     ValueError
         If any of the columns cannot be converted to the
         given data type.
-    """
+    """  # noqa: D401 review required
     path = Path(path)
     if name is None:
         name = path.stem
     check_file_path(path, name, ".txt", ".csv")
-    if "sep" not in kwargs.keys() and "delimiter" not in kwargs.keys():
+    if "sep" not in kwargs and "delimiter" not in kwargs:
         # Don't try to figure out delimiter if it is already given
         # Read in the second line of the file to determine the delimiter
-        with open(path, "r") as csv_file:
+        with open(path, "r") as csv_file:  # noqa: PTH123 review required
             second_line = list(islice(csv_file, 2))[1]
         kwargs["sep"] = "\t" if len(second_line.split("\t")) > 1 else ","
     if isinstance(columns, (tuple, list)):
@@ -370,15 +375,14 @@ def read_csv(path: Path, name: str = None, columns: Dict = None, **kwargs) -> pd
                     df[c].astype(t)
                 except ValueError:
                     raise ValueError(
-                        f"Column '{c}' in {name} has values "
-                        f"which cannot be converted to {t}"
+                        f"Column '{c}' in {name} has values which cannot be converted to {t}"
                     ) from err
         raise
     return df
 
 
 def read_excel(
-    path: Path, name: str | None = None, columns: Dict | None = None, **kwargs
+    path: Path, name: str | None = None, columns: dict | None = None, **kwargs
 ) -> pd.DataFrame:
     """Wrapper function for `pandas.read_excel` to perform additional checks.
 
@@ -413,8 +417,7 @@ def read_excel(
     ValueError
         If any of the columns cannot be converted to the
         given data type.
-    """
-
+    """  # noqa: D401 review required
     path = Path(path)
     if name is None:
         name = path.stem
@@ -446,15 +449,14 @@ def read_excel(
                     df[c].astype(t)
                 except ValueError:
                     raise ValueError(
-                        f"Column '{c}' in {name} has values "
-                        f"which cannot be converted to {t}"
+                        f"Column '{c}' in {name} has values which cannot be converted to {t}"
                     ) from err
         raise
 
     return df
 
 
-def read_multi_sheets(path: Path, sheets: Dict, **kwargs):
+def read_multi_sheets(path: Path, sheets: dict, **kwargs):  # noqa: ANN201 review required
     """Function to read in multiple excel sheets.
 
     Reads all sheets into a dictonary and provides detailed error messages
@@ -480,11 +482,11 @@ def read_multi_sheets(path: Path, sheets: Dict, **kwargs):
     ------
     MissingWorksheetError
         If any sheets given don't exist in the XLSX.
-    """
+    """  # noqa: D401 review required
     path = Path(path)
     check_file_path(path, path.stem, ".xlsx")
     dfs = {}
-    for sheet in sheets:
+    for sheet in sheets:  # noqa: PLC0206 review required
         try:
             dfs[sheet] = read_excel(
                 path, name=sheet, columns=sheets[sheet], sheet_name=sheet, **kwargs
@@ -501,8 +503,10 @@ def read_multi_sheets(path: Path, sheets: Dict, **kwargs):
     return dfs
 
 
-def to_dict(df: pd.DataFrame, key_col: str, val_col: tuple[str, type], name: str = None):
-    """Transform a dataframe to a dictionary
+def to_dict(  # noqa: ANN201 review required
+    df: pd.DataFrame, key_col: str, val_col: tuple[str, type], name: str | None = None
+):
+    """Transform a dataframe to a dictionary.
 
     Parameters
     ----------
@@ -542,6 +546,6 @@ def to_dict(df: pd.DataFrame, key_col: str, val_col: tuple[str, type], name: str
             raise ValueError(msg) from err
 
     for i in df.index:
-        dictionary[df.at[i, key_col]] = df.at[i, val_col]
+        dictionary[df.at[i, key_col]] = df.at[i, val_col]  # noqa: PD008 review required
 
     return dictionary

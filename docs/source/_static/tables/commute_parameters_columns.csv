@@ -1,0 +1,6 @@
+Parameter, Data Type, Description
+Weighting - High, Number, Factor to apply to the high relevance warehouse floorspace input.
+Weighting - Medium, Number, Factor to apply to the medium relevance warehouse floorspace input.
+Weighting - Low, Number, Factor to apply to the low relevance warehouse floorspace input.
+Model Zone Infill, Comma-separated list, List of model zones in commute warehouse data which should be infilled.
+Zone Infill Method, Text (from options below), Method for infilling model zones.

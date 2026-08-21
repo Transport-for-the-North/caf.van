@@ -1,9 +1,8 @@
 Methodology
 ===========
 
-The LGV model is split into six model segments for different types of
-LGV trips, these are the following (see Ian Williams' technical
-note[^lgvn_design] for more details):
+The van model is split into six model segments for different types of
+van trips, these are the following:
 
 -  Service
 -  Delivery Grocery
@@ -12,7 +11,7 @@ note[^lgvn_design] for more details):
 -  Commute Drivers
 -  Commute Skilled Trades
 
-The LGV model methodology is split into three sections, only the first
+The van model methodology is split into three sections, only the first
 of which varies between model segments, these are as follows:
 
 -  Trip end generation;
@@ -33,10 +32,10 @@ segments except the delivery bush trips where they instead have origin
 and destination trip ends.
 
 The trip end generation uses various inputs from the DfT van survey and
-census data tables, these are all outlined in the `LGV Model
-Inputs <#lgv-model-inputs>`__ section. This section will discuss the
-methodologies for the three main segments (which each contain
-sub-segments that make up the six total LGV model segments).
+census data tables, these are all outlined in the :ref:`van model inputs`
+section. This section will discuss the methodologies for the three main
+segments (which each contain sub-segments that make up the six total
+van model segments).
 
 Service Trip Ends
 ~~~~~~~~~~~~~~~~~
@@ -47,15 +46,13 @@ trips (from the DfT van survey) to the model zone system. The trip ends
 are distributed separately for the sub-segments of Residential, Office
 and All Other Employment before being combined together into a single
 set of service productions and attractions. The flowchart below outlines
-the service trip ends methodology, more details of this methodology can
-be found in section 5 of Ian Williams' technical note[^lgvn_design].
+the service trip ends methodology.
 
-.. figure:: _static/images/LGV_methodology-Servicing.png
-   :alt: LGV service productions and attractions trip ends methodology -
+.. figure:: ../_static/images/LGV_methodology-Servicing.drawio.svg
+   :alt: Van service productions and attractions trip ends methodology -
       flowchart
 
-   LGV service productions and attractions trip ends methodology -
-   flowchart
+   Van service productions and attractions trip ends methodology
 
 Delivery Trip Ends
 ~~~~~~~~~~~~~~~~~~
@@ -79,12 +76,15 @@ sub-segments, detailed below:
 The parcel stem trips are calculated as productions and attractions,
 whereas both the bush types are origin / destination trip ends. The
 flowchart below outlines the methodology for calculating the trip ends
-for all three types of delivery trip, more details of this methodology
-can be found in section 6 of Ian Williams' technical note[^lgvn_design].
+for all three types of delivery trip.
 
-**TODO** *Update flowchart to show trips are factored using delivery
-growth factor* |LGV delivery parcel and grocery trip ends methodology -
-flowchart|
+.. todo::
+   Update flowchart to show trips are factored using delivery growth factor
+
+.. figure:: ../_static/images/LGV_methodology-Delivery.drawio.svg
+   :alt: Van delivery trip ends methodology - flowchart
+
+   Van delivery trip ends methodology
 
 Commuting Trip Ends
 ~~~~~~~~~~~~~~~~~~~
@@ -101,26 +101,31 @@ detailed below:
 
 Both commuting segments are calculated as productions and attractions,
 these methodologies have been split into two flowcharts below, one for
-each type of trip end. More details on the commuting methodology is
-given in section 4 of Ian Williams' technical note[^lgvn_design].
+each type of trip end.
 
-**TODO** *Update flowchart to show trips are factored using growth
-factor* |LGV commuting attractions trip ends methodology - flowchart|
+.. todo::
+   Update flowchart to show trips are factored using growth factor
 
-.. figure:: _static/images/LGV_methodology-Commuting-Productions.png
-   :alt: LGV commuting productions trip ends methodology - flowchart
+.. figure:: ../_static/images/LGV_methodology-Commuting-Productions.drawio.svg
+   :alt: Van commuting productions trip ends methodology - flowchart
 
-   LGV commuting productions trip ends methodology - flowchart
+   Van commuting productions trip ends methodology
+
+.. figure:: ../_static/images/LGV_methodology-Commuting-Attractions.drawio.svg
+   :alt: Van commuting attractions trip ends methodology - flowchart
+
+   Van commuting attractions trip ends methodology
 
 Gravity Model
 -------------
 
-The package utilises caf.distribute multi-TLD gravity model for calibrating and running the gravity model.
-The gravity model distributes trips based on the purposes' calculated trip ends and inputted trip-length distributions (TLD).
-This is achieved by fitting the cost function parameters to match the target TLD and Furnessing then achieved distribution to match the trip ends.
-The multi-TLD gravity allows for different areas to have their own TLDs 
-For more information on this process please see the caf.distribute gravity mode documentation here: 
-:class:`caf.distribute.gravity_model.multi_area.MultiAreaGravityModelCalibrator`
+The package utilises [caf.distribute](https://cafdistribute.readthedocs.io/en/stable/) multi-TLD
+gravity model for calibrating and running the gravity model. The gravity model distributes trips
+based on the purposes' calculated trip ends and inputted trip-length distributions (TLD).
+This is achieved by fitting the cost function parameters to match the target TLD and Furnessing
+then achieved distribution to match the trip ends. The multi-TLD gravity allows for different areas
+to have their own TLDs, for more information on this process please see
+:class:`caf.distribute.gravity_model.multi_area.MultiAreaGravityModelCalibrator`.
 
 Time Period Conversion
 ----------------------
@@ -130,8 +135,4 @@ period specific trip matrices. The conversion is done by factoring the
 annual matrices (for each model segment) by the period factor provided
 for each of the given time periods. The time period factors should be
 provided separately to respect the different time profiles for each of
-the model segments, the factors are provided in the `LGV Parameters
-Spreadsheet <#lgv-parameters-spreadsheet>`__.
-
-.. |LGV delivery parcel and grocery trip ends methodology - flowchart| image:: _static/images/LGV_methodology-Delivery.png
-.. |LGV commuting attractions trip ends methodology - flowchart| image:: _static/images/LGV_methodology-Commuting-Attractions.png
+the model segments, the factors are provided in the :ref:`van parameters spreadsheet`.

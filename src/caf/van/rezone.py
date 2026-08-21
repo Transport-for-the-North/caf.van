@@ -1,6 +1,4 @@
-"""
-Rezones a matrix when given a lookup with splitting factors.
-"""
+"""Rezones a matrix when given a lookup with splitting factors."""
 
 ##### IMPORTS #####
 
@@ -21,7 +19,7 @@ class Rezone:
     """Class for rezoning a matrix when given a lookup with splitting factors."""
 
     @classmethod
-    def read(cls, path, columns):
+    def read(cls, path, columns):  # noqa: ANN001, ANN206 review required
         """Read the lookup file.
 
         Parameters
@@ -58,7 +56,7 @@ class Rezone:
         except IncorrectParameterError:
             err_type, err_val = sys.exc_info()[:2]
             # Log any errors and reraise
-            LOG.error("%s: %s", err_type.__name__, str(err_val))
+            LOG.exception("%s: %s", err_type.__name__, str(err_val))
             raise
 
         # Set column names if rename is list or use rename method with dicts
@@ -69,14 +67,14 @@ class Rezone:
         return df
 
     @staticmethod
-    def rezone(
-        df,
-        lookup,
-        df_col,
-        lookup_old="old",
-        lookup_new="new",
-        split_col="splitting_factor",
-        rezone_cols="trips",
+    def rezone(  # noqa: ANN205 review required
+        df,  # noqa: ANN001 review required
+        lookup,  # noqa: ANN001 review required
+        df_col,  # noqa: ANN001 review required
+        lookup_old="old",  # noqa: ANN001 review required
+        lookup_new="new",  # noqa: ANN001 review required
+        split_col="splitting_factor",  # noqa: ANN001 review required
+        rezone_cols="trips",  # noqa: ANN001 review required
     ):
         """Rezones a dataframe with a lookup dataframe, using splitting factors.
 
@@ -130,7 +128,7 @@ class Rezone:
         return merged[original_cols], missing
 
     @classmethod
-    def rezone_od(cls, df, lookup, df_cols=("origin", "destination"), **kwargs):
+    def rezone_od(cls, df, lookup, df_cols=("origin", "destination"), **kwargs):  # noqa: ANN001, ANN206 review required
         """Rezones the matrix on both the origin and destination columns.
 
         Uses the `rezone` method.
@@ -161,5 +159,4 @@ class Rezone:
                 raise MissingLookupValuesError(missing, c)
 
         # Group the new zones
-        df = df.groupby(df_cols, as_index=False).sum()
-        return df
+        return df.groupby(df_cols, as_index=False).sum()

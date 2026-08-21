@@ -1,0 +1,24 @@
+Column Name, Data Type, Description
+Area, Text, Description / Name of Area Type 
+mnemonic, Text, Data zone or LSOA area code 
+"A : Agriculture, forestry and fishing", Real, Number of employees for this industry type 
+B : Mining and quarrying, Real, Number of employees for this industry type
+C : Manufacturing, Real, Number of employees for this industry type
+"D : Electricity, gas, steam and air conditioning supply", Real, Number of employees for this industry type
+"E : Water supply; sewerage, waste management and remediation activities", Real, Number of employees for this industry type
+F : Construction, Real, Number of employees for this industry type
+G : Wholesale and retail trade; repair of motor vehicles and motorcycles, Real, Number of employees for this industry type 
+H : Transportation and storage, Real, Number of employees for this industry type 
+I : Accommodation and food service activities, Real, Number of employees for this industry type
+J : Information and communication, Real, Number of employees for this industry type
+K : Financial and insurance activities, Real, Number of employees for this industry type
+L : Real estate activities, Real, Number of employees for this industry type
+"M : Professional, scientific and technical activities", Real, Number of employees for this industry type
+N : Administrative and support service activities, Real, Number of employees for this industry type
+O : Public administration and defence; compulsory social security, Real, Number of employees for this industry type
+P : Education, Real, Number of employees for this industry type
+Q : Human health and social work activities, Real, Number of employees for this industry type
+"R : Arts, entertainment and recreation", Real, Number of employees for this industry type
+S : Other service activities, Real, Number of employees for this industry type
+T : Activities of households as employers;undifferentiated goods-and services-producing activities of households for own use, Real, Number of employees for this industry type
+U : Activities of extraterritorial organisations and bodies, Real, Number of employees for this industry type

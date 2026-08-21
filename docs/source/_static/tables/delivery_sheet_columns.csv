@@ -1,0 +1,7 @@
+Parameter, Data Type , Description
+Annual Trip Productions - Parcel Stem, Integer, "The total annual trip productions for the delivery parcel stem segment from the DfT van survey, for the **base year**."
+Annual Trips - Parcel Bush, Integer, "The total annual trips for the delivery parcel bush segment from the DfT van survey, for the **base year**."
+Annual Trips - Grocery Bush, Integer, "The total annual trips for the delivery grocery bush segment from the DfT van survey, for the **base year**."
+Delivery Growth Factor, Real (> 0), Growth factor to apply to the annual delivery trips to factor to forecast year. 
+B2C vs B2B Weighting, Real (> 0), The ratio of business-to-customer vs business-to-business delivery trips.
+Depots Infill Zones, Comma-separated list, "List of all zones in areas that aren't covered by the warehouse dataset (e.g. Scotland), these zones will have depots allocated based on number of households."
