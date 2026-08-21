@@ -3,10 +3,10 @@ User Guide
 
 This section provides an in-depth guide on using CAF.van.
 
-.. note::
-   - For quick start guide see :ref:`quick start`
-   - For details on the package API see :ref:`api reference`
-   - For code examples see :ref:`code examples`
+.. seealso::
+   - :ref:`quick start` for installation instructions and usage
+   - :ref:`api reference` for details on the package API
+   - :ref:`code examples` for code examples
 
 .. toctree::
    :maxdepth: 2

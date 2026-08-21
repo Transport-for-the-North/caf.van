@@ -24,6 +24,9 @@ Homepage = "https://github.com/transport-for-the-north/caf.van"
 Source = "https://github.com/transport-for-the-north/caf.van"
 Documentation = "http://cafvan.readthedocs.io/"
 
+[project.scripts]
+"caf.van" = "caf.van.__main__:main"
+
 [tool.setuptools.dynamic]
 dependencies = { "file" = "requirements.txt" }
 

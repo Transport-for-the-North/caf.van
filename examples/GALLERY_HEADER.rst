@@ -8,7 +8,7 @@ This section contains code examples for using some of the functionality within C
     suggestions for examples please consider raising an issue on
     `GitHub <https://github.com/transport-for-the-north/caf.van/issues>`__.
 
-.. note::
-   - For quick start guide see :ref:`quick start`
-   - For more in-depth user guide and tutorial see :ref:`user guide`
-   - For details on the package API see :ref:`api reference`
+.. seealso::
+   - :ref:`quick start` for installation instructions and usage
+   - :ref:`user guide` for more in-depth user guide and tutorials
+   - :ref:`api reference` for details on the package API

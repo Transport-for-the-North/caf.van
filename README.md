@@ -42,7 +42,6 @@ Transport demand model to produce van travel matrices.
 > For more detailed information including a user guide, tutorials and API reference see the full
 > [caf.van documentation](https://cafvan.readthedocs.io/en/stable/)
 
-
 ## Table of Contents
 
 - [Table of Contents](#table-of-contents)
@@ -85,18 +84,14 @@ Transport demand model to produce van travel matrices.
 
 ### Who is it for?
 
-- **Target audience:** *TODO*
-- **CAF Analytical Stage:** *TODO*
+- **Target audience:** Transport Modellers
+- **CAF Analytical Stage:** Modelling
 
 ![CAF Analytical Process Diagram](https://github.com/Transport-for-the-North/.github/blob/21a428e81880639839e221940881572cdee24d5a/profile/ProcessDiagram.png?raw=true)
 
 For more details on CAF Analytical Stages see the [description within TfN's GitHub homepage](https://github.com/Transport-for-the-North)
 
 ## Where to get it
-
-> [!IMPORTANT]
-> caf.van has not been published yet so cannot be installed from
-> conda-forge or PyPI, see [Installation from GitHub](#installation-from-github).
 
 The latest released version are available at the [Python
 Package Index (PyPI)](https://pypi.org/project/caf.van) and on [Conda](https://anaconda.org/conda-forge/caf.van).
@@ -131,7 +126,7 @@ pip install "git+https://github.com/transport-for-the-north/caf.van"
 
 ## Usage
 
-caf.van provides and Command-line (CLI) and graphical interface (GUI) to use many of it's
+CAF.van provides and Command-line (CLI) to use many of it's
 features without the need to write any Python code, see the [Tool Usage section](https://cafvan.readthedocs.io/en/stable/usage/index.html)
 of the user guide for more details.
 
@@ -149,7 +144,6 @@ for full explanations of the parameters.
 ## Documentation
 
 The code documentation is hosted at <https://cafvan.readthedocs.io/en/stable/>.
-
 
 ## What is CAF?
 
@@ -172,6 +166,5 @@ provides details for contributions.
 For further information about using this tool or CAF tools in your projects and work contact Transport for the North - <TfNOffer@transportforthenorth.com>
 
 ---
-
 
 [Go to Top](#table-of-contents)

@@ -1,5 +1,11 @@
-Van Model Inputs
-================
+Inputs
+======
+
+.. todo::
+   Review :doc:`../inputs` and incoporate any changes here.
+
+.. todo::
+   Review inputs and update to align with current tool.
 
 The Van model has a number of input files which can be provided in the
 GUI, or via a configuration file (example below). This section details

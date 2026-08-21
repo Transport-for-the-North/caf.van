@@ -17,10 +17,7 @@ permissions:
 
 jobs:
   deploy:
-    # Disabled until PyPI publishing is setup
-    if: false
     timeout-minutes: 3
-
     runs-on: ubuntu-latest
 
     # Specifying a GitHub environment is optional, but strongly encouraged
