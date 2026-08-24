@@ -22,22 +22,11 @@ conda-forge
 Installing through conda-forge is easy and can be done in one command:
 ``conda install caf.van -c conda-forge``
 
-Pipx
-----
-
-`Pipx <https://pipx.pypa.io/stable/>`__ is the recommended way to use caf.van as a utility.
-It handles installing the tool in its own container, and makes it easy to access from a terminal.
-
-First install pipx into your default Python environment using pip or conda, see
-`Pipx's installation instructions <https://pipx.pypa.io/stable/installation/>`__ for more details.
-
-Once pipx is installed and setup caf.toolkit can be installed using ``pipx install caf.van``,
-this should make it available in command-line anywhere using ``caf.van ...``.
-
-.. _start-usage:
-
 Usage
 -----
+The tool should be run from the command-line and a configuration (YAML) file to pass the inputs.
+The command to call the tool is:
+``python -m caf.van -c path/to/config.yaml``
 
 CAF.van provides a command-line interface (CLI) for running the van model. The
 below details the basic usage and arguments for running from the command line,
