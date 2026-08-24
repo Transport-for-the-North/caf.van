@@ -122,7 +122,7 @@ each type of trip end.
 Gravity Model
 -------------
 
-The package utilises [caf.distribute](https://cafdistribute.readthedocs.io/en/stable/) multi-TLD
+The package utilises `caf.distribute <https://cafdistribute.readthedocs.io/en/stable/>`_ multi-TLD
 gravity model for calibrating and running the gravity model. The gravity model distributes trips
 based on the purposes' calculated trip ends and inputted trip-length distributions (TLD).
 This is achieved by fitting the cost function parameters to match the target TLD and Furnessing
@@ -133,7 +133,7 @@ to have their own TLDs, for more information on this process please see
 Time Period Conversion
 ----------------------
 
-The final process of the LGV model is the conversion from annual to time
+The final process of the van model is the conversion from annual to time
 period specific trip matrices. The conversion is done by factoring the
 annual matrices (for each model segment) by the period factor provided
 for each of the given time periods. The time period factors should be

@@ -32,22 +32,17 @@ and delivery parcel bush which are origin and destinations.
 
 .. table:: Trip ends outputs CSV columns.
 
-   +-------------------+-----+--------------------------------------------+
-   | Column Name       | D   | Description                                |
-   |                   | ata |                                            |
-   |                   | T   |                                            |
-   |                   | ype |                                            |
-   +===================+=====+============================================+
-   | Zone              | I   | The model zone number                      |
-   |                   | nte |                                            |
-   |                   | ger |                                            |
-   +-------------------+-----+--------------------------------------------+
-   | Productions (or   | R   | The number of production (or origin) trip  |
-   | Origins)          | eal | ends for this zone                         |
-   +-------------------+-----+--------------------------------------------+
-   | Attractions (or   | R   | The number of attraction (or destination)  |
-   | Destinations)     | eal | trip ends for this zone                    |
-   +-------------------+-----+--------------------------------------------+
+   +-------------------+-------------+--------------------------------------------+
+   | Column Name       | Data Type   | Description                                |
+   +===================+=============+============================================+
+   | Zone              | Integer     | The model zone number                      |
+   +-------------------+-------------+--------------------------------------------+
+   | Productions (or   | Real        | The number of production (or origin) trip  |
+   | Origins)          |             | ends for this zone                         |
+   +-------------------+-------------+--------------------------------------------+
+   | Attractions (or   | Real        | The number of attraction (or destination)  |
+   | Destinations)     |             | trip ends for this zone                    |
+   +-------------------+-------------+--------------------------------------------+
 
 Annual Trip Matrices
 --------------------
