@@ -1,9 +1,6 @@
 Outputs
 =======
 
-.. todo::
-   Review outputs and update to align with current tool.
-
 The Van model creates a new folder for each run to store all outputs inside,
 this folder follows the name convention of "LGV Model Outputs - {date}
 {time}" (e.g. "LGV Model Outputs - 2021-08-05 19.15.32"). The Van model
