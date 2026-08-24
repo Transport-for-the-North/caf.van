@@ -108,7 +108,7 @@ The PDF contains a graph of the observed trip distributions compared to
 the output annual trip matrix distributions. The file is named ``{segment_name}-distribution_{category}.pdf``
 and contains the distributions plotted for the observed data and the calibration sub-subset of
 the matrix for the TLD category. All the data used to produce these graphs is given in the
-Trip Distribution sheet of the :ref:`excel log file`.
+Trip Distribution sheet of the :ref:`usage/outputs:excel log file`.
 
 Time Period Matrices
 --------------------

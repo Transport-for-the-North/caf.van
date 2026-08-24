@@ -33,7 +33,7 @@ segments except the delivery bush trips where they instead have origin
 and destination trip ends.
 
 The trip end generation uses various inputs from the DfT van survey and
-census data tables, these are all outlined in the :ref:`van model inputs`
+census data tables, these are all outlined in the :doc:`inputs`
 section. This section will discuss the methodologies for the three main
 segments (which each contain sub-segments that make up the six total
 van model segments).
@@ -132,4 +132,4 @@ period specific trip matrices. The conversion is done by factoring the
 annual matrices (for each model segment) by the period factor provided
 for each of the given time periods. The time period factors should be
 provided separately to respect the different time profiles for each of
-the model segments, the factors are provided in the :ref:`van parameters spreadsheet`.
+the model segments, the factors are provided in the :ref:`usage/inputs:van parameters spreadsheet`.

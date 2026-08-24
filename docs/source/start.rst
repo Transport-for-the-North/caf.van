@@ -2,14 +2,12 @@ Quick Start
 ===========
 
 CAF.van is provided as a Python package and a command-line utility.
-The command-line utility can be used to run the complete caf.van process without using Python directly.
-This should be used for most use-cases. 
-To interact directly with caf.van's underlying functionality, it can be imported and called directly from Python.
- See :ref:`usage` for details.
+The command-line utility can be used to run the complete caf.van process without using Python
+directly. This should be used for most use-cases. To interact directly with caf.van's underlying
+functionality, it can be imported and called directly from Python, see :ref:`start:usage` for details.
 
 CAF.van can be installed from pip, conda-forge or **pipx
 (when using as a command-line utility).**
-
 
 Pip
 ---
@@ -32,8 +30,6 @@ First install pipx into your default Python environment using pip or conda, see
 Once pipx is installed and setup caf.toolkit can be installed using ``pipx install caf.van``,
 this should make it available in command-line anywhere using ``caf.van ...``.
 
-.. _start-usage:
-
 Usage
 -----
 The tool should be run from the command-line and a configuration (YAML) file to pass the inputs.
@@ -42,7 +38,7 @@ The command to call the tool is:
 
 CAF.van provides a command-line interface (CLI) for running the van model. The
 below details the basic usage and arguments for running from the command line,
-the details for the inputs and methodology are outlined in :ref:`tool usage`.
+the details for the inputs and methodology are outlined in :doc:`usage/index`.
 
 CLI
 ^^^
@@ -61,6 +57,6 @@ When using CAF.van functionality within Python:
 
     import caf.van as cvan
 
-The :ref:`user guide` contains :ref:`tutorials` and :ref:`code examples`, which
+The :doc:`usage/index` contains :doc:`tutorial` and :doc:`_generated/examples/index`, which
 explain available functionality. For a detailed look at the
-package API see :ref:`API Reference`.
+package API see :doc:`api`.

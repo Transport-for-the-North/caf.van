@@ -5,7 +5,7 @@ Example
 This is an example of a code example which is displayed but **not** ran.
 
 .. note::
-    See :ref:`ran example` for an example which is displayed **and** ran.
+    See :doc:`run_example` for an example which is displayed **and** ran.
 
 The examples can include documentation in the docstrings and comments alongside
 the code and outputs. Text uses the reStructuredText format, the same as other

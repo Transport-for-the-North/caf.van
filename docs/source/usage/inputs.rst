@@ -7,11 +7,11 @@ all of the input files which are needed in order to run the Van model.
 
 To run the Van model with a configuration file it needs to be ran from
 command line. The command for running it is ``caf.van -c "path/to/config.yml"``,
-(see :ref:`start-usage` for more information). An example of the configuration file is shown below.
+(see :ref:`start:usage` for more information). An example of the configuration file is shown below.
 
 .. note::
    Help text for running the tool through the command line can
-   be seen with ``caf.van -h``, it's also shown in :ref:`start-usage`.
+   be seen with ``caf.van -h``, it's also shown in :ref:`start:usage`.
 
 .. code:: yaml
   
@@ -81,7 +81,7 @@ Occupied dwellings is required and unoccupied dwellings is optional.
 If both are given the number of dwellings used is the sum of both datasets, if unoccupied is not given, the occupied data is used as is.
 
 The zone correspondence path should point to a CSV, which contains zone correspondence from the DVector's zoning to the model zoning,
-see :ref:`Zone Correspondences` for information on the format of the CSV.
+see :ref:`usage/inputs:zone correspondences` for information on the format of the CSV.
 
 
 Employment Data
@@ -257,7 +257,7 @@ The sheet named "Commute Warehouse Parameters" should contain all the
 parameters for the warehouse input calculations, including the weighting
 factors and infilling parameters. The table below describes all the
 required values and their use, the different weighting factors
-correspond to the input files described in :ref:`warehouse data`.
+correspond to the input files described in :ref:`usage/inputs:warehouse data`.
 
 .. csv-table:: Description of the commute warehouse parameters
    :file: ../_static/tables/commute_parameters_columns.csv
@@ -344,24 +344,26 @@ The ``trip_length_distribution_path`` should be a path to a CSV containing the t
 distribution(s) (TLD) to use for calibration. The CSV should contain the following columns,
 with names:
 
-+--------------+--------+-----------------------------------------------+
-| Column       | Data   | Description                                   |                                      
-| Name         | Type   |                                               |
-+==============+========+===============================================+
-| area         | string | This labels which area the TLD belongs to.    |                                 
-|              | or     | Area Ids should correspond to those in the    |
-|              | int    | Category Zone Correspondence.                 |
-+--------------+--------+-----------------------------------------------+
-| from         | Real   | The lower bin edge for the TLD.               |
-+--------------+--------+-----------------------------------------------+
-| to           | Real   | The upper bin edge for the TLD.               |
-+--------------+--------+-----------------------------------------------+
-| av_distance  | Real   | The average distance travelled within that    |
-|              |        | bin and area.                                 |
-+--------------+--------+-----------------------------------------------+
-| normalised   | Real   | The proportion of trips that fall within that |
-|              |        | bin and area.                                 |
-+--------------+--------+-----------------------------------------------+
+.. table:: Format of the trip length distribution CSV
+
+   +--------------+--------+-----------------------------------------------+
+   | Column       | Data   | Description                                   |                                      
+   | Name         | Type   |                                               |
+   +==============+========+===============================================+
+   | area         | string | This labels which area the TLD belongs to.    |                                 
+   |              | or     | Area Ids should correspond to those in the    |
+   |              | int    | Category Zone Correspondence.                 |
+   +--------------+--------+-----------------------------------------------+
+   | from         | Real   | The lower bin edge for the TLD.               |
+   +--------------+--------+-----------------------------------------------+
+   | to           | Real   | The upper bin edge for the TLD.               |
+   +--------------+--------+-----------------------------------------------+
+   | av_distance  | Real   | The average distance travelled within that    |
+   |              |        | bin and area.                                 |
+   +--------------+--------+-----------------------------------------------+
+   | normalised   | Real   | The proportion of trips that fall within that |
+   |              |        | bin and area.                                 |
+   +--------------+--------+-----------------------------------------------+
 
 .. note::
     If ``cat_zone_correspondence_path`` is not given, the CSV does not need to contain 
@@ -376,18 +378,19 @@ defines which model zones are calibrated to each TLD provided. This is required 
 to perform multi-TLD gravity model calibration.
 
 .. table:: Format of the category zone correspondence
-+--------------+--------+-----------------------------------------------+
-| Column       | Data   | Description                                   |                                      
-| Name         | Type   |                                               |
-+==============+========+===============================================+
-| area         | string | This labels which category the Zone belongs   |
-|              | or     | to. Ids should correspond to those in the     |
-|              | int    | Trip Length Distribution.                     |
-+--------------+--------+-----------------------------------------------+
-| zone_id      | text   | Should contain the IDs of all zones in the    |  
-|              | or     | mode zone system, without duplicates.         | 
-|              | int    |                                               |
-+--------------+--------+-----------------------------------------------+
+
+   +--------------+--------+-----------------------------------------------+
+   | Column       | Data   | Description                                   |                                      
+   | Name         | Type   |                                               |
+   +==============+========+===============================================+
+   | area         | string | This labels which category the Zone belongs   |
+   |              | or     | to. Ids should correspond to those in the     |
+   |              | int    | Trip Length Distribution.                     |
+   +--------------+--------+-----------------------------------------------+
+   | zone_id      | text   | Should contain the IDs of all zones in the    |  
+   |              | or     | mode zone system, without duplicates.         | 
+   |              | int    |                                               |
+   +--------------+--------+-----------------------------------------------+
 
 Cost Function
 ~~~~~~~~~~~~~
@@ -398,7 +401,7 @@ expert.
 
 .. note::
     If using multi-TLD calibration all TLDs will use the same cost function, although
-    different parameters can be defined for each (see :ref:`Cost Function Parameters`).
+    different parameters can be defined for each (see :ref:`usage/inputs:cost function parameters`).
 
 Log Normal
 **********
@@ -440,7 +443,7 @@ two parameters (in a specific order):
 
 If a single pair of parameters is provided these will be used for all TLDs,
 alternatively separate parameters can be provided for each of the area IDs in
-:ref:`Category-Zone Correspondence`.
+:ref:`usage/inputs:category-zone correspondence`.
 
 Calibrate
 ~~~~~~~~~
@@ -466,7 +469,7 @@ Trip End Balancing regions
 
 The ``tripend_balancing_regions_path`` is an optional path to a CSV containing zone groups
 which the van trip ends will be balanced at. The CSV should be in the same format as the
-:ref:`Category-Zone Correspondence`.
+:ref:`usage/inputs:category-zone correspondence`.
 
 If this isn't given then the trip ends will be balanced at all zones, i.e. the
 GB total trip ends.
@@ -478,23 +481,24 @@ The ``constructions_path`` should point to a CSV containing the dwelling and emp
 floorspace changes in the model zoning.
 
 .. table:: Required columns in the Constructions CSV
-+----------------------+--------+--------------------------------------------+
-| Column               | Data   | Description                                |                                      
-| Name                 | Type   |                                            |
-+======================+========+============================================+
-| zone                 | Text   | The model zoning IDs.                      |
-|                      | or     |                                            |
-|                      | int    |                                            |
-+----------------------+--------+--------------------------------------------+
-| additional_dwellings  | Real   | The number of dwellings constructed in the | 
-|                      |        | model year within the zone.                |
-+----------------------+--------+--------------------------------------------+
-| demolished_dwellings | Real   | The number of dwellings constructed in the |
-|                      |        | model year within the zone.                |
-+----------------------+--------+--------------------------------------------+
-| business_floorspace  | Real   | The floorspace, in m^2, constructed in the |
-|                      |        | model year, within the zone.               |
-+----------------------+--------+--------------------------------------------+
+
+   +----------------------+--------+--------------------------------------------+
+   | Column               | Data   | Description                                |
+   | Name                 | Type   |                                            |
+   +======================+========+============================================+
+   | zone                 | Text   | The model zoning IDs.                      |
+   |                      | or     |                                            |
+   |                      | int    |                                            |
+   +----------------------+--------+--------------------------------------------+
+   | additional_dwellings | Real   | The number of dwellings constructed in the | 
+   |                      |        | model year within the zone.                |
+   +----------------------+--------+--------------------------------------------+
+   | demolished_dwellings | Real   | The number of dwellings constructed in the |
+   |                      |        | model year within the zone.                |
+   +----------------------+--------+--------------------------------------------+
+   | business_floorspace  | Real   | The floorspace, in m^2, constructed in the |
+   |                      |        | model year, within the zone.               |
+   +----------------------+--------+--------------------------------------------+
 
 Census Occupation Data
 ----------------------
@@ -566,12 +570,12 @@ table below.
    +---------------------------------------+-----------+------------------------+
 
 Zone Correspondences
--------------------------
+--------------------
 
 Zone correspondence CSVs are required for converting Warehouse 
 and Occupation data from LSOA to the model zone system and annual matrices to a summary zone system.
 The summary zone system can be chosen by the user to suit the specific situation. LSOA to model zones requires
- column names on the first row and three required columns, listed in the table below.
+column names on the first row and three required columns, listed in the table below.
 
 .. table:: Required columns for the LSOA zone correspondence CSV, column
    names are ignored the columns just need to be in the correct order.
@@ -586,10 +590,11 @@ The summary zone system can be chosen by the user to suit the specific situation
 
 The summary zone correspondence should be in `caf.space <https://cafspace.readthedocs.io/en/stable/>`_
 format, containing the following columns:
-   - {from_zoning}_id - the model zone ID
-   - {to_zoning}_id - the summary zone ID
-   - {from_zoning}_{to_zoning} - translation factor, best practice is to use aggregated zones 
-      for the summary, so all of theses should be 1.
+
+- {from_zoning}_id - the model zone ID
+- {to_zoning}_id - the summary zone ID
+- {from_zoning}_{to_zoning} - translation factor, best practice is to use aggregated zones 
+  for the summary, so all of theses should be 1.
 
 Zoning
 ------
@@ -615,7 +620,7 @@ Cost Matrix
 -----------
 
 Matrix CSV containing the cost values for all zones in the model, the
-units of the costs should be the same as the units in the :ref:`trip length distribution`.
+units of the costs should be the same as the units in the :ref:`usage/inputs:trip length distribution`.
 The CSV file should be in square matrix format where the first column and
 row contains all the zone numbers, an example of a three by three matrix
 with the same costs for all zones is shown below.
@@ -633,10 +638,10 @@ with the same costs for all zones is shown below.
 Calibration Matrix
 ------------------
 
-The calibration matrix should be a CSV in the same format as :ref:`cost matrix`.
+The calibration matrix should be a CSV in the same format as :ref:`usage/inputs:cost matrix`.
 This matrix is used during the gravity model
 process to adjust the impact of trips between certain zone pairs and
-should have positive values around 0 - 2. The :ref:`gravity model` section
+should have positive values around 0 - 2. The :ref:`usage/methodology:gravity model` section
 outlines the methodology where this input is used.
 
 Output Folder

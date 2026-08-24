@@ -13,6 +13,10 @@ import os
 import pathlib
 import re
 import sys
+from typing import Any
+
+import sphinx.ext.autodoc
+from sphinx.application import Sphinx
 
 dir_path = pathlib.Path(__file__).parents[2]
 source = dir_path / "src"
@@ -56,6 +60,9 @@ templates_path = ["_templates", "_templates/autosummary"]
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
+
+# Prefix each section label with the relative document path followed by a colon
+autosectionlabel_prefix_document = True
 
 # -- Options for API summary -------------------------------------------------
 napoleon_google_docstring = False
@@ -107,6 +114,7 @@ intersphinx_mapping = {
     "pandas": ("https://pandas.pydata.org/docs/", None),
 }
 intersphinx_timeout = 30
+
 
 # -- Options for Todo extension ----------------------------------------------
 def get_env_bool(name: str, default: bool) -> bool:
@@ -240,3 +248,26 @@ def linkcode_resolve(domain: str, info: dict) -> str | None:
     )
 
     return f"{github_url}/{filepath}"
+
+
+# -- Custom sphinx setup --------------------------------------------
+def skip_imported(
+    app: Sphinx,
+    what: str,
+    name: str,
+    obj: Any,
+    skip: bool,
+    options: sphinx.ext.autodoc.Options,
+) -> bool | None:
+    """Skip any objects which aren't from caf.van."""
+    package = "caf.van"
+
+    module = getattr(obj, "__module__", None)
+    if module is not None and not module.startswith(package):
+        return True
+
+    return skip
+
+
+def setup(app: Sphinx) -> None:
+    app.connect("autodoc-skip-member", skip_imported)
