@@ -2,9 +2,10 @@ Quick Start
 ===========
 
 CAF.van is provided as a Python package and a command-line utility.
-The command-line utility can be used to run the complete caf.van process, without using Python directly,
-and should be used for most cases. For more bespoke use-case caf.van functionality can be called 
-directly from Python. See :ref:`usage` for details.
+The command-line utility can be used to run the complete caf.van process without using Python directly.
+This should be used for most use-cases. 
+To interact directly with caf.van's underlying functionality, it can be imported and called directly from Python.
+ See :ref:`usage` for details.
 
 CAF.van can be installed from pip, conda-forge or **pipx
 (when using as a command-line utility).**
@@ -19,6 +20,19 @@ conda-forge
 -----------
 Installing through conda-forge is easy and can be done in one command:
 ``conda install caf.van -c conda-forge``
+
+Pipx
+----
+`Pipx <https://pipx.pypa.io/stable/>`__ is the recommended way to use caf.van as a utility.
+It handles installing the tool in its own container, and makes it easy to access from a terminal.
+
+First install pipx into your default Python environment using pip or conda, see
+`Pipx's installation instructions <https://pipx.pypa.io/stable/installation/>`__ for more details.
+
+Once pipx is installed and setup caf.toolkit can be installed using ``pipx install caf.van``,
+this should make it available in command-line anywhere using ``caf.van ...``.
+
+.. _start-usage:
 
 Usage
 -----

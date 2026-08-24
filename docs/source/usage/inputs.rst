@@ -1,9 +1,6 @@
 Inputs
 ======
 
-.. todo::
-   Review inputs and update to align with current tool.
-
 The Van model has a number of input files which can be provided in the
 GUI, or via a configuration file (example below). This section details
 all of the input files which are needed in order to run the Van model.
@@ -15,9 +12,6 @@ command line. The command for running it is ``caf.van -c "path/to/config.yml"``,
 .. note::
    Help text for running the tool through the command line can
    be seen with ``caf.van -h``, it's also shown in :ref:`start-usage`.
-
-.. todo::
-   Review the example config below to reflect recent changes.
 
 .. code:: yaml
   
