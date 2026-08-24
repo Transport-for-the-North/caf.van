@@ -48,7 +48,7 @@ CLI
 ^^^
 
 .. argparse::
-    :module: caf.van
+    :module: caf.van.lgv_model
     :func: lgv_arg_parser
     :nosubcommands:
 
