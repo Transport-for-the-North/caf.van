@@ -64,19 +64,19 @@ Transport demand model to produce van travel matrices.
 ### What does it do?
 
 > The tool has been built to produce synthetic LGV demand. This is intended to be assigned to a network 
-as part of a transport model. 
+as part of a strategic highway transport model. 
 > This was developed to produce the LGV demand for TfN's Highway assignment model (NoHAM). However, the tool is flexible to any zoning system given the correct inputs are provided.
 
 ### Main Features
 
 
-- **Calculating Trip Ends** - Distributing total annual GB van trip ends to model zones using land-use
+- **Calculating Trip Ends** - Distributing total annual GB van trip ends to model zones using land-use data.
 - **Calculating Distribution** - Distributing trip-ends using TfN's gravity model in `caf.distribute` to create annual demand matrices.
-- **Caculating Time Period Matrices** - Converting van-purpose-split annual demand matrices into LGV average hour matrices.
+- **Caculating Time Period Matrices** - Converting van-purpose-split annual demand matrices into LGV average hour matrices required for modelling.
 
 #### Work-in-Progress
 
-- **Prior Adjustment** - Sectorally adjust the synthetic matrix to a set of target matrices.
+- **Prior Adjustment** - Sectorally adjust the synthetic matrices to a set of target matrices.
 
 > [!WARNING]
 > These features are work-in-progress and are not available in a released version of caf.van, to
