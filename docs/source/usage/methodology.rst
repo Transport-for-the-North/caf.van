@@ -83,6 +83,7 @@ for all three types of delivery trip.
 
 .. todo::
    Update flowchart to show trips are factored using delivery growth factor
+   
 
 .. figure:: ../_static/images/LGV_methodology-Delivery.drawio.svg
    :alt: Van delivery trip ends methodology - flowchart
