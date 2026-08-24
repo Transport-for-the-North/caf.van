@@ -1,8 +1,6 @@
 Methodology
 ===========
 
-.. todo::
-   Review methodology and update to align with current tool.
 
 The van model is split into six model segments for different types of
 van trips, these are the following:
@@ -81,9 +79,6 @@ whereas both the bush types are origin / destination trip ends. The
 flowchart below outlines the methodology for calculating the trip ends
 for all three types of delivery trip.
 
-.. todo::
-   Update flowchart to show trips are factored using delivery growth factor
-   
 
 .. figure:: ../_static/images/LGV_methodology-Delivery.drawio.svg
    :alt: Van delivery trip ends methodology - flowchart
@@ -107,8 +102,6 @@ Both commuting segments are calculated as productions and attractions,
 these methodologies have been split into two flowcharts below, one for
 each type of trip end.
 
-.. todo::
-   Update flowchart to show trips are factored using growth factor
 
 .. figure:: ../_static/images/LGV_methodology-Commuting-Productions.drawio.svg
    :alt: Van commuting productions trip ends methodology - flowchart

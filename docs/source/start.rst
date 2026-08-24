@@ -1,16 +1,14 @@
 Quick Start
 ===========
 
-.. todo::
-    Write brief description about the possible ways for using the tool e.g. CLI, GUI and
-    importing in Python.
-
-*CAF.van is provided as a Python package and a command-line utility.
-The command-line utility aims to make some of the commonly used functionality 
-available without needing to use Python code, see :ref:`usage` for details.*
+CAF.van is provided as a Python package and a command-line utility.
+The command-line utility can be used to run the complete caf.van process, without using Python directly,
+and should be used for most cases. For more bespoke use-case caf.van functionality can be called 
+directly from Python. See :ref:`usage` for details.
 
 CAF.van can be installed from pip, conda-forge or **pipx
 (when using as a command-line utility).**
+
 
 Pip
 ---
