@@ -286,8 +286,7 @@ Time Period Factors
 
 The sheet named "Time Period Factors" should contain all the factors for
 converting from the annual matrices to the time periods for each model
-segment, see Ian Williams' technical note[^lgvn_design] for more detail
-on each segment. The table should contain one factor for each time
+segment. The table should contain one factor for each time
 period / segment combination, a list of the required columns is given
 below.
 
@@ -334,20 +333,22 @@ each segment and time period separately.
    | Skilled Trades |      | average daily time period (e.g. AM) for this segment   |
    +----------------+------+--------------------------------------------------------+
 
-Gravity Model Parameters (``gm_parameters``)
---------------------------------------------
+Gravity Model Parameters
+------------------------
 
-The gravity model is ran separately for each van segment, therefore the parameters
+The gravity model is ran separately for each van segment, therefore the parameters (``gm_parameters``)
 should be specified separately for each. The segment names should be given exactly
-as follows: 'service', 'delivery_parcel_stem', 'delivery_parcel_bush', 'delivery_grocery', 'commuting_drivers', 'commuting_skilled_trades'.
+as follows: 'service', 'delivery_parcel_stem', 'delivery_parcel_bush', 'delivery_grocery',
+'commuting_drivers', 'commuting_skilled_trades'.
 
 The following sections outline the parameters which should be defined for each segment.
 
-Trip Length Distribution (``trip_length_distribution_path``)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Trip Length Distribution
+~~~~~~~~~~~~~~~~~~~~~~~~
 
-This should be a CSV containing the trip length distribution(s) (TLD) to use for
-calibration. The CSV should contain the following columns, with names:
+The ``trip_length_distribution_path`` should be a path to a CSV containing the trip length
+distribution(s) (TLD) to use for calibration. The CSV should contain the following columns,
+with names:
 
 +--------------+--------+-----------------------------------------------+
 | Column       | Data   | Description                                   |                                      
@@ -373,12 +374,12 @@ calibration. The CSV should contain the following columns, with names:
     the area column and the tool will perform a single TLD calibration.
     Alternatively, TLDs can be calibrated to separately for different zones.
 
-Category-Zone correspondence (``cat_zone_correspondence_path``)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Category-Zone Correspondence
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The category-zone correspondence is an optional lookup which defines which model zones
-are calibrated to each TLD provided. This is required when attempting to perform
-multi-TLD gravity model calibration.
+The category-zone correspondence (``cat_zone_correspondence_path``) is an optional lookup which
+defines which model zones are calibrated to each TLD provided. This is required when attempting
+to perform multi-TLD gravity model calibration.
 
 .. table:: Format of the category zone correspondence
 +--------------+--------+-----------------------------------------------+
@@ -394,17 +395,16 @@ multi-TLD gravity model calibration.
 |              | int    |                                               |
 +--------------+--------+-----------------------------------------------+
 
-Cost Function (``cost_function``)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Cost Function
+~~~~~~~~~~~~~
 
-The cost function to use for the gravity model, either "log_normal" or "tanner".
+The cost function (``cost_function``) to use for the gravity model, either "log_normal" or "tanner".
 If you don't know which to use, consult TAG or your nearest demand modelling
 expert.
 
 .. note::
-    If using multi-TLD calibration all TLDs will use the same cost function,
-    although different parameters can be defined for each (see
-    :ref:`Cost Function params (cost_function_params)`).
+    If using multi-TLD calibration all TLDs will use the same cost function, although
+    different parameters can be defined for each (see :ref:`Cost Function Parameters`).
 
 Log Normal
 **********
@@ -434,18 +434,19 @@ where:
 - :math:`\alpha, \beta`: calibration parameters.
 
 
-Cost Function params (``cost_function_params``)  
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+Cost Function Parameters
+~~~~~~~~~~~~~~~~~~~~~~~~
 
-The starting values for the cost function parameters to use when calibrating,  
-or just the values to use if calibration is off. Both cost functions require  
-two parameters (in a specific order):  
+The starting values for the cost function parameters (``cost_function_params``) to use when
+calibrating, or just the values to use if calibration is off. Both cost functions require
+two parameters (in a specific order):
 
-- Log normal: :math:`\mu` (mu), :math:`\sigma` (sigma) 
-- Tanner: :math:`\alpha` (alpha), :math:`\beta` (beta)  
+- Log normal: :math:`\mu` (mu), :math:`\sigma` (sigma)
+- Tanner: :math:`\alpha` (alpha), :math:`\beta` (beta)
 
-If a single pair of parameters is provided these will be used for all TLDs, 
-alternatively separate parameters can be provided for each of the area IDs in :ref:`Category-Zone correspondence (cat_zone_correspondence_path)`.  
+If a single pair of parameters is provided these will be used for all TLDs,
+alternatively separate parameters can be provided for each of the area IDs in
+:ref:`Category-Zone Correspondence`.
 
 Calibrate
 ~~~~~~~~~
@@ -466,20 +467,21 @@ the implementation details.
     which contain mostly intrazonal trips by definition. If you find poor results for
     these matrices, try setting furness jacobian to off.
 
-Trip End Balancing regions (``tripend_balancing_regions_path``)
----------------------------------------------------------------
+Trip End Balancing regions
+--------------------------
 
-Optional CSV containing zone groups which the van trip ends will be balanced at.
-The CSV should be in the same format as the
-:ref:`Category-Zone correspondence (cat_zone_correspondence_path)`.
+The ``tripend_balancing_regions_path`` is an optional path to a CSV containing zone groups
+which the van trip ends will be balanced at. The CSV should be in the same format as the
+:ref:`Category-Zone Correspondence`.
 
 If this isn't given then the trip ends will be balanced at all zones, i.e. the
 GB total trip ends.
 
-Constructions (``constructions_path``)
-----------------------------------
+Constructions
+-------------
 
-This should contains the dwelling and employment floorspace changes in the model zoning.
+The ``constructions_path`` should point to a CSV containing the dwelling and employment
+floorspace changes in the model zoning.
 
 .. table:: Required columns in the Constructions CSV
 +----------------------+--------+--------------------------------------------+
@@ -619,9 +621,8 @@ Cost Matrix
 -----------
 
 Matrix CSV containing the cost values for all zones in the model, the
-units of the costs should be the same as the units in the
-:ref:`trip length distribution (trip_length_distribution_path)`. The
-CSV file should be in square matrix format where the first column and
+units of the costs should be the same as the units in the :ref:`trip length distribution`.
+The CSV file should be in square matrix format where the first column and
 row contains all the zone numbers, an example of a three by three matrix
 with the same costs for all zones is shown below.
 
