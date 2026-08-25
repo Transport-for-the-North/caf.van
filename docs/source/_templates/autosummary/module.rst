@@ -9,7 +9,7 @@
    .. rubric:: {{ _('Module Attributes') }}
 
    .. autosummary::
-   {% for item in attributes %}
+   {% for item in attributes if item|include_module_member %}
       {{ item }}
    {%- endfor %}
    {% endif %}
@@ -21,7 +21,7 @@
 
    .. autosummary::
       :toctree:
-   {% for item in functions %}
+   {% for item in functions if item|include_module_member %}
       {{ item }}
    {%- endfor %}
    {% endif %}
@@ -33,7 +33,7 @@
 
    .. autosummary::
       :toctree:
-   {% for item in classes %}
+   {% for item in classes if item|include_module_member %}
       {{ item }}
    {%- endfor %}
    {% endif %}
@@ -45,7 +45,7 @@
 
    .. autosummary::
       :toctree:
-   {% for item in exceptions %}
+   {% for item in exceptions if item|include_module_member %}
       {{ item }}
    {%- endfor %}
    {% endif %}
@@ -59,7 +59,7 @@
 .. autosummary::
    :toctree:
    :recursive:
-{% for item in modules %}
+{% for item in modules if item|include_module_member %}
    {{ item }}
 {%- endfor %}
 {% endif %}
@@ -68,7 +68,7 @@
 {% block attribute_docs %}
 {% if attributes %}
 .. rubric:: Attributes Documentation
-{% for item in attributes %}
+{% for item in attributes if item|include_module_member %}
 .. autodata:: {{ item }}
 {%- endfor %}
 {% endif %}

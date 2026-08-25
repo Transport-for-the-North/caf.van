@@ -6,7 +6,6 @@
 
 from __future__ import annotations
 
-# Built-Ins
 import importlib
 import inspect
 import os
@@ -20,6 +19,10 @@ from sphinx.application import Sphinx
 
 dir_path = pathlib.Path(__file__).parents[2]
 source = dir_path / "src"
+sys.path.insert(
+    0,
+    str((pathlib.Path(__file__).parent / "_ext").absolute()),
+)
 sys.path.insert(0, str(source.absolute()))
 
 # -- Project information -----------------------------------------------------
@@ -43,6 +46,7 @@ extensions = [
     "sphinx.ext.duration",
     "sphinx.ext.doctest",
     "sphinx.ext.autodoc",
+    "autosummary_filters",
     "sphinx.ext.autosummary",
     "sphinx.ext.napoleon",
     "sphinx.ext.autosectionlabel",
@@ -72,13 +76,6 @@ numpydoc_show_class_members = False
 # Change autodoc settings
 autodoc_member_order = "groupwise"
 autoclass_content = "class"
-autodoc_default_options = {
-    "undoc-members": True,
-    "show-inheritance": True,
-    "special-members": False,
-    "private-members": False,
-    "exclude-members": "__module__, __weakref__, __dict__",
-}
 autodoc_typehints = "description"
 
 # Auto summary options
@@ -93,6 +90,16 @@ autosummary_context = {
     # Enable / disable inherited methods / attributes in some classes
     "show_inherited": [],
     "exclude_inherited": [],
+    # Filter specific member names for classes and modules,
+    # used by the autosummary_filters extension
+    "class_exclude_members": ["model_config"],
+    "class_include_members": ["__init__"],
+    "class_include_private": False,
+    "class_include_special": False,
+    "module_exclude_members": [],
+    "module_include_members": [],
+    "module_include_private": False,
+    "module_include_special": True,
 }
 
 # -- Options for Sphinx Examples gallery -------------------------------------
