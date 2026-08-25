@@ -25,10 +25,14 @@ Pipx
 It handles installing the tool in its own container, and makes it easy to access from a terminal.
 
 First install pipx into your default Python environment using pip or conda, see
-`Pipx's installation instructions <https://pipx.pypa.io/stable/installation/>`__ for more details.
+`Pipx's installation instructions <https://pipx.pypa.io/latest/how-to/install-pipx.html>`__ for more details.
 
 Once pipx is installed and setup caf.toolkit can be installed using ``pipx install caf.van``,
 this should make it available in command-line anywhere using ``caf.van ...``.
+
+.. seealso::
+    `Pipx Getting started <https://pipx.pypa.io/latest/tutorial/getting-started.html>`__ for
+    more information about using pipx.
 
 Usage
 -----
