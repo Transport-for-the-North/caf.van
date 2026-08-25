@@ -440,6 +440,7 @@ def read_study_area(path: Path) -> set:
     Notes
     -----
     The CSV should contain two columns:
+
     - zone: the zone number
     - internal: a value of 1 or 0 for whether
       the zone is in the study area or not

@@ -1,6 +1,7 @@
 Methodology
 ===========
 
+
 The van model is split into six model segments for different types of
 van trips, these are the following:
 
@@ -32,7 +33,7 @@ segments except the delivery bush trips where they instead have origin
 and destination trip ends.
 
 The trip end generation uses various inputs from the DfT van survey and
-census data tables, these are all outlined in the :ref:`van model inputs`
+census data tables, these are all outlined in the :doc:`inputs`
 section. This section will discuss the methodologies for the three main
 segments (which each contain sub-segments that make up the six total
 van model segments).
@@ -78,8 +79,6 @@ whereas both the bush types are origin / destination trip ends. The
 flowchart below outlines the methodology for calculating the trip ends
 for all three types of delivery trip.
 
-.. todo::
-   Update flowchart to show trips are factored using delivery growth factor
 
 .. figure:: ../_static/images/LGV_methodology-Delivery.drawio.svg
    :alt: Van delivery trip ends methodology - flowchart
@@ -103,8 +102,6 @@ Both commuting segments are calculated as productions and attractions,
 these methodologies have been split into two flowcharts below, one for
 each type of trip end.
 
-.. todo::
-   Update flowchart to show trips are factored using growth factor
 
 .. figure:: ../_static/images/LGV_methodology-Commuting-Productions.drawio.svg
    :alt: Van commuting productions trip ends methodology - flowchart
@@ -119,7 +116,7 @@ each type of trip end.
 Gravity Model
 -------------
 
-The package utilises [caf.distribute](https://cafdistribute.readthedocs.io/en/stable/) multi-TLD
+The package utilises `caf.distribute <https://cafdistribute.readthedocs.io/en/stable/>`_ multi-TLD
 gravity model for calibrating and running the gravity model. The gravity model distributes trips
 based on the purposes' calculated trip ends and inputted trip-length distributions (TLD).
 This is achieved by fitting the cost function parameters to match the target TLD and Furnessing
@@ -130,9 +127,9 @@ to have their own TLDs, for more information on this process please see
 Time Period Conversion
 ----------------------
 
-The final process of the LGV model is the conversion from annual to time
+The final process of the van model is the conversion from annual to time
 period specific trip matrices. The conversion is done by factoring the
 annual matrices (for each model segment) by the period factor provided
 for each of the given time periods. The time period factors should be
 provided separately to respect the different time profiles for each of
-the model segments, the factors are provided in the :ref:`van parameters spreadsheet`.
+the model segments, the factors are provided in the :ref:`usage/inputs:van parameters spreadsheet`.

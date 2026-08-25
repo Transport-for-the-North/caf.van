@@ -25,7 +25,7 @@
    .. rubric:: {{ _('Attributes') }}
 
    .. autosummary::
-   {% for item in attributes %}
+   {% for item in attributes if item|include_class_member %}
       {%- if include_inherited_attributes|default(false) or item not in inherited_members %}
       ~{{ name }}.{{ item }}
       {%- endif -%}
@@ -39,7 +39,7 @@
 
    .. autosummary::
       :toctree:
-   {% for item in methods %}
+   {% for item in methods if item|include_class_member %}
       {%- if include_inherited_methods|default(false) or item not in inherited_members %}
       ~{{ name }}.{{ item }}
       {%- endif -%}
@@ -51,7 +51,7 @@
    {% block attribute_docs %}
    {% if attributes %}
    .. rubric:: Attributes Documentation
-   {% for item in attributes %}
+   {% for item in attributes if item|include_class_member %}
    {%- if include_inherited_attributes|default(false) or item not in inherited_members %}
    .. autoattribute:: {{ name }}.{{ item }}
    {%- endif -%}

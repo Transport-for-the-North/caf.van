@@ -1,5 +1,5 @@
-Van Model Outputs
-=================
+Outputs
+=======
 
 The Van model creates a new folder for each run to store all outputs inside,
 this folder follows the name convention of "LGV Model Outputs - {date}
@@ -29,22 +29,17 @@ and delivery parcel bush which are origin and destinations.
 
 .. table:: Trip ends outputs CSV columns.
 
-   +-------------------+-----+--------------------------------------------+
-   | Column Name       | D   | Description                                |
-   |                   | ata |                                            |
-   |                   | T   |                                            |
-   |                   | ype |                                            |
-   +===================+=====+============================================+
-   | Zone              | I   | The model zone number                      |
-   |                   | nte |                                            |
-   |                   | ger |                                            |
-   +-------------------+-----+--------------------------------------------+
-   | Productions (or   | R   | The number of production (or origin) trip  |
-   | Origins)          | eal | ends for this zone                         |
-   +-------------------+-----+--------------------------------------------+
-   | Attractions (or   | R   | The number of attraction (or destination)  |
-   | Destinations)     | eal | trip ends for this zone                    |
-   +-------------------+-----+--------------------------------------------+
+   +-------------------+-------------+--------------------------------------------+
+   | Column Name       | Data Type   | Description                                |
+   +===================+=============+============================================+
+   | Zone              | Integer     | The model zone number                      |
+   +-------------------+-------------+--------------------------------------------+
+   | Productions (or   | Real        | The number of production (or origin) trip  |
+   | Origins)          |             | ends for this zone                         |
+   +-------------------+-------------+--------------------------------------------+
+   | Attractions (or   | Real        | The number of attraction (or destination)  |
+   | Destinations)     |             | trip ends for this zone                    |
+   +-------------------+-------------+--------------------------------------------+
 
 Annual Trip Matrices
 --------------------
@@ -113,7 +108,7 @@ The PDF contains a graph of the observed trip distributions compared to
 the output annual trip matrix distributions. The file is named ``{segment_name}-distribution_{category}.pdf``
 and contains the distributions plotted for the observed data and the calibration sub-subset of
 the matrix for the TLD category. All the data used to produce these graphs is given in the
-Trip Distribution sheet of the :ref:`excel log file`.
+Trip Distribution sheet of the :ref:`usage/outputs:excel log file`.
 
 Time Period Matrices
 --------------------

@@ -85,7 +85,7 @@ class CommuteTripEnds:
 
     See Also
     --------
-    .lgv_inputs: Module with functions for reading some inputs.
+    caf.van.lgv_inputs: Module with functions for reading some inputs.
     """  # noqa: D205 review required
 
     COMMUTING_INPUTS_SHEET_HEADERS = {  # noqa: RUF012 review required
